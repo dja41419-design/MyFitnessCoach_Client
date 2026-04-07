@@ -77,3 +77,29 @@ body {
 a    { text-decoration: none; color: inherit; }
 img  { max-width: 100%; display: block; }
 button { border: none; cursor: pointer; font-family: inherit; }
+
+/* ── 7. 入場動畫（全域工具類別） ─────────────────────────── */
+/* 選配：僅在需要視覺強調的區塊使用，搭配 useReveal() composable  */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.rd0 { transition-delay: 0s; }
+.rd1 { transition-delay: 0.1s; }
+.rd2 { transition-delay: 0.2s; }
+.rd3 { transition-delay: 0.3s; }
+.rd4 { transition-delay: 0.4s; }
+
+/* 尊重使用者的動態偏好設定 */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
