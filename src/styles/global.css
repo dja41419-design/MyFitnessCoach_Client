@@ -1,0 +1,79 @@
+/* ============================================================
+   global.css — 全域基底樣式
+   在 main.js 引入，作用於整個應用程式。
+
+   ⚠️  Google Fonts 改由 index.html <head> 的 <link> 載入，
+       不在此使用 @import url()，原因：
+       - Vite 的 CSS 處理管線可能延遲或忽略外部 @import
+       - <link rel="preconnect"> 讓瀏覽器更早建立連線，載入更快
+
+   包含：
+   1. CSS 設計變數（--bg、--accent 等）
+   2. Box-model / Reset
+   3. html / body 基礎設定
+   4. 覆蓋 Vite 預設 #app 寬度限制
+   ============================================================ */
+
+/* ── 2. CSS 設計變數 ──────────────────────────────────────── */
+:root {
+  /* 色彩 */
+  --bg: #f5f0eb;
+  --bg-dark: #1a1613;
+  --bg-card: #eae4dc;
+  --text-primary: #1a1613;
+  --text-secondary: #6b5e52;
+  --text-light: #f5f0eb;
+  --accent: #c4a882;
+  --accent-dark: #a68b6b;
+  --border: #d4ccc2;
+  --tag-bg: #ddd5cb;
+
+  /* 字型 */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Noto Sans TC', 'DM Sans', sans-serif;
+
+  /* 圓角 */
+  --radius: 16px;
+  --radius-lg: 24px;
+
+  /* 過渡動畫 */
+  --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── 3. Box-model Reset ───────────────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── 4. html / body 基礎 ──────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 5. 覆蓋 Vite 預設 #app 限制 ────────────────────────── */
+/* Vite scaffold 的 style.css 會設定 width: 1126px，會壓縮全版面 */
+#app {
+  width: 100% !important;
+  max-width: 100% !important;
+  border: none !important;
+  text-align: left !important;
+}
+
+/* ── 6. 共用元素 Reset ────────────────────────────────────── */
+a    { text-decoration: none; color: inherit; }
+img  { max-width: 100%; display: block; }
+button { border: none; cursor: pointer; font-family: inherit; }
