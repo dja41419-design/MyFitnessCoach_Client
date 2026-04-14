@@ -162,7 +162,7 @@
         <!-- 原始輪播列表 -->
         <div v-else class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in Instructors"
+            v-for="(nutri, idx) in instructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -215,7 +215,7 @@
 
       <div class="pricing-grid">
         <div
-          v-for="(plan, idx) in pricingPlans"
+          v-for="(plan, idx) in plans"
           :key="plan.name"
           class="price-card reveal"
           :class="[plan.featured ? 'featured' : '', `rd${idx}`]"
@@ -292,7 +292,7 @@
           <h2 class="reveal">健康食品商城</h2>
           <p class="reveal rd1">官方直營、品質保證。嚴選優質健康食品，<br />讓你的飲食計畫更輕鬆執行。</p>
         </div>
-        <RouterLink to="/store" class="btn-outline reveal rd2">查看全部商品</RouterLink>
+        <RouterLink to="/store" target="_blank" class="btn-outline reveal rd2">查看全部商品</RouterLink>
       </div>
 
       <!-- 分類 Tab -->
@@ -377,149 +377,28 @@
   </footer>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import partReview from '@/hooks/partReview'
-import partInstructor from '@/hooks/partInstructor'
-import partPlans from '../hooks/partPlans'
-import partProduct from '../hooks/partProduct'
+import { useNavbar } from '@/composables/useNavbar'
+import { useReveal } from '@/composables/useReveal'
+import { useNutriCarousel } from '@/composables/useNutriCarousel'
+import { reviews } from '@/data/reviews'
+import { instructors } from '@/data/instructors'
+import { plans } from '@/data/plans'
+import { trackingItems } from '@/data/tracking'
+import { shopTabs, shopProducts } from '@/data/shop'
+import { footerCols } from '@/data/footer'
 
-// ─────────────────────────────────────────────
-// 【Navbar 捲動效果】
-// 捲動超過 40px 時加上 .scrolled class，縮小 padding
-// ─────────────────────────────────────────────
-const isScrolled = ref(false)
+const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
+const { nutriTrackRef, slideNutri } = useNutriCarousel()
+useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 40
 }
 
-// ─────────────────────────────────────────────
-// 【手機選單開關】
-// 開啟時鎖定 body 捲動，關閉時解鎖
-// ─────────────────────────────────────────────
-const isMobileMenuOpen = ref(false)
 
-function toggleMenu() {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
-  document.body.style.overflow = isMobileMenuOpen.value ? 'hidden' : ''
-}
-
-/** 手機選單連結點擊：先關閉選單，再平滑捲動 */
-function menuScrollTo(selector) {
-  toggleMenu()
-  scrollTo(selector)
-}
-
-// ─────────────────────────────────────────────
-// 【平滑捲動】
-// 由 Vue 統一處理 anchor 跳轉，避免原生跳轉閃爍
-// ─────────────────────────────────────────────
-function scrollTo(selector) {
-  const target = document.querySelector(selector)
-  if (target) target.scrollIntoView({ behavior: 'smooth' })
-}
-
-// ─────────────────────────────────────────────
-// 【進場動畫 Intersection Observer】
-// 元素進入視口時加上 .visible，觸發 CSS transition
-// ─────────────────────────────────────────────
-let revealObserver = null
-
-function initReveal() {
-  revealObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add('visible')
-      })
-    },
-    { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
-  )
-  document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el))
-}
-
-
-
-// ─────────────────────────────────────────────
-// 【生命週期】
-// mounted 掛載事件；unmounted 清除，防止記憶體洩漏
-// ─────────────────────────────────────────────
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-  initReveal()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-  revealObserver?.disconnect()
-})
-
-// ─────────────────────────────────────────────
-// 【靜態資料】
-// 抽離為 JS 物件，未來可替換成 API 請求
-// ─────────────────────────────────────────────
-
-/** 學員回饋 */
-const {reviews} = partReview()
-
-/** 營養師資料與輪播function */
-const { Instructors, nutriTrackRef, slideNutri } = partInstructor()
-
-/** 切換顯示前三名營養師 */
-const isTopThreeOnly = ref(false)
-
-/** 切換顯示前三名時，重新初始化觀察器以捕捉新生成的 DOM */
-watch(isTopThreeOnly, async () => {
-  await nextTick()
-  // 先斷開舊的，再重新綁定
-  revealObserver?.disconnect()
-  initReveal()
-})
-
-/** 課程方案 */
-const {pricingPlans} = partPlans()
-
-/** 飲食追蹤功能列表 */
-const trackingItems = [
-  { icon: '🍽️', title: '每日飲食日誌',     desc: '輕鬆紀錄三餐與點心，系統自動加總當日攝取熱量並與目標比對。' },
-  { icon: '📊', title: 'BMR / TDEE 智慧分析', desc: '自動抓取你的基礎代謝率與每日總消耗，給予精準的飲食建議。' },
-  { icon: '📈', title: '體態可視化報表',     desc: '體重、體脂變化一目了然，追蹤你的每一步進展與成就。' },
-]
-
-/** 商城 Tab 與商品 */
-const { shopTabs, activeTab, shopProducts } = partProduct()
-
-/** Footer 連結欄位 */
-const footerCols = [
-  {
-    title: '服務',
-    links: [
-      { label: '營養師諮詢', href: '#nutritionists' },
-      { label: '課程套組',   href: '#pricing' },
-      { label: '飲食追蹤',   href: '#tracking' },
-      { label: '健康商城',   href: '#shop' },
-    ],
-  },
-  {
-    title: '關於我們',
-    links: [
-      { label: '品牌故事',   href: '#' },
-      { label: '營養師招募', href: '#' },
-      { label: '常見問題',   href: '#' },
-      { label: '隱私政策',   href: '#' },
-    ],
-  },
-  {
-    title: '聯繫方式',
-    links: [
-      { label: 'contact@myfitcoach.tw', href: 'mailto:contact@myfitcoach.tw' },
-      { label: '+886 2-1234-5678',      href: 'tel:+886212345678' },
-      { label: 'Instagram',             href: '#' },
-      { label: 'Facebook',              href: '#' },
-    ],
-  },
-]
 </script>
 
 <!--
