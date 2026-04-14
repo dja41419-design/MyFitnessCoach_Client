@@ -275,7 +275,7 @@
       </div>
 
       <div class="shop-more reveal">
-        <a href="#" class="btn-outline">探索更多商品</a>
+        <RouterLink to="/store" class="btn-outline">探索更多商品</RouterLink>
       </div>
     </div>
   </section>
