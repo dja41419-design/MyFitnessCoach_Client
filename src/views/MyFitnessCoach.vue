@@ -98,14 +98,22 @@
             自選營養師、自選時段，你的健康你做主。
           </p>
         </div>
-        <a href="#pricing" class="btn-outline reveal rd2" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
+        <div class="reveal rd2 d-flex gap-2">
+          <button 
+            class="btn-outline" 
+            @click="isTopThreeOnly = !isTopThreeOnly"
+          >
+            {{ isTopThreeOnly ? '營養師預覽' : '人氣前三名' }}
+          </button>
+          <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
+        </div>
       </div>
 
       <!-- 輪播軌道 -->
       <div class="nutri-track-wrap">
         <div class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in Instructors"
+            v-for="(nutri, idx) in displayedInstructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -321,7 +329,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import partReview from '@/hooks/partReview'
 import partInstructor from '@/hooks/partInstructor'
@@ -408,6 +416,12 @@ const {reviews} = partReview()
 
 /** 營養師資料與輪播function */
 const { Instructors, nutriTrackRef, slideNutri } = partInstructor()
+
+/** 切換顯示前三名營養師 */
+const isTopThreeOnly = ref(false)
+const displayedInstructors = computed(() => {
+  return isTopThreeOnly.value ? Instructors.slice(0, 3) : Instructors
+})
 
 /** 課程方案 */
 const {pricingPlans} = partPlans()
