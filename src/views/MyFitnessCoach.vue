@@ -228,7 +228,7 @@
           <h2 class="reveal">健康食品商城</h2>
           <p class="reveal rd1">官方直營、品質保證。嚴選優質健康食品，<br />讓你的飲食計畫更輕鬆執行。</p>
         </div>
-        <a href="#" class="btn-outline reveal rd2">查看全部商品</a>
+        <RouterLink to="/store" class="btn-outline reveal rd2">查看全部商品</RouterLink>
       </div>
 
       <!-- 分類 Tab -->
@@ -315,6 +315,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { RouterLink } from 'vue-router'
 
 // ─────────────────────────────────────────────
 // 【Navbar 捲動效果】

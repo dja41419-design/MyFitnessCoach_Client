@@ -149,3 +149,4 @@ npm run dev      # 啟動開發伺服器
 npm run build    # 正式環境建構
 npm run preview  # 預覽建構結果
 ```
+npm r un
