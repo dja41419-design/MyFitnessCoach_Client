@@ -14,9 +14,16 @@
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
         <a href="#tracking"      @click.prevent="scrollTo('#tracking')">飲食追蹤</a>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
+
       </div>
 
-      <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
+      
+      <div class="d-flex align-items-center nav-right-group">
+        <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
+        <router-link :to="{name:'info'}">關於我</router-link>
+      </div>
+      
+      
 
       <!-- 手機漢堡按鈕 -->
       <button class="mobile-toggle" @click="toggleMenu" aria-label="Menu">☰</button>
@@ -63,7 +70,7 @@
     <!-- 渲染兩組達成 CSS 無縫循環效果 -->
     <div class="testimonial-track">
       <div
-        v-for="(item, idx) in [...reviews, ...reviews]"
+        v-for="(item, idx) in reviews"
         :key="idx"
         class="testimonial-card"
       >
@@ -330,7 +337,247 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-const activeTab = ref<string>('全部')
+function handleScroll() {
+  isScrolled.value = window.scrollY > 40
+}
+
+// ─────────────────────────────────────────────
+// 【手機選單開關】
+// 開啟時鎖定 body 捲動，關閉時解鎖
+// ─────────────────────────────────────────────
+const isMobileMenuOpen = ref(false)
+
+function toggleMenu() {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+  document.body.style.overflow = isMobileMenuOpen.value ? 'hidden' : ''
+}
+
+/** 手機選單連結點擊：先關閉選單，再平滑捲動 */
+function menuScrollTo(selector) {
+  toggleMenu()
+  scrollTo(selector)
+}
+
+// ─────────────────────────────────────────────
+// 【平滑捲動】
+// 由 Vue 統一處理 anchor 跳轉，避免原生跳轉閃爍
+// ─────────────────────────────────────────────
+function scrollTo(selector) {
+  const target = document.querySelector(selector)
+  if (target) target.scrollIntoView({ behavior: 'smooth' })
+}
+
+// ─────────────────────────────────────────────
+// 【進場動畫 Intersection Observer】
+// 元素進入視口時加上 .visible，觸發 CSS transition
+// ─────────────────────────────────────────────
+let revealObserver = null
+
+function initReveal() {
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('visible')
+      })
+    },
+    { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+  )
+  document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el))
+}
+
+// ─────────────────────────────────────────────
+// 【營養師輪播】
+// ref 綁定 DOM，slideNutri 計算偏移並 transform
+// ─────────────────────────────────────────────
+const nutriTrackRef = ref(null)
+let nutriIndex = 0
+
+function slideNutri(dir) {
+  const track = nutriTrackRef.value
+  if (!track) return
+  const cards = track.querySelectorAll('.nutri-card')
+  if (!cards.length) return
+
+  const cardWidth = cards[0].offsetWidth + 20  // 卡片寬度 + gap
+  const maxIndex = Math.max(0, cards.length - Math.floor(track.parentElement.offsetWidth / cardWidth))
+
+  nutriIndex = Math.max(0, Math.min(nutriIndex + dir, maxIndex))
+  track.style.transform = `translateX(-${nutriIndex * cardWidth}px)`
+}
+
+// ─────────────────────────────────────────────
+// 【生命週期】
+// mounted 掛載事件；unmounted 清除，防止記憶體洩漏
+// ─────────────────────────────────────────────
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  initReveal()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  revealObserver?.disconnect()
+})
+
+// ─────────────────────────────────────────────
+// 【靜態資料】
+// 抽離為 JS 物件，未來可替換成 API 請求
+// ─────────────────────────────────────────────
+
+/** 學員回饋 */
+const testimonials = [
+  {
+    name: '林小萱', title: '上班族・28 歲',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★★',
+    text: '「營養師幫我量身制定了飲食計畫，三個月下來體脂降了 5%，而且完全不用挨餓！整個過程超有成就感。」',
+  },
+  {
+    name: '陳柏翰', title: '健身愛好者・32 歲',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★★',
+    text: '「飲食紀錄功能真的太方便了，每天花不到三分鐘就能記錄完，系統還會自動幫我算熱量跟 TDEE 比對。」',
+  },
+  {
+    name: '王雅琪', title: '產後媽媽・35 歲',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★★',
+    text: '「產後想恢復體態，營養師很有耐心地調整我的飲食，搭配商城買的即食雞胸肉，省時又健康，大推！」',
+  },
+  {
+    name: '張志偉', title: '工程師・29 歲',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★☆',
+    text: '「以前吃東西完全沒概念，用了平台之後才知道自己每天到底吃了什麼。體態報表看到進步很有動力。」',
+  },
+  {
+    name: '李佳穎', title: '大學生・21 歲',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★★',
+    text: '「套組方案超划算，買了之後變成點數，可以隨時約營養師，時間彈性很大，很適合學生族群！」',
+  },
+  {
+    name: '黃建安', title: '業務主管・40 歲',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face',
+    stars: '★★★★★',
+    text: '「應酬多、外食多，營養師根據我的生活型態給了很實際的建議。每次諮詢前營養師都已經看過我的飲食紀錄了，效率超高。」',
+  },
+]
+
+/** 營養師資料 */
+const nutritionists = [
+  {
+    name: '蘇怡婷 營養師', specialty: '體重管理專家',
+    img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&h=500&fit=crop&crop=face',
+    bio: '擁有 8 年臨床經驗，專精於體重控制與代謝調理。曾輔導超過 500 位學員成功達標，擅長為外食族設計實際可執行的飲食方案。',
+    tags: ['體重控制', '代謝調理', '外食規劃'],
+  },
+  {
+    name: '陳宥翔 營養師', specialty: '運動營養顧問',
+    img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&h=500&fit=crop&crop=face',
+    bio: '前職業運動員背景，深諳運動營養學。專為健身族群、運動選手量身打造增肌減脂飲食策略，精確計算巨量營養素比例。',
+    tags: ['增肌減脂', '運動營養', '巨量營養素'],
+  },
+  {
+    name: '張雅芯 營養師', specialty: '孕期與產後調理',
+    img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=500&fit=crop&crop=face',
+    bio: '專注於孕期營養規劃與產後體態恢復，溫柔細膩的諮詢風格深受媽媽族群信賴。同時也擅長兒童飲食營養指導。',
+    tags: ['孕期營養', '產後恢復', '兒童飲食'],
+  },
+  {
+    name: '林柏勳 營養師', specialty: '慢性疾病飲食',
+    img: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&h=500&fit=crop&crop=face',
+    bio: '擁有醫學中心 10 年臨床經驗，專精於三高、糖尿病等慢性疾病的飲食管理與衛教，幫助你吃出健康新生活。',
+    tags: ['三高飲食', '糖尿病', '慢性病管理'],
+  },
+]
+
+/** 課程方案 */
+const pricingPlans = [
+  {
+    name: '單次體驗', label: '適合初次嘗試',
+    price: 'NT$800', unit: '次', period: '單次線上刷卡付款',
+    features: ['1 小時一對一諮詢', '自選營養師與時段', '基礎飲食建議報告', '線上刷卡支付'],
+    btnStyle: 'light', btnText: '立即預約', featured: false, badge: null,
+  },
+  {
+    name: '經典套組', label: '最多人選擇的方案',
+    price: 'NT$3,600', unit: '組', period: '含 5 次諮詢點數（每次省 $80）',
+    features: ['5 堂一對一諮詢點數', '完整飲食追蹤功能', 'BMR / TDEE 智慧分析', '個人體態報表', '商城 9 折優惠'],
+    btnStyle: 'accent', btnText: '立即購買', featured: true, badge: '最受歡迎',
+  },
+  {
+    name: '進階方案', label: '深度體態管理',
+    price: 'NT$6,800', unit: '組', period: '含 10 次諮詢點數（每次省 $120）',
+    features: ['10 堂一對一諮詢點數', '優先預約熱門營養師', '進階數據整合分析', '每月體態追蹤報告', '商城 85 折優惠'],
+    btnStyle: 'light', btnText: '立即購買', featured: false, badge: null,
+  },
+]
+
+/** 飲食追蹤功能列表 */
+const trackingItems = [
+  { icon: '🍽️', title: '每日飲食日誌',     desc: '輕鬆紀錄三餐與點心，系統自動加總當日攝取熱量並與目標比對。' },
+  { icon: '📊', title: 'BMR / TDEE 智慧分析', desc: '自動抓取你的基礎代謝率與每日總消耗，給予精準的飲食建議。' },
+  { icon: '📈', title: '體態可視化報表',     desc: '體重、體脂變化一目了然，追蹤你的每一步進展與成就。' },
+]
+
+/** 商城 Tab 與商品 */
+const shopTabs = ['全部', '蛋白質', '輕食', '補給品', '零食']
+const activeTab = ref('全部')
+
+const shopProducts = [
+  {
+    name: '舒肥即食雞胸肉（5入）', category: '蛋白質',
+    img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&h=300&fit=crop',
+    price: 'NT$399', original: 'NT$499', badge: '熱銷',
+  },
+  {
+    name: '分離乳清蛋白粉 1kg', category: '補給品',
+    img: 'https://images.unsplash.com/photo-1622484211148-3e0ab498b7d6?w=400&h=300&fit=crop',
+    price: 'NT$1,280', original: null, badge: null,
+  },
+  {
+    name: '低卡鮮蔬沙拉組合', category: '輕食',
+    img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    price: 'NT$199', original: null, badge: '新品',
+  },
+  {
+    name: '無調味綜合堅果 300g', category: '零食',
+    img: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400&h=300&fit=crop',
+    price: 'NT$320', original: 'NT$380', badge: null,
+  },
+]
+
+/** Footer 連結欄位 */
+const footerCols = [
+  {
+    title: '服務',
+    links: [
+      { label: '營養師諮詢', href: '#nutritionists' },
+      { label: '課程套組',   href: '#pricing' },
+      { label: '飲食追蹤',   href: '#tracking' },
+      { label: '健康商城',   href: '#shop' },
+    ],
+  },
+  {
+    title: '關於我們',
+    links: [
+      { label: '品牌故事',   href: '#' },
+      { label: '營養師招募', href: '#' },
+      { label: '常見問題',   href: '#' },
+      { label: '隱私政策',   href: '#' },
+    ],
+  },
+  {
+    title: '聯繫方式',
+    links: [
+      { label: 'contact@myfitcoach.tw', href: 'mailto:contact@myfitcoach.tw' },
+      { label: '+886 2-1234-5678',      href: 'tel:+886212345678' },
+      { label: 'Instagram',             href: '#' },
+      { label: 'Facebook',              href: '#' },
+    ],
+  },
+]
 </script>
 
 <!--
@@ -368,6 +615,15 @@ const activeTab = ref<string>('全部')
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.nav-right-group{
+  display: flex;
+  align-items: center;
+}
+
+.nav-right-group .nav-cta {
+  margin-right: 20px;
 }
 
 .nav-logo {
