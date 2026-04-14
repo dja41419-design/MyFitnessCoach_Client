@@ -109,11 +109,60 @@
         </div>
       </div>
 
-      <!-- 輪播軌道 -->
+      <!-- 輪播軌道 / 領獎台 -->
       <div class="nutri-track-wrap">
-        <div class="nutri-track" ref="nutriTrackRef">
+        <!-- 人氣前三名領獎台 (Kahoot 樣式) -->
+        <div v-if="isTopThreeOnly" class="podium-container">
+          <div class="podium">
+            <!-- 第二名 -->
+            <div v-if="Instructors[1]" class="podium-item rank-2 reveal rd1">
+               <div class="podium-card">
+                  <div class="podium-img-wrap">
+                     <img :src="Instructors[1].img" :alt="Instructors[1].name" />
+                  </div>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[1].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[1].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-2" data-rank="2"></div>
+            </div>
+            
+            <!-- 第一名 -->
+            <div v-if="Instructors[0]" class="podium-item rank-1 reveal">
+               <div class="podium-card">
+                  <div class="podium-img-wrap">
+                     <div class="crown">👑</div>
+                     <img :src="Instructors[0].img" :alt="Instructors[0].name" />
+                  </div>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[0].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[0].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-1" data-rank="1"></div>
+            </div>
+            
+            <!-- 第三名 -->
+            <div v-if="Instructors[2]" class="podium-item rank-3 reveal rd2">
+               <div class="podium-card">
+                  <div class="podium-img-wrap">
+                     <img :src="Instructors[2].img" :alt="Instructors[2].name" />
+                  </div>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[2].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[2].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-3" data-rank="3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 原始輪播列表 -->
+        <div v-else class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in displayedInstructors"
+            v-for="(nutri, idx) in Instructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -139,8 +188,8 @@
         </div>
       </div>
 
-      <!-- 輪播前後按鈕 -->
-      <div class="carousel-nav">
+      <!-- 輪播前後按鈕 (僅在非前三名模式下顯示) -->
+      <div v-if="!isTopThreeOnly" class="carousel-nav">
         <button class="carousel-btn" @click="slideNutri(-1)" aria-label="上一位">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="m15 18-6-6 6-6" />
@@ -329,7 +378,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { RouterLink } from 'vue-router'
 import partReview from '@/hooks/partReview'
 import partInstructor from '@/hooks/partInstructor'
@@ -419,8 +468,13 @@ const { Instructors, nutriTrackRef, slideNutri } = partInstructor()
 
 /** 切換顯示前三名營養師 */
 const isTopThreeOnly = ref(false)
-const displayedInstructors = computed(() => {
-  return isTopThreeOnly.value ? Instructors.slice(0, 3) : Instructors
+
+/** 切換顯示前三名時，重新初始化觀察器以捕捉新生成的 DOM */
+watch(isTopThreeOnly, async () => {
+  await nextTick()
+  // 先斷開舊的，再重新綁定
+  revealObserver?.disconnect()
+  initReveal()
 })
 
 /** 課程方案 */
@@ -1263,6 +1317,152 @@ const footerCols = [
 .rd2 { transition-delay: 0.2s; }
 .rd3 { transition-delay: 0.3s; }
 .rd4 { transition-delay: 0.4s; }
+
+/* ── 領獎台 (Kahoot 樣式) ───────────────────────── */
+.podium-container {
+  margin-top: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 480px;
+  padding-bottom: 20px;
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.podium-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 排序：2, 1, 3 */
+.rank-2 { order: 1; }
+.rank-1 { order: 2; z-index: 2; }
+.rank-3 { order: 3; }
+
+.podium-card {
+  width: 100%;
+  max-width: 240px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px rgba(26, 22, 19, 0.08);
+  text-align: center;
+  border: 1px solid rgba(212, 204, 194, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.podium-item:hover .podium-card {
+  transform: translateY(-8px);
+}
+
+.podium-img-wrap {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.rank-1 .podium-img-wrap {
+  width: 120px;
+  height: 120px;
+  border-color: var(--accent);
+}
+
+.podium-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crown {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-size: 2rem;
+  z-index: 3;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.podium-info h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.podium-specialty {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.podium-base {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.4s ease;
+}
+
+.podium-base::after {
+  content: attr(data-rank);
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.base-1 { 
+  height: 200px; 
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%); 
+  box-shadow: 0 10px 25px rgba(196, 168, 130, 0.3);
+}
+.base-2 { 
+  height: 140px; 
+  background: linear-gradient(180deg, #bdc3c7 0%, #7f8c8d 100%); 
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.base-3 { 
+  height: 100px; 
+  background: linear-gradient(180deg, #d35400 0%, #a04000 100%); 
+  box-shadow: 0 10px 15px rgba(211, 84, 0, 0.2);
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .podium-container { min-height: 400px; padding: 0 10px; }
+  .podium { gap: 8px; }
+  .podium-card { padding: 15px 8px; }
+  .podium-img-wrap { width: 60px; height: 60px; }
+  .rank-1 .podium-img-wrap { width: 80px; height: 80px; }
+  .podium-info h3 { font-size: 0.95rem; }
+  .podium-specialty { font-size: 0.65rem; }
+  .podium-base::after { font-size: 2.2rem; }
+  .base-1 { height: 140px; }
+  .base-2 { height: 100px; }
+  .base-3 { height: 70px; }
+  .crown { font-size: 1.4rem; top: -10px; }
+}
 
 /* ── 手機選單 ─────────────────────────────────── */
 .mobile-menu {
