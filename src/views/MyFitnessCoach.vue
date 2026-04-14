@@ -14,9 +14,16 @@
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
         <a href="#tracking"      @click.prevent="scrollTo('#tracking')">飲食追蹤</a>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
+
       </div>
 
-      <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
+      
+      <div class="d-flex align-items-center nav-right-group">
+        <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
+        <router-link :to="{name:'info'}">關於我</router-link>
+      </div>
+      
+      
 
       <!-- 手機漢堡按鈕 -->
       <button class="mobile-toggle" @click="toggleMenu" aria-label="Menu">☰</button>
@@ -601,6 +608,15 @@ const footerCols = [
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.nav-right-group{
+  display: flex;
+  align-items: center;
+}
+
+.nav-right-group .nav-cta {
+  margin-right: 20px;
 }
 
 .nav-logo {
