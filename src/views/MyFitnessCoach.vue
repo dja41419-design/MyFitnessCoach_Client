@@ -115,43 +115,43 @@
         <div v-if="isTopThreeOnly" class="podium-container">
           <div class="podium">
             <!-- 第二名 -->
-            <div v-if="Instructors[1]" class="podium-item rank-2 reveal rd1">
+            <div v-if="instructors[1]" class="podium-item rank-2 reveal rd1">
                <div class="podium-card">
                   <div class="podium-img-wrap">
-                     <img :src="Instructors[1].img" :alt="Instructors[1].name" />
+                     <img :src="instructors[1].img" :alt="instructors[1].name" />
                   </div>
                   <div class="podium-info">
-                     <h3>{{ Instructors[1].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[1].specialty }}</div>
+                     <h3>{{ instructors[1].name }}</h3>
+                     <div class="podium-specialty">{{ instructors[1].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-2" data-rank="2"></div>
             </div>
             
             <!-- 第一名 -->
-            <div v-if="Instructors[0]" class="podium-item rank-1 reveal">
+            <div v-if="instructors[0]" class="podium-item rank-1 reveal">
                <div class="podium-card">
                   <div class="podium-img-wrap">
                      <div class="crown">👑</div>
-                     <img :src="Instructors[0].img" :alt="Instructors[0].name" />
+                     <img :src="instructors[0].img" :alt="instructors[0].name" />
                   </div>
                   <div class="podium-info">
-                     <h3>{{ Instructors[0].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[0].specialty }}</div>
+                     <h3>{{ instructors[0].name }}</h3>
+                     <div class="podium-specialty">{{ instructors[0].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-1" data-rank="1"></div>
             </div>
             
             <!-- 第三名 -->
-            <div v-if="Instructors[2]" class="podium-item rank-3 reveal rd2">
+            <div v-if="instructors[2]" class="podium-item rank-3 reveal rd2">
                <div class="podium-card">
                   <div class="podium-img-wrap">
-                     <img :src="Instructors[2].img" :alt="Instructors[2].name" />
+                     <img :src="instructors[2].img" :alt="instructors[2].name" />
                   </div>
                   <div class="podium-info">
-                     <h3>{{ Instructors[2].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[2].specialty }}</div>
+                     <h3>{{ instructors[2].name }}</h3>
+                     <div class="podium-specialty">{{ instructors[2].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-3" data-rank="3"></div>
