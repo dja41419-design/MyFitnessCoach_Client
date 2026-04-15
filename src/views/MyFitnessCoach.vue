@@ -103,7 +103,7 @@
             class="btn-outline" 
             @click="isTopThreeOnly = !isTopThreeOnly"
           >
-            {{ isTopThreeOnly ? '營養師預覽' : '人氣前三名' }}
+            {{ isTopThreeOnly ? '營養師預覽' : '人氣營養師' }}
           </button>
           <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
         </div>
@@ -178,7 +178,7 @@
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
               <RouterLink :to="{ name: 'Reserve', query: { id: nutri.id } }" target="_blank" class="book-link">
-                馬上預約
+                馬上預約諮詢
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
