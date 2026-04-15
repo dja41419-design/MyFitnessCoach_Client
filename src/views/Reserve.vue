@@ -50,10 +50,10 @@ import { instructors } from '@/data/instructors'
 }
 
 .reserve-sidebar {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24px;
   padding: 30px;
-  box-shadow: 0 10px 30px rgba(26, 22, 19, 0.05);
+  box-shadow: 0 10px 30px white;
   border: 1px solid var(--border);
   position: sticky;
   top: 100px;
@@ -64,7 +64,7 @@ import { instructors } from '@/data/instructors'
   font-size: 1.25rem;
   margin-bottom: 24px;
   padding-bottom: 12px;
-  border-bottom: 2px solid var(--bg);
+  border-bottom: 2px solid var(--border);
 }
 
 .instructor-list {
@@ -86,14 +86,15 @@ import { instructors } from '@/data/instructors'
 }
 
 .instructor-item:hover {
-  background: var(--bg);
-  transform: translateX(5px);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .instructor-item.active {
-  background: var(--bg-dark);
+  background: var(--accent);
   color: #fff;
-  border-color: var(--bg-dark);
+  border-color: var(--accent);
 }
 
 .mini-avatar {
@@ -122,7 +123,7 @@ import { instructors } from '@/data/instructors'
   background: #fff;
   border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 20px 80px rgba(26, 22, 19, 0.08);
+  box-shadow: 0 20px 80px rgba(116, 110, 104, 0.08);
   border: 1px solid var(--border);
 }
 

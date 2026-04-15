@@ -294,6 +294,7 @@ import { instructors as Instructors } from '@/data/instructors'
   align-items: center;
   justify-content: center;
   position: relative;
+  transition: all 0.4s ease;
 }
 
 .podium-base::after {
@@ -306,15 +307,20 @@ import { instructors as Instructors } from '@/data/instructors'
 
 .base-1 { 
   height: 200px; 
-  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%); 
+  background: linear-gradient(180deg, #d4b892 0%, #bf9f77 100%); 
+  box-shadow: 0 10px 25px rgba(191, 159, 119, 0.3);
 }
+
 .base-2 { 
   height: 140px; 
-  background: linear-gradient(180deg, #bdc3c7 0%, #7f8c8d 100%); 
+  background: linear-gradient(180deg, #e6cdac 0%, #d4b892 100%); 
+  box-shadow: 0 10px 20px rgba(169, 135, 94, 0.15);
 }
+
 .base-3 { 
   height: 100px; 
-  background: linear-gradient(180deg, #d35400 0%, #a04000 100%); 
+  background: linear-gradient(180deg, #f5e4d0 0%, #e6cdac 100%); 
+  box-shadow: 0 10px 15px rgba(212, 184, 146, 0.2);
 }
 
 /* 網格佈局 */

@@ -222,10 +222,10 @@ onMounted(() => {
 
 /* 頂部資訊樣式 */
 .instructor-info {
-  background: var(--bg-dark);
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text-primary);
   padding: 40px 60px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid var(--border);
 }
 
 .info-card-top {
@@ -239,7 +239,7 @@ onMounted(() => {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  border: 3px solid var(--accent);
   flex-shrink: 0;
 }
 
@@ -254,7 +254,7 @@ onMounted(() => {
   font-size: 2rem;
   font-weight: 500;
   margin-bottom: 8px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .tags-small {
@@ -264,7 +264,7 @@ onMounted(() => {
 }
 
 .tags-small .tag {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tag-bg);
   padding: 4px 12px;
   border-radius: 100px;
   font-size: 0.75rem;
