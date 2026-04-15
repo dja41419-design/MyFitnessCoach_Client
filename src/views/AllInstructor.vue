@@ -20,7 +20,65 @@
       </div>
     </header>
 
-    <section class="instructors-grid-section">
+    <!-- 人氣前三名領獎台 -->
+    <section class="podium-section">
+      <div class="container">
+        <div class="podium-container">
+          <div class="podium">
+            <!-- 第二名 -->
+            <div v-if="Instructors[1]" class="podium-item rank-2">
+               <div class="podium-card">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: Instructors[1].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <img :src="Instructors[1].img" :alt="Instructors[1].name" />
+                    </div>
+                  </RouterLink>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[1].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[1].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-2" data-rank="2"></div>
+            </div>
+            
+            <!-- 第一名 -->
+            <div v-if="Instructors[0]" class="podium-item rank-1">
+               <div class="podium-card">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: Instructors[0].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <div class="crown">👑</div>
+                       <img :src="Instructors[0].img" :alt="Instructors[0].name" />
+                    </div>
+                  </RouterLink>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[0].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[0].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-1" data-rank="1"></div>
+            </div>
+            
+            <!-- 第三名 -->
+            <div v-if="Instructors[2]" class="podium-item rank-3">
+               <div class="podium-card">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: Instructors[2].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <img :src="Instructors[2].img" :alt="Instructors[2].name" />
+                    </div>
+                  </RouterLink>
+                  <div class="podium-info">
+                     <h3>{{ Instructors[2].name }}</h3>
+                     <div class="podium-specialty">{{ Instructors[2].specialty }}</div>
+                  </div>
+               </div>
+               <div class="podium-base base-3" data-rank="3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="instructors-grid-section" id="all-list">
       <div class="container">
         <div class="instructors-grid">
           <div
@@ -38,7 +96,7 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <RouterLink :to="{ name: 'Reserve', query: { id: nutri.id } }" target="_blank" class="book-link">
+              <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" class="book-link">
                 馬上預約諮詢
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
@@ -112,7 +170,151 @@ import { instructors as Instructors } from '@/data/instructors'
   color: var(--text-secondary);
   font-size: 1.1rem;
   max-width: 600px;
-  margin: 0 auto;
+  margin: 0 auto 32px;
+}
+
+.btn-outline {
+  padding: 12px 28px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-primary);
+  transition: all 0.3s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-outline:hover {
+  background: var(--bg-dark);
+  color: #fff;
+  border-color: var(--bg-dark);
+}
+
+/* 領獎台樣式 */
+.podium-section {
+  padding: 40px 0 80px;
+}
+
+.podium-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 480px;
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.podium-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rank-2 { order: 1; }
+.rank-1 { order: 2; z-index: 2; }
+.rank-3 { order: 3; }
+
+.podium-card {
+  width: 100%;
+  max-width: 240px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px rgba(26, 22, 19, 0.08);
+  text-align: center;
+  border: 1px solid rgba(212, 204, 194, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.podium-item:hover .podium-card {
+  transform: translateY(-8px);
+}
+
+.podium-img-wrap {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.rank-1 .podium-img-wrap {
+  width: 120px;
+  height: 120px;
+  border-color: var(--accent);
+}
+
+.podium-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crown {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-size: 2rem;
+  z-index: 3;
+}
+
+.podium-info h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.podium-specialty {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.podium-base {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.podium-base::after {
+  content: attr(data-rank);
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.base-1 { 
+  height: 200px; 
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%); 
+}
+.base-2 { 
+  height: 140px; 
+  background: linear-gradient(180deg, #bdc3c7 0%, #7f8c8d 100%); 
+}
+.base-3 { 
+  height: 100px; 
+  background: linear-gradient(180deg, #d35400 0%, #a04000 100%); 
 }
 
 /* 網格佈局 */

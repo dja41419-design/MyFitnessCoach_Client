@@ -98,75 +98,15 @@
             自選營養師、自選時段，你的健康你做主。
           </p>
         </div>
-        <div class="reveal rd2 d-flex gap-2">
-          <button 
-            class="btn-outline" 
-            @click="isTopThreeOnly = !isTopThreeOnly"
-          >
-            {{ isTopThreeOnly ? '營養師預覽' : '人氣營養師' }}
-          </button>
+        <div class="reveal rd2">
           <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
+          <a href="#pricing" class="btn-outline" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
         </div>
       </div>
 
-      <!-- 輪播軌道 / 領獎台 -->
+      <!-- 輪播軌道 -->
       <div class="nutri-track-wrap">
-        <!-- 人氣前三名領獎台 (Kahoot 樣式) -->
-        <div v-if="isTopThreeOnly" class="podium-container">
-          <div class="podium">
-            <!-- 第二名 -->
-            <div v-if="instructors[1]" class="podium-item rank-2 reveal rd1">
-               <div class="podium-card">
-                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[1].id } }" target="_blank" class="podium-img-link">
-                    <div class="podium-img-wrap">
-                       <img :src="instructors[1].img" :alt="instructors[1].name" />
-                    </div>
-                  </RouterLink>
-                  <div class="podium-info">
-                     <h3>{{ instructors[1].name }}</h3>
-                     <div class="podium-specialty">{{ instructors[1].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-2" data-rank="2"></div>
-            </div>
-            
-            <!-- 第一名 -->
-            <div v-if="instructors[0]" class="podium-item rank-1 reveal">
-               <div class="podium-card">
-                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[0].id } }" target="_blank" class="podium-img-link">
-                    <div class="podium-img-wrap">
-                       <div class="crown">👑</div>
-                       <img :src="instructors[0].img" :alt="instructors[0].name" />
-                    </div>
-                  </RouterLink>
-                  <div class="podium-info">
-                     <h3>{{ instructors[0].name }}</h3>
-                     <div class="podium-specialty">{{ instructors[0].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-1" data-rank="1"></div>
-            </div>
-            
-            <!-- 第三名 -->
-            <div v-if="instructors[2]" class="podium-item rank-3 reveal rd2">
-               <div class="podium-card">
-                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[2].id } }" target="_blank" class="podium-img-link">
-                    <div class="podium-img-wrap">
-                       <img :src="instructors[2].img" :alt="instructors[2].name" />
-                    </div>
-                  </RouterLink>
-                  <div class="podium-info">
-                     <h3>{{ instructors[2].name }}</h3>
-                     <div class="podium-specialty">{{ instructors[2].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-3" data-rank="3"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 原始輪播列表 -->
-        <div v-else class="nutri-track" ref="nutriTrackRef">
+        <div class="nutri-track" ref="nutriTrackRef">
           <div
             v-for="(nutri, idx) in instructors"
             :key="nutri.name"
@@ -183,7 +123,7 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <RouterLink :to="{ name: 'Reserve', query: { id: nutri.id } }" target="_blank" class="book-link">
+              <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" target="_blank" class="book-link">
                 馬上預約諮詢
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
@@ -194,8 +134,8 @@
         </div>
       </div>
 
-      <!-- 輪播前後按鈕 (僅在非前三名模式下顯示) -->
-      <div v-if="!isTopThreeOnly" class="carousel-nav">
+      <!-- 輪播前後按鈕 -->
+      <div class="carousel-nav">
         <button class="carousel-btn" @click="slideNutri(-1)" aria-label="上一位">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="m15 18-6-6 6-6" />
@@ -401,7 +341,7 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-const isTopThreeOnly = ref(true)
+const isTopThreeOnly = ref(false)
 const activeTab = ref(shopTabs[0])
 
 const filteredProducts = computed(() => {
