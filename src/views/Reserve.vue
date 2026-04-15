@@ -53,7 +53,7 @@ import { instructors } from '@/data/instructors'
   background: var(--bg-card);
   border-radius: 24px;
   padding: 30px;
-  box-shadow: 0 10px 30px white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
   border: 1px solid var(--border);
   position: sticky;
   top: 100px;
@@ -86,15 +86,15 @@ import { instructors } from '@/data/instructors'
 }
 
 .instructor-item:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--tag-bg);
+  border-color: var(--border);
+  font-weight: 600;
 }
 
 .instructor-item.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--tag-bg);
+  border-color: var(--border);
+  font-weight: 600;
 }
 
 .mini-avatar {
