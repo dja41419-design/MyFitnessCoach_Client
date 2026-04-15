@@ -19,7 +19,7 @@
 
       
       <div class="d-flex align-items-center nav-right-group">
-        <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
+        <router-link :to="{name:'register'}" class="nav-cta ">立即加入</router-link>
         <router-link :to="{name:'login'}" class="nav-cta nav-cta-ghost">會員登入</router-link>
       </div>
       
@@ -37,6 +37,7 @@
     <a href="#tracking"      @click.prevent="menuScrollTo('#tracking')">飲食追蹤</a>
     <a href="#shop"          @click.prevent="menuScrollTo('#shop')">健康商城</a>
     <a href="#cta"           @click.prevent="menuScrollTo('#cta')">立即加入</a>
+    <router-link :to="{name:'login'}" >會員登入</router-link>
   </div>
 
   <!-- ========== HERO ========== -->
@@ -284,7 +285,7 @@
   <section class="final-cta reveal" id="cta">
     <h2>你的理想體態<br />從這裡開始</h2>
     <p>結合營養諮詢、飲食追蹤與健康商城，My Fitness Coach 陪你走每一步。</p>
-    <a href="#" class="btn-dark">立即加入會員</a>
+    <router-link :to="{name:'register'}" class="btn-dark">立即加入會員</router-link>
   </section>
 
   <!-- ========== FOOTER ========== -->
@@ -334,6 +335,7 @@ import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
 
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
+const activeTab = ref<string>(shopTabs[0])
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
@@ -450,7 +452,6 @@ function handleScroll() {
 
 .nav-cta.nav-cta-ghost:hover {
   background: rgba(26, 22, 19, 0.06);
-  background: F0F8FF;
   transform: translateY(-1px);
   box-shadow: none;
 }
