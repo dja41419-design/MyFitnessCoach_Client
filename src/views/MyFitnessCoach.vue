@@ -20,7 +20,7 @@
       
       <div class="d-flex align-items-center nav-right-group">
         <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
-        <router-link :to="{name:'info'}">關於我</router-link>
+        <router-link :to="{name:'login'}"class="nav-cta" >會員登入 </router-link>
       </div>
       
       
