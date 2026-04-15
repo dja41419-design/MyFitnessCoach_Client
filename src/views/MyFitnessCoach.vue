@@ -20,7 +20,7 @@
       
       <div class="d-flex align-items-center nav-right-group">
         <a href="#cta" class="nav-cta" @click.prevent="scrollTo('#cta')">立即加入</a>
-        <router-link :to="{name:'login'}"class="nav-cta" >會員登入 </router-link>
+        <router-link :to="{name:'login'}" class="nav-cta nav-cta-ghost">會員登入</router-link>
       </div>
       
       
@@ -439,6 +439,20 @@ function handleScroll() {
   background: #2d2620;
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(26, 22, 19, 0.15);
+}
+
+.nav-cta.nav-cta-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--text-primary);
+  box-shadow: none;
+}
+
+.nav-cta.nav-cta-ghost:hover {
+  background: rgba(26, 22, 19, 0.06);
+  background: F0F8FF;
+  transform: translateY(-1px);
+  box-shadow: none;
 }
 
 .mobile-toggle {
