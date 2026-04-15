@@ -177,12 +177,12 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <a href="#" class="book-link">
+              <RouterLink :to="{ name: 'Reserve', query: { id: nutri.id } }" target="_blank" class="book-link">
                 馬上預約
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
-              </a>
+              </RouterLink>
             </div>
           </div>
         </div>
