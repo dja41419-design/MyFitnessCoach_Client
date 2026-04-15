@@ -311,7 +311,7 @@
       <!-- 商品卡片 -->
       <div class="shop-grid">
         <div
-          v-for="(product, idx) in shopProducts"
+          v-for="(product, idx) in filteredProducts"
           :key="product.name"
           class="shop-card reveal"
           :class="`rd${idx}`"
@@ -389,10 +389,19 @@ import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
+import { computed } from 'vue'
 
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
+
+const isTopThreeOnly = ref(false)
+const activeTab = ref(shopTabs[0])
+
+const filteredProducts = computed(() => {
+  if (activeTab.value === '全部') return shopProducts
+  return shopProducts.filter(p => p.category === activeTab.value)
+})
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 40
