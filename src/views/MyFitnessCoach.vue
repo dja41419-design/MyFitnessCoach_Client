@@ -70,7 +70,7 @@
     <!-- 渲染兩組達成 CSS 無縫循環效果 -->
     <div class="testimonial-track">
       <div
-        v-for="(item, idx) in reviews"
+        v-for="(item, idx) in [...reviews, ...reviews]"
         :key="idx"
         class="testimonial-card"
       >
