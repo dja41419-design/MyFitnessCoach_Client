@@ -117,9 +117,11 @@
             <!-- 第二名 -->
             <div v-if="instructors[1]" class="podium-item rank-2 reveal rd1">
                <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="instructors[1].img" :alt="instructors[1].name" />
-                  </div>
+                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[1].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <img :src="instructors[1].img" :alt="instructors[1].name" />
+                    </div>
+                  </RouterLink>
                   <div class="podium-info">
                      <h3>{{ instructors[1].name }}</h3>
                      <div class="podium-specialty">{{ instructors[1].specialty }}</div>
@@ -131,10 +133,12 @@
             <!-- 第一名 -->
             <div v-if="instructors[0]" class="podium-item rank-1 reveal">
                <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <div class="crown">👑</div>
-                     <img :src="instructors[0].img" :alt="instructors[0].name" />
-                  </div>
+                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[0].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <div class="crown">👑</div>
+                       <img :src="instructors[0].img" :alt="instructors[0].name" />
+                    </div>
+                  </RouterLink>
                   <div class="podium-info">
                      <h3>{{ instructors[0].name }}</h3>
                      <div class="podium-specialty">{{ instructors[0].specialty }}</div>
@@ -146,9 +150,11 @@
             <!-- 第三名 -->
             <div v-if="instructors[2]" class="podium-item rank-3 reveal rd2">
                <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="instructors[2].img" :alt="instructors[2].name" />
-                  </div>
+                  <RouterLink :to="{ name: 'Reserve', query: { id: instructors[2].id } }" target="_blank" class="podium-img-link">
+                    <div class="podium-img-wrap">
+                       <img :src="instructors[2].img" :alt="instructors[2].name" />
+                    </div>
+                  </RouterLink>
                   <div class="podium-info">
                      <h3>{{ instructors[2].name }}</h3>
                      <div class="podium-specialty">{{ instructors[2].specialty }}</div>
@@ -395,7 +401,7 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-const isTopThreeOnly = ref(false)
+const isTopThreeOnly = ref(true)
 const activeTab = ref(shopTabs[0])
 
 const filteredProducts = computed(() => {
