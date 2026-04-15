@@ -61,10 +61,7 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
-import partInstructor from '@/hooks/partInstructor'
-
-/** 取得營養師完整資料 */
-const { Instructors } = partInstructor()
+import { instructors as Instructors } from '@/data/instructors'
 </script>
 
 <style scoped>
