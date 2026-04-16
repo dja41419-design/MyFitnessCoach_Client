@@ -33,9 +33,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchAllInstructors } from '@/data/instructors'
+import { fetchAllInstructors, type Instructor } from '@/data/instructors'
 
-const instructors = ref([])
+const instructors = ref<Instructor[]>([])
 
 onMounted(async () => {
   instructors.value = await fetchAllInstructors()
