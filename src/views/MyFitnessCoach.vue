@@ -330,19 +330,24 @@ import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
 import { reviews } from '@/data/reviews'
-import { instructors } from '@/data/instructors'
+import { fetchAllInstructors } from '@/data/instructors'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
+const instructors = ref([])
 const isTopThreeOnly = ref(false)
 const activeTab = ref(shopTabs[0])
+
+onMounted(async () => {
+  instructors.value = await fetchAllInstructors()
+})
 
 const filteredProducts = computed(() => {
   if (activeTab.value === '全部') return shopProducts
@@ -677,7 +682,7 @@ function handleScroll() {
 
 .nutri-img-wrap { overflow: hidden; height: 300px; position: relative; }
 
-.nutri-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
+.nutri-img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 0.6s; }
 .nutri-card:hover .nutri-img { transform: scale(1.04); }
 
 .nutri-body { padding: 28px; }

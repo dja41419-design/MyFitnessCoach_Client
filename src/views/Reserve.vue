@@ -32,7 +32,14 @@
 </template>
 
 <script setup lang="ts">
-import { instructors } from '@/data/instructors'
+import { ref, onMounted } from 'vue'
+import { fetchAllInstructors } from '@/data/instructors'
+
+const instructors = ref([])
+
+onMounted(async () => {
+  instructors.value = await fetchAllInstructors()
+})
 </script>
 
 <style scoped>

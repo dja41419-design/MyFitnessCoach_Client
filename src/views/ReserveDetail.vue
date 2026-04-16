@@ -112,13 +112,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { instructors } from '@/data/instructors'
+import { fetchAllInstructors } from '@/data/instructors'
 
 const route = useRoute()
 const router = useRouter()
 
+const instructors = ref([])
+onMounted(async () => {
+  instructors.value = await fetchAllInstructors()
+})
+
 const instructorId = computed(() => Number(route.params.id))
-const instructor = computed(() => instructors.find(i => i.id === instructorId.value))
+const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
 
 const availableTimes = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'
@@ -247,6 +252,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
 }
 
 .details-top h1 {
