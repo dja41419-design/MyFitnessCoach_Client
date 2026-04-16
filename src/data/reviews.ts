@@ -7,6 +7,12 @@ export interface Review {
   avatar: string
   stars: string
   text: string
+  originalText?: string
+  instructorId: number
+  instructorName: string
+  instructorAvatar: string
+  instructorTitle: string
+  createdAt: string
 }
 
 export const fetchLandingPageReviews = async (): Promise<Review[]> => {
