@@ -11,14 +11,23 @@ import ForgetPwd from '../views/ForgetPwd.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: MyFitnessCoach },
+    { name: 'home', path: '/', component: MyFitnessCoach },
     { path: '/store', component: Store },
-    { name: 'info', path: '/personalInfo', component: Personalnfo },
+    { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },//meta:受保護路由
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
     { name: 'forgetpwd', path: '/forgetpassword', component: ForgetPwd }
   ]
+})
+
+
+//檢查token是否存在，若不存在則導向登入頁面
+router.beforeEach((to) => {
+  const token = localStorage.getItem('token')
+  if (to.meta.requiresAuth && !token) {
+    return { name: 'login', query: { returnUrl: to.fullPath } }
+  }
 })
 
 export default router

@@ -1,5 +1,5 @@
 export interface LoginRequest {
-  username: string
+  account: string
   password: string
 }
 
@@ -16,10 +16,18 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
     body: JSON.stringify(payload)
   })
 
-  if (!response.ok) {
+  if (response.status === 401) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err?.message ?? '登入失敗，請確認帳號密碼')
+    throw new Error(err?.message ?? '帳號或密碼錯誤')
+  }
+
+  if (!response.ok) {
+    throw new Error('伺服器錯誤，請稍後再試')
   }
 
   return response.json()
+}
+
+export function logout(): void {
+  localStorage.removeItem('token')
 }

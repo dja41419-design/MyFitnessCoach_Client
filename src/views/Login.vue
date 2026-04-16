@@ -21,24 +21,24 @@
         <form class="login-form" @submit.prevent="handleSubmit" novalidate>
           <!-- 帳號 -->
           <div class="form-group">
-            <label for="username" class="form-label">帳號</label>
+            <label for="account" class="form-label">帳號</label>
             <input
-              id="username"
-              v-model="form.username"
+              id="account"
+              v-model="form.account"
               type="text"
               class="form-input"
-              :class="{ 'is-error': errors.username }"
+              :class="{ 'is-error': errors.account }"
               placeholder="請輸入帳號"
               autocomplete="username"
             />
-            <span v-if="errors.username" class="form-error">{{ errors.username }}</span>
+            <span v-if="errors.account" class="form-error">{{ errors.account }}</span>
           </div>
 
           <!-- 密碼 -->
           <div class="form-group">
             <div class="form-label-row">
               <label for="password" class="form-label">密碼</label>
-              <router-link to="/forgot-password" class="forgot-link">忘記密碼？</router-link>
+              <router-link :to="{name:'forgetpwd'}" class="forgot-link">忘記密碼？</router-link>
             </div>
             <input
               id="password"
@@ -90,17 +90,18 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/data/login'
 
+
 const router = useRouter()
 
-const form = reactive({ username: '', password: '' })
-const errors = reactive({ username: '', password: '' })
+const form = reactive({ account: '', password: '' })
+const errors = reactive({ account: '', password: '' })
 const apiError = ref('')
 const isLoading = ref(false)
 
 function validate(): boolean {
-  errors.username = form.username.trim() ? '' : '請輸入帳號'
+  errors.account  = form.account.trim() ? '' : '請輸入帳號'
   errors.password = form.password ? '' : '請輸入密碼'
-  return !errors.username && !errors.password
+  return !errors.account && !errors.password
 }
 
 async function handleSubmit() {
@@ -109,9 +110,9 @@ async function handleSubmit() {
 
   isLoading.value = true
   try {
-    const res = await login({ username: form.username.trim(), password: form.password })
+    const res = await login({ account: form.account.trim(), password: form.password })
     localStorage.setItem('token', res.token)
-    router.push({ name: 'info' })
+    router.push({ name: 'home' })
   } catch (err) {
     apiError.value = err instanceof Error ? err.message : '登入失敗，請稍後再試'
   } finally {
