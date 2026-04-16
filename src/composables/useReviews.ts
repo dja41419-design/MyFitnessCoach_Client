@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { fetchLandingPageReviews, type Review } from '@/data/reviews'
+import { fetchLandingPageReviews, fetchAllReviews, type Review } from '@/data/reviews'
 
 export function useReviews() {
   const reviewList = ref<Review[]>([])
@@ -8,8 +8,13 @@ export function useReviews() {
     reviewList.value = await fetchLandingPageReviews()
   }
 
+  const loadAllReviews = async () => {
+    reviewList.value = await fetchAllReviews()
+  }
+
   return {
     reviewList,
-    loadReviews
+    loadReviews,
+    loadAllReviews
   }
 }
