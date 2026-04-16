@@ -87,130 +87,23 @@
     </div>
   </section>
 
-  <!-- ========== 營養師團隊 ========== -->
-  <section class="nutritionists" id="nutritionists">
-    <div class="container">
-      <div class="section-header">
-        <div>
-          <h2 class="reveal">專業營養師團隊</h2>
-          <p class="reveal rd1">
-            嚴選合格營養師，提供一對一線上諮詢。<br />
-            自選營養師、自選時段，你的健康你做主。
-          </p>
-        </div>
-        <div class="reveal rd2 d-flex gap-2">
-          <button 
-            class="btn-outline" 
-            @click="isTopThreeOnly = !isTopThreeOnly"
-          >
-            {{ isTopThreeOnly ? '營養師預覽' : '人氣前三名' }}
-          </button>
-          <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
-        </div>
-      </div>
-
-      <!-- 輪播軌道 / 領獎台 -->
-      <div class="nutri-track-wrap">
-        <!-- 人氣前三名領獎台 (Kahoot 樣式) -->
-        <div v-if="isTopThreeOnly" class="podium-container">
-          <div class="podium">
-            <!-- 第二名 -->
-            <div v-if="Instructors[1]" class="podium-item rank-2 reveal rd1">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="Instructors[1].img" :alt="Instructors[1].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[1].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[1].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-2" data-rank="2"></div>
-            </div>
-            
-            <!-- 第一名 -->
-            <div v-if="Instructors[0]" class="podium-item rank-1 reveal">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <div class="crown">👑</div>
-                     <img :src="Instructors[0].img" :alt="Instructors[0].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[0].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[0].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-1" data-rank="1"></div>
-            </div>
-            
-            <!-- 第三名 -->
-            <div v-if="Instructors[2]" class="podium-item rank-3 reveal rd2">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="Instructors[2].img" :alt="Instructors[2].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[2].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[2].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-3" data-rank="3"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 原始輪播列表 -->
-        <div v-else class="nutri-track" ref="nutriTrackRef">
-          <div
-            v-for="(nutri, idx) in instructors"
-            :key="nutri.name"
-            class="nutri-card reveal"
-            :class="`rd${idx}`"
-          >
-            <div class="nutri-img-wrap">
-              <img :src="nutri.img" :alt="nutri.name" class="nutri-img" />
-            </div>
-            <div class="nutri-body">
-              <div class="nutri-specialty">{{ nutri.specialty }}</div>
-              <h3>{{ nutri.name }}</h3>
-              <p>{{ nutri.bio }}</p>
-              <div class="nutri-tags">
-                <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
-              </div>
-              <a href="#" class="book-link">
-                馬上預約
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 輪播前後按鈕 (僅在非前三名模式下顯示) -->
-      <div v-if="!isTopThreeOnly" class="carousel-nav">
-        <button class="carousel-btn" @click="slideNutri(-1)" aria-label="上一位">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <button class="carousel-btn" @click="slideNutri(1)" aria-label="下一位">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </section>
+ 
 
   <!-- ========== 課程方案 ========== -->
   <section class="pricing" id="pricing">
     <div class="container">
-      <div style="text-align:center;">
-        <div class="scroll-label reveal">課程套組方案</div>
-        <h2 class="pricing-title reveal rd1">選擇最適合你的方案</h2>
-        <p class="pricing-subtitle reveal rd2">套組結帳後自動轉換為儲值點數，預約時可彈性扣抵使用</p>
+      <div class="pricing-header">
+        <div style="text-align:center;">
+          <div class="scroll-label reveal">課程套組方案</div>
+          <h2 class="pricing-title reveal rd1">選擇最適合你的方案</h2>
+          <p class="pricing-subtitle reveal rd2">套組結帳後自動轉換為儲值點數，預約時可彈性扣抵使用</p>
+        </div>
+        <RouterLink to="/lesson" class="btn-all-plans reveal rd2" aria-label="查看所有儲值方案">
+          查看所有方案
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </RouterLink>
       </div>
 
       <div class="pricing-grid">
@@ -296,7 +189,7 @@
       </div>
 
       <!-- 分類 Tab -->
-      <div class="shop-tabs reveal">
+      <!-- <div class="shop-tabs reveal">
         <button
           v-for="tab in shopTabs"
           :key="tab"
@@ -306,7 +199,7 @@
         >
           {{ tab }}
         </button>
-      </div>
+      </div> -->
 
       <!-- 商品卡片 -->
       <div class="shop-grid">
@@ -783,6 +676,36 @@ function handleScroll() {
 
 /* ── 課程方案 ─────────────────────────────────── */
 .pricing { padding: 100px 0; }
+
+.pricing-header {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.btn-all-plans {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-all-plans:hover {
+  background: var(--bg-dark);
+  color: var(--text-light);
+  border-color: var(--bg-dark);
+  gap: 10px;
+}
 
 /* inline style 替代：統一在 class 管理 */
 .pricing-title {
