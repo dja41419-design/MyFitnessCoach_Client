@@ -324,26 +324,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
 import { reviews } from '@/data/reviews'
-import { fetchAllInstructors } from '@/data/instructors'
+import { fetchAllInstructors, type Instructor } from '@/data/instructors'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
-import { computed, onMounted } from 'vue'
 
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-const instructors = ref([])
+const instructors = ref<Instructor[]>([])
 const isTopThreeOnly = ref(false)
-const activeTab = ref(shopTabs[0])
+const activeTab = ref<string>(shopTabs[0])
 
 onMounted(async () => {
   instructors.value = await fetchAllInstructors()
@@ -354,11 +353,7 @@ const filteredProducts = computed(() => {
   return shopProducts.filter(p => p.category === activeTab.value)
 })
 
-function handleScroll() {
-  isScrolled.value = window.scrollY > 40
-}
-
-
+// handleScroll 已由 useNavbar 處理，若無特殊用途可移除
 </script>
 
 <!--

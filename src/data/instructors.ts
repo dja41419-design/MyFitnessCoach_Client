@@ -10,6 +10,13 @@ export interface Instructor {
   tags: string[]
 }
 
+export interface Availability {
+  shiftId: number
+  date: string
+  timeSlot: string
+  isReserved: boolean
+}
+
 /**
  * 取得營養師圖片路徑
  * @param instructorId 營養師 ID

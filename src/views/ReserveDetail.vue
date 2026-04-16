@@ -120,13 +120,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchAllInstructors } from '@/data/instructors'
+import { fetchAllInstructors, type Instructor, type Availability } from '@/data/instructors'
 
 const route = useRoute()
 const router = useRouter()
 
-const instructors = ref([])
-const availability = ref([]) // 儲存排班與預約狀況
+const instructors = ref<Instructor[]>([])
+const availability = ref<Availability[]>([])
 const instructorId = computed(() => Number(route.params.id))
 const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
 
@@ -138,7 +138,6 @@ const form = ref({
   note: ''
 })
 
-// 月曆邏輯
 const today = new Date()
 const currentYear = ref(today.getFullYear())
 const currentMonth = ref(today.getMonth())
@@ -151,12 +150,12 @@ const firstDayOfMonth = computed(() => {
   return new Date(currentYear.value, currentMonth.value, 1).getDay()
 })
 
-// 封裝獲取排班的邏輯
 const fetchAvailabilityData = async (id: number) => {
   try {
     const res = await fetch(`/api/Instructor/Availability/${id}`)
     if (res.ok) {
-      availability.value = await res.json()
+      const data: Availability[] = await res.json()
+      availability.value = data
     } else {
       availability.value = []
     }
@@ -166,7 +165,6 @@ const fetchAvailabilityData = async (id: number) => {
   }
 }
 
-// 判斷月曆格子狀態
 function getDayClass(dateNum: number) {
   const d = new Date(currentYear.value, currentMonth.value, dateNum)
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -181,7 +179,6 @@ function getDayClass(dateNum: number) {
   return { 'status-available': true }
 }
 
-// 根據選擇的日期，篩選可預約的時段
 const filteredTimes = computed(() => {
   if (!form.value.date) return []
   return availability.value
@@ -213,7 +210,7 @@ function nextMonth() {
 function selectDate(date: number) {
   const d = new Date(currentYear.value, currentMonth.value, date)
   form.value.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  form.value.time = '' // 切換日期時清空已選時段
+  form.value.time = ''
 }
 
 function isSelected(date: number) {
@@ -238,22 +235,14 @@ const isFormValid = computed(() => {
 })
 
 function handleReserve() {
-  alert(`預約成功！\n\n營養師：${instructor.value?.name}\n時間：${form.value.date} ${form.value.time}\n我們將會撥打 ${form.value.phone} 與您連繫。`)
+  alert(`預約成功！\n\n營養師：${instructor.value?.name}\n時間：${form.value.date} ${form.value.time}`)
   router.push('/')
 }
 
-// 監聽 ID 變化，重新獲取資料
 watch(instructorId, async (newId) => {
   if (newId) {
     await fetchAvailabilityData(newId)
-    // 當更換營養師時重置表單
-    form.value = {
-      date: '',
-      time: '',
-      name: '',
-      phone: '',
-      note: ''
-    }
+    form.value = { date: '', time: '', name: '', phone: '', note: '' }
   }
 })
 
@@ -261,7 +250,6 @@ onMounted(async () => {
   instructors.value = await fetchAllInstructors()
   if (instructorId.value) {
     await fetchAvailabilityData(instructorId.value)
-
     if (!instructor.value) {
       alert('找不到該營養師資訊')
       router.push('/reserve')
@@ -278,7 +266,6 @@ onMounted(async () => {
   font-size: 1.2rem;
 }
 
-/* 頂部資訊樣式 */
 .instructor-info {
   background: var(--bg-card);
   color: var(--text-primary);
@@ -329,7 +316,6 @@ onMounted(async () => {
   font-size: 0.75rem;
 }
 
-/* 表單佈局 */
 .booking-form {
   padding: 60px;
 }
@@ -354,7 +340,6 @@ onMounted(async () => {
   display: block;
 }
 
-/* 放大版月曆樣式 */
 .calendar-container.large {
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -458,13 +443,13 @@ onMounted(async () => {
 }
 
 .calendar-day.status-available {
-  background-color: rgba(46, 204, 113, 0.15); /* 綠色背景 */
+  background-color: rgba(46, 204, 113, 0.15);
   color: #27ae60;
   font-weight: 700;
 }
 
 .calendar-day.status-reserved {
-  background-color: rgba(231, 76, 60, 0.15); /* 紅色背景 */
+  background-color: rgba(231, 76, 60, 0.15);
   color: #c0392b;
 }
 
