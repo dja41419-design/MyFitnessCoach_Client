@@ -47,7 +47,7 @@
         >
           <div class="store-img-wrap">
             <span v-if="hasDiscount(product)" class="store-card-badge">特價</span>
-            <img :src="product.imageUrl" :alt="product.name" class="store-img" />
+            <img :src="`/api/StoreApi/ProductImage/${product.id}`" :alt="product.name" class="store-img" />
           </div>
           <div class="store-body">
             <div class="store-category">{{ product.categoryName }}</div>
@@ -72,35 +72,55 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
 
-const categories = ref([])
-const products = ref([])
-const activeCategory = ref(null)
-const loading = ref(true)
+interface CategoryDto {
+  id: number
+  categoryName: string
+  sortOrder: number
+  isActive: boolean
+}
 
-const filteredProducts = computed(() => {
+interface ProductDto {
+  id: number
+  categoryId: number
+  name: string
+  imageUrl: string
+  originalPrice: number
+  unitPrice: number
+  description: string
+  sortOrder: number
+  isActive: boolean
+  categoryName: string
+}
+
+const categories = ref<CategoryDto[]>([])
+const products = ref<ProductDto[]>([])
+const activeCategory = ref<number | null>(null)
+const loading = ref<boolean>(true)
+
+const filteredProducts = computed<ProductDto[]>(() => {
   if (activeCategory.value === null) return products.value
   return products.value.filter(p => p.categoryId === activeCategory.value)
 })
 
-function hasDiscount(product) {
+function hasDiscount(product: ProductDto): boolean {
   return product.originalPrice > product.unitPrice
 }
 
-function formatPrice(price) {
+function formatPrice(price: number): string {
   return Math.floor(price).toLocaleString()
 }
 
-async function fetchCategories() {
+async function fetchCategories(): Promise<void> {
   const res = await fetch('/api/StoreApi/categories')
   categories.value = await res.json()
 }
 
-async function fetchProducts() {
+async function fetchProducts(): Promise<void> {
   const res = await fetch('/api/StoreApi/products')
   products.value = await res.json()
 }
