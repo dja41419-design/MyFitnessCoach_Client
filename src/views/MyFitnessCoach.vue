@@ -112,7 +112,7 @@
       <div class="nutri-track-wrap">
         <div class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in instructors"
+            v-for="(nutri, idx) in allInstructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -333,8 +333,8 @@ import { RouterLink } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
-import { fetchLandingPageReviews, type Review } from '@/data/reviews'
-import { fetchAllInstructors, type Instructor } from '@/data/instructors'
+import { useInstructors } from '@/composables/useInstructors'
+import { useReviews } from '@/composables/useReviews'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
@@ -344,14 +344,16 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-const instructors = ref<Instructor[]>([])
-const reviewList = ref<Review[]>([])
-const isTopThreeOnly = ref(false)
+const { allInstructors, loadInstructors } = useInstructors()
+const { reviewList, loadReviews } = useReviews()
+
 const activeTab = ref<string>(shopTabs[0])
 
 onMounted(async () => {
-  instructors.value = await fetchAllInstructors()
-  reviewList.value = await fetchLandingPageReviews()
+  await Promise.all([
+    loadInstructors(),
+    loadReviews()
+  ])
 })
 
 const filteredProducts = computed(() => {

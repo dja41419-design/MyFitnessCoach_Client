@@ -26,49 +26,49 @@
         <div class="podium-container">
           <div class="podium">
             <!-- 第二名 -->
-            <div v-if="TopThreeInstructors[1]" class="podium-item rank-2">
+            <div v-if="topThreeInstructors[1]" class="podium-item rank-2">
                <div class="podium-card">
-                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: TopThreeInstructors[1].id } }" target="_blank" class="podium-img-link">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: topThreeInstructors[1].id } }" target="_blank" class="podium-img-link">
                     <div class="podium-img-wrap">
-                       <img :src="TopThreeInstructors[1].img" :alt="TopThreeInstructors[1].name" />
+                       <img :src="topThreeInstructors[1].img" :alt="topThreeInstructors[1].name" />
                     </div>
                   </RouterLink>
                   <div class="podium-info">
-                     <h3>{{ TopThreeInstructors[1].name }}</h3>
-                     <div class="podium-specialty">{{ TopThreeInstructors[1].specialty }}</div>
+                     <h3>{{ topThreeInstructors[1].name }}</h3>
+                     <div class="podium-specialty">{{ topThreeInstructors[1].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-2" data-rank="2"></div>
             </div>
             
             <!-- 第一名 -->
-            <div v-if="TopThreeInstructors[0]" class="podium-item rank-1">
+            <div v-if="topThreeInstructors[0]" class="podium-item rank-1">
                <div class="podium-card">
-                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: TopThreeInstructors[0].id } }" target="_blank" class="podium-img-link">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: topThreeInstructors[0].id } }" target="_blank" class="podium-img-link">
                     <div class="podium-img-wrap">
                        <div class="crown">👑</div>
-                       <img :src="TopThreeInstructors[0].img" :alt="TopThreeInstructors[0].name" />
+                       <img :src="topThreeInstructors[0].img" :alt="topThreeInstructors[0].name" />
                     </div>
                   </RouterLink>
                   <div class="podium-info">
-                     <h3>{{ TopThreeInstructors[0].name }}</h3>
-                     <div class="podium-specialty">{{ TopThreeInstructors[0].specialty }}</div>
+                     <h3>{{ topThreeInstructors[0].name }}</h3>
+                     <div class="podium-specialty">{{ topThreeInstructors[0].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-1" data-rank="1"></div>
             </div>
             
             <!-- 第三名 -->
-            <div v-if="TopThreeInstructors[2]" class="podium-item rank-3">
+            <div v-if="topThreeInstructors[2]" class="podium-item rank-3">
                <div class="podium-card">
-                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: TopThreeInstructors[2].id } }" target="_blank" class="podium-img-link">
+                  <RouterLink :to="{ name: 'ReserveDetail', params: { id: topThreeInstructors[2].id } }" target="_blank" class="podium-img-link">
                     <div class="podium-img-wrap">
-                       <img :src="TopThreeInstructors[2].img" :alt="TopThreeInstructors[2].name" />
+                       <img :src="topThreeInstructors[2].img" :alt="topThreeInstructors[2].name" />
                     </div>
                   </RouterLink>
                   <div class="podium-info">
-                     <h3>{{ TopThreeInstructors[2].name }}</h3>
-                     <div class="podium-specialty">{{ TopThreeInstructors[2].specialty }}</div>
+                     <h3>{{ topThreeInstructors[2].name }}</h3>
+                     <div class="podium-specialty">{{ topThreeInstructors[2].specialty }}</div>
                   </div>
                </div>
                <div class="podium-base base-3" data-rank="3"></div>
@@ -114,7 +114,7 @@
       <div class="container">
         <div class="instructors-grid">
           <div
-            v-for="nutri in FilteredInstructors"
+            v-for="nutri in filteredInstructors"
             :key="nutri.id"
             class="nutri-card"
           >
@@ -162,43 +162,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { fetchAllInstructors } from '@/data/instructors'
+import { useInstructors } from '@/composables/useInstructors'
 
-const AllInstructors = ref([])
-const FilteredInstructors = ref([])
-const TopThreeInstructors = ref([])
-const searchQuery = ref('')
-
-// 排名時間篩選 (預設為 2026 年 4 月)
-const selectedYear = ref(2026)
-const selectedMonth = ref(4)
-const yearOptions = [2024, 2025, 2026]
-
-const loadInstructors = async (name = '') => {
-  // 將時間篩選傳入 fetchAllInstructors
-  const data = await fetchAllInstructors(name, selectedYear.value, selectedMonth.value)
-  
-  if (name === '' && selectedYear.value === 2026 && selectedMonth.value === 4) {
-    // 初始化或重置時，設定所有營養師與排名前三
-    AllInstructors.value = data
-    TopThreeInstructors.value = data.slice(0, 3)
-    FilteredInstructors.value = data
-  } else if (name !== '') {
-    // 僅搜尋名稱時，只更新過濾後的列表
-    FilteredInstructors.value = data
-  } else {
-    // 僅切換時間時，全量更新 (包含排名)
-    AllInstructors.value = data
-    TopThreeInstructors.value = data.slice(0, 3)
-    FilteredInstructors.value = data
-  }
-}
-
-const handleSearch = () => {
-  loadInstructors(searchQuery.value)
-}
+const {
+  filteredInstructors,
+  topThreeInstructors,
+  searchQuery,
+  selectedYear,
+  selectedMonth,
+  yearOptions,
+  loadInstructors,
+  handleSearch
+} = useInstructors()
 
 onMounted(() => {
   loadInstructors()
