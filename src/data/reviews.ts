@@ -38,7 +38,7 @@ export const reviews: Review[] = [
     name: '李佳穎', title: '大學生・21 歲',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
     stars: '★★★★★',
-    text: '「套組方案超划算，買了之後變成點數，可以隨時約營養師，時間彈性很大，很適合學生族群！」',
+    text: '「套組方案超劃算，買了之後變成點數，可以隨時約營養師，時間彈性很大，很適合學生族群！」',
   },
   {
     name: '黃建安', title: '業務主管・40 歲',
@@ -47,3 +47,16 @@ export const reviews: Review[] = [
     text: '「應酬多、外食多，營養師根據我的生活型態給了很實際的建議。每次諮詢前營養師都已經看過我的飲食紀錄了，效率超高。」',
   },
 ]
+
+export const fetchLandingPageReviews = async (): Promise<Review[]> => {
+  try {
+    const response = await fetch('/api/Review/LandingPage')
+    if (!response.ok) throw new Error('無法獲取學員回饋')
+    const data = await response.json()
+    // 如果 API 回傳空的，則回傳預設的靜態資料
+    return data.length > 0 ? data : reviews
+  } catch (error) {
+    console.error('Error fetching reviews:', error)
+    return reviews
+  }
+}

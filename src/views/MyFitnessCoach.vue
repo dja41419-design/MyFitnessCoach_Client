@@ -70,7 +70,7 @@
     <!-- 渲染兩組達成 CSS 無縫循環效果 -->
     <div class="testimonial-track">
       <div
-        v-for="(item, idx) in reviews"
+        v-for="(item, idx) in [...reviewList, ...reviewList]"
         :key="idx"
         class="testimonial-card"
       >
@@ -85,6 +85,10 @@
         <p class="testimonial-text">{{ item.text }}</p>
       </div>
     </div>
+
+    <div class="testimonial-more reveal">
+      <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink>
+    </div>
   </section>
 
   <!-- ========== 營養師團隊 ========== -->
@@ -98,71 +102,17 @@
             自選營養師、自選時段，你的健康你做主。
           </p>
         </div>
-        <div class="reveal rd2 d-flex gap-2">
-          <button 
-            class="btn-outline" 
-            @click="isTopThreeOnly = !isTopThreeOnly"
-          >
-            {{ isTopThreeOnly ? '營養師預覽' : '人氣前三名' }}
-          </button>
-          <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
+        <div class="reveal rd2">
+          <RouterLink to="/AllInstructor" class="btn-outline">顯示全部營養師</RouterLink>
+          <a href="#pricing" class="btn-outline" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
         </div>
       </div>
 
-      <!-- 輪播軌道 / 領獎台 -->
+      <!-- 輪播軌道 -->
       <div class="nutri-track-wrap">
-        <!-- 人氣前三名領獎台 (Kahoot 樣式) -->
-        <div v-if="isTopThreeOnly" class="podium-container">
-          <div class="podium">
-            <!-- 第二名 -->
-            <div v-if="Instructors[1]" class="podium-item rank-2 reveal rd1">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="Instructors[1].img" :alt="Instructors[1].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[1].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[1].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-2" data-rank="2"></div>
-            </div>
-            
-            <!-- 第一名 -->
-            <div v-if="Instructors[0]" class="podium-item rank-1 reveal">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <div class="crown">👑</div>
-                     <img :src="Instructors[0].img" :alt="Instructors[0].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[0].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[0].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-1" data-rank="1"></div>
-            </div>
-            
-            <!-- 第三名 -->
-            <div v-if="Instructors[2]" class="podium-item rank-3 reveal rd2">
-               <div class="podium-card">
-                  <div class="podium-img-wrap">
-                     <img :src="Instructors[2].img" :alt="Instructors[2].name" />
-                  </div>
-                  <div class="podium-info">
-                     <h3>{{ Instructors[2].name }}</h3>
-                     <div class="podium-specialty">{{ Instructors[2].specialty }}</div>
-                  </div>
-               </div>
-               <div class="podium-base base-3" data-rank="3"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 原始輪播列表 -->
-        <div v-else class="nutri-track" ref="nutriTrackRef">
+        <div class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in instructors"
+            v-for="(nutri, idx) in allInstructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -177,19 +127,19 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <a href="#" class="book-link">
-                馬上預約
+              <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" target="_blank" class="book-link">
+                馬上預約諮詢
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
-              </a>
+              </RouterLink>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 輪播前後按鈕 (僅在非前三名模式下顯示) -->
-      <div v-if="!isTopThreeOnly" class="carousel-nav">
+      <!-- 輪播前後按鈕 -->
+      <div class="carousel-nav">
         <button class="carousel-btn" @click="slideNutri(-1)" aria-label="上一位">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="m15 18-6-6 6-6" />
@@ -311,7 +261,7 @@
       <!-- 商品卡片 -->
       <div class="shop-grid">
         <div
-          v-for="(product, idx) in shopProducts"
+          v-for="(product, idx) in filteredProducts"
           :key="product.name"
           class="shop-card reveal"
           :class="`rd${idx}`"
@@ -378,13 +328,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
-import { reviews } from '@/data/reviews'
-import { instructors } from '@/data/instructors'
+import { useInstructors } from '@/composables/useInstructors'
+import { useReviews } from '@/composables/useReviews'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
@@ -394,11 +344,24 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-function handleScroll() {
-  isScrolled.value = window.scrollY > 40
-}
+const { allInstructors, loadInstructors } = useInstructors()
+const { reviewList, loadReviews } = useReviews()
 
+const activeTab = ref<string>(shopTabs[0])
 
+onMounted(async () => {
+  await Promise.all([
+    loadInstructors(),
+    loadReviews()
+  ])
+})
+
+const filteredProducts = computed(() => {
+  if (activeTab.value === '全部') return shopProducts
+  return shopProducts.filter(p => p.category === activeTab.value)
+})
+
+// handleScroll 已由 useNavbar 處理，若無特殊用途可移除
 </script>
 
 <!--
@@ -661,6 +624,8 @@ function handleScroll() {
   100% { transform: translateX(-50%); }
 }
 
+.testimonial-more { text-align: center; margin-top: 40px; }
+
 /* ── 營養師 ───────────────────────────────────── */
 .nutritionists { padding: 100px 0; }
 
@@ -722,7 +687,7 @@ function handleScroll() {
 
 .nutri-img-wrap { overflow: hidden; height: 300px; position: relative; }
 
-.nutri-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
+.nutri-img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 0.6s; }
 .nutri-card:hover .nutri-img { transform: scale(1.04); }
 
 .nutri-body { padding: 28px; }

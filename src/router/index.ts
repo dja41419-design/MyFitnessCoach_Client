@@ -3,6 +3,8 @@ import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
 import Personalnfo from '@/views/Personalnfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
+import Reserve from '@/views/Reserve.vue'
+import ReserveDetail from '@/views/ReserveDetail.vue'
 
 
 const router = createRouter({
@@ -12,6 +14,14 @@ const router = createRouter({
   { path: '/store', component: Store },
   { name:'info', path: '/personalInfo', component: Personalnfo },
   { name:'AllInstructor', path: '/AllInstructor', component: AllInstructor },
+  { 
+    path: '/reserve', 
+    component: Reserve,
+    children: [
+      { path: '', redirect: '/reserve/1' },
+      { name: 'ReserveDetail', path: ':id', component: ReserveDetail }
+    ]
+  },
 ]
 })
 
