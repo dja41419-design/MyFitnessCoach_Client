@@ -22,90 +22,69 @@
       </div>
     </header>
 
-    <!-- 篩選 Tab -->
-    <section class="filter-section">
-      <div class="container">
-        <div class="filter-tabs reveal rd2">
-          <button
-            class="filter-tab"
-            :class="{ active: activeFilter === null }"
-            aria-label="顯示全部方案"
-            @click="activeFilter = null"
-          >
-            全部方案
-          </button>
-          <button
-            v-for="tag in allTags"
-            :key="tag"
-            class="filter-tab"
-            :class="{ active: activeFilter === tag }"
-            :aria-label="`篩選${tag}方案`"
-            @click="activeFilter = tag"
-          >
-            {{ tag }}
-          </button>
-        </div>
-      </div>
-    </section>
-
     <!-- 載入中 -->
     <div v-if="loading" class="lesson-loading">
       <p>方案載入中...</p>
     </div>
 
     <!-- 方案卡片 Grid -->
-    <section v-else-if="filteredPlans.length > 0" class="plans-section">
+    <section v-else-if="plans.length > 0" class="plans-section">
       <div class="container">
         <div class="plans-grid">
           <div
-            v-for="(plan, idx) in filteredPlans"
-            :key="plan.name"
+            v-for="(plan, idx) in plans"
+            :key="plan.id"
             class="plan-card reveal"
-            :class="[plan.featured ? 'featured' : '', `rd${idx % 4}`]"
+            :class="[isFeatured(plan) ? 'featured' : '', `rd${idx % 4}`]"
           >
-            <!-- 標籤 -->
-            <div v-if="plan.badge" class="plan-badge">{{ plan.badge }}</div>
-
-            <!-- 方案名稱 -->
-            <div class="plan-label">{{ plan.label }}</div>
-            <h2 class="plan-name">{{ plan.name }}</h2>
-
-            <!-- 價格 -->
-            <div class="plan-price-wrap">
-              <span class="plan-price">{{ plan.price }}</span>
-              <span class="plan-unit"> / {{ plan.unit }}</span>
+            <!-- 圖片（有才顯示） -->
+            <div v-if="plan.imageUrl" class="plan-img-wrap">
+              <img :src="plan.imageUrl" :alt="plan.planName" class="plan-img" />
             </div>
-            <p class="plan-period">{{ plan.period }}</p>
 
-            <!-- 分隔線 -->
-            <div class="plan-divider"></div>
+            <!-- 卡片主體 -->
+            <div class="plan-body">
 
-            <!-- 功能列表 -->
-            <ul class="plan-features" :aria-label="`${plan.name}功能列表`">
-              <li v-for="feat in plan.features" :key="feat">
-                <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="m5 13 4 4L19 7" />
-                </svg>
-                {{ feat }}
-              </li>
-            </ul>
+              <!-- 推薦標籤 -->
+              <span v-if="isFeatured(plan)" class="plan-badge">推薦方案</span>
 
-            <!-- CTA 按鈕 -->
-            <button
-              class="plan-btn"
-              :class="plan.btnStyle"
-              :aria-label="`${plan.btnText} ${plan.name}`"
-            >
-              {{ plan.btnText }}
-            </button>
+              <!-- 點數 -->
+              <div class="plan-points-label">{{ plan.points }} 點</div>
+
+              <!-- 方案名稱 -->
+              <h2 class="plan-name">{{ plan.planName }}</h2>
+
+              <!-- 價格 -->
+              <div class="plan-price-wrap">
+                <span class="plan-currency">NT$</span>
+                <span class="plan-price">{{ formatPrice(plan.price) }}</span>
+              </div>
+
+              <!-- 分隔線 -->
+              <div class="plan-divider"></div>
+
+              <!-- 說明 -->
+              <p class="plan-desc">{{ plan.description }}</p>
+
+              <!-- CTA 按鈕 -->
+              <button
+                class="plan-btn"
+                :class="isFeatured(plan) ? 'accent' : 'light'"
+                :aria-label="`加入購物車 ${plan.planName}`"
+                @click="addToCart(plan)"
+              >
+                立即購買
+              </button>
+
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 空狀態 -->
+    <!-- 空狀態 / 錯誤 -->
     <div v-else class="lesson-empty">
-      <p>目前沒有符合條件的方案</p>
+      <p>目前沒有可用的方案，請稍後再試。</p>
     </div>
 
     <!-- 補充說明區 -->
@@ -159,44 +138,66 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
-import { plans as localPlans } from '@/data/plans'
+import { topUpPlans as fallbackPlans } from '@/data/topUpPlans'
+
+const router = useRouter()
+const CART_KEY = 'lessonCart'
 
 const plans = ref([])
 const loading = ref(true)
-const activeFilter = ref(null)
 
-const allTags = computed(() => {
-  const tags = new Set()
-  plans.value.forEach(plan => {
-    if (plan.featured) tags.add('推薦方案')
-    if (plan.badge) tags.add(plan.badge)
-  })
-  return Array.from(tags)
+// 點數最多的方案視為「推薦方案」，套用深色卡片樣式
+const featuredId = computed(() => {
+  if (!plans.value.length) return null
+  return plans.value.reduce((prev, curr) => curr.points > prev.points ? curr : prev).id
 })
 
-const filteredPlans = computed(() => {
-  if (activeFilter.value === null) return plans.value
-  if (activeFilter.value === '推薦方案') return plans.value.filter(p => p.featured)
-  return plans.value.filter(p => p.badge === activeFilter.value)
-})
+function isFeatured(plan) {
+  return plan.id === featuredId.value
+}
+
+function formatPrice(price) {
+  return Math.floor(price).toLocaleString()
+}
+
+function addToCart(plan) {
+  try {
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    // 同一方案不重複加入，直接跳轉
+    if (!cart.find(item => item.id === plan.id)) {
+      cart.push({
+        id: plan.id,
+        planName: plan.planName,
+        price: plan.price,
+        points: plan.points,
+        description: plan.description,
+        imageUrl: plan.imageUrl ?? null,
+      })
+      localStorage.setItem(CART_KEY, JSON.stringify(cart))
+    }
+  } catch {
+    // localStorage 不可用時直接跳轉
+  }
+  router.push('/lesson-cart')
+}
 
 async function fetchPlans() {
-  try {
-    const res = await fetch('/api/LessonApi/plans')
-    if (!res.ok) throw new Error('API 回應異常')
-    const data = await res.json()
-    plans.value = data
-  } catch {
-    // API 尚未就緒時使用本地資料
-    plans.value = localPlans
-  }
+  const res = await fetch('/api/LessonApi/plans')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = await res.json()
+  // API 有資料時使用 API 資料，否則使用本地備用資料
+  plans.value = data.length > 0 ? data : fallbackPlans
 }
 
 onMounted(async () => {
   try {
     await fetchPlans()
+  } catch (err) {
+    // API 連線失敗（後端未啟動或網路錯誤）時使用本地備用資料
+    console.warn('方案 API 無法連線，使用本地備用資料', err)
+    plans.value = fallbackPlans
   } finally {
     loading.value = false
   }
@@ -249,7 +250,7 @@ useReveal()
 
 /* ── 頁面標題 ── */
 .page-header {
-  padding: 64px 0 40px;
+  padding: 64px 0 48px;
   text-align: center;
 }
 
@@ -279,42 +280,6 @@ useReveal()
   line-height: 1.7;
 }
 
-/* ── 篩選 Tab ── */
-.filter-section {
-  padding-bottom: 8px;
-}
-
-.filter-tabs {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-
-.filter-tab {
-  padding: 8px 22px;
-  border-radius: 100px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  background: transparent;
-  border: 1.5px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.filter-tab.active {
-  background: var(--bg-dark);
-  color: var(--text-light);
-  border-color: var(--bg-dark);
-}
-
-.filter-tab:hover:not(.active) {
-  border-color: var(--text-secondary);
-  color: var(--text-primary);
-}
-
 /* ── 方案 Grid ── */
 .plans-section {
   padding-bottom: 80px;
@@ -331,10 +296,9 @@ useReveal()
 .plan-card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  padding: 40px 32px;
+  overflow: hidden;
   border: 1px solid rgba(212, 204, 194, 0.5);
   transition: transform var(--transition), box-shadow var(--transition);
-  position: relative;
   display: flex;
   flex-direction: column;
   cursor: default;
@@ -351,35 +315,61 @@ useReveal()
   color: var(--text-light);
 }
 
-/* 標籤 */
-.plan-badge {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: var(--text-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 5px 18px;
-  border-radius: 100px;
-  white-space: nowrap;
+/* 圖片 */
+.plan-img-wrap {
+  height: 180px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.plan-label {
+.plan-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s;
+}
+
+.plan-card:hover .plan-img {
+  transform: scale(1.04);
+}
+
+/* 卡片主體 */
+.plan-body {
+  padding: 28px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* 推薦標籤 */
+.plan-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 14px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+
+/* 點數 */
+.plan-points-label {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--accent-dark);
   margin-bottom: 8px;
 }
 
-.plan-card.featured .plan-label {
+.plan-card.featured .plan-points-label {
   color: var(--accent);
 }
 
+/* 方案名稱 */
 .plan-name {
   font-family: var(--font-display);
   font-size: 1.8rem;
@@ -389,46 +379,33 @@ useReveal()
   color: inherit;
 }
 
-/* 價格區 */
+/* 價格 */
 .plan-price-wrap {
   display: flex;
   align-items: baseline;
-  gap: 2px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.plan-currency {
+  font-size: 1rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
 }
 
 .plan-price {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
   font-weight: 600;
   color: inherit;
-}
-
-.plan-unit {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.plan-card.featured .plan-unit {
-  color: rgba(245, 240, 235, 0.6);
-}
-
-.plan-period {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  margin: 0 0 24px;
-  line-height: 1.5;
-}
-
-.plan-card.featured .plan-period {
-  color: rgba(245, 240, 235, 0.55);
 }
 
 /* 分隔線 */
 .plan-divider {
   height: 1px;
   background: var(--border);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   opacity: 0.5;
 }
 
@@ -437,39 +414,17 @@ useReveal()
   opacity: 1;
 }
 
-/* 功能列表 */
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.plan-features li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* 說明 */
+.plan-desc {
   font-size: 0.88rem;
-  padding: 9px 0;
-  border-bottom: 1px solid rgba(212, 204, 194, 0.25);
-  color: inherit;
-  line-height: 1.4;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  flex: 1;
+  margin-bottom: 28px;
 }
 
-.plan-features li:last-child {
-  border-bottom: none;
-}
-
-.check-icon {
-  flex-shrink: 0;
-  color: var(--accent-dark);
-}
-
-.plan-card.featured .check-icon {
-  color: var(--accent);
+.plan-card.featured .plan-desc {
+  color: rgba(245, 240, 235, 0.6);
 }
 
 /* CTA 按鈕 */
@@ -483,7 +438,7 @@ useReveal()
   cursor: pointer;
   transition: all 0.3s;
   text-align: center;
-  border: none;
+  margin-top: auto;
 }
 
 .plan-btn.light {
@@ -499,6 +454,16 @@ useReveal()
   transform: translateY(-2px);
 }
 
+.plan-card.featured .plan-btn.light {
+  border-color: rgba(245, 240, 235, 0.3);
+  color: var(--text-light);
+}
+
+.plan-card.featured .plan-btn.light:hover {
+  background: rgba(245, 240, 235, 0.12);
+  border-color: rgba(245, 240, 235, 0.5);
+}
+
 .plan-btn.accent {
   background: var(--accent);
   color: var(--text-primary);
@@ -509,16 +474,6 @@ useReveal()
   background: var(--accent-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(196, 168, 130, 0.35);
-}
-
-.plan-card.featured .plan-btn.light {
-  border-color: rgba(245, 240, 235, 0.3);
-  color: var(--text-light);
-}
-
-.plan-card.featured .plan-btn.light:hover {
-  background: rgba(245, 240, 235, 0.12);
-  border-color: rgba(245, 240, 235, 0.5);
 }
 
 /* ── 載入 / 空狀態 ── */
@@ -609,8 +564,8 @@ useReveal()
     gap: 32px;
   }
 
-  .plan-card {
-    padding: 36px 24px 28px;
+  .plan-body {
+    padding: 24px 24px 28px;
   }
 
   .info-grid {
