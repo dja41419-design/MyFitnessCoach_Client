@@ -70,7 +70,7 @@
     <!-- 渲染兩組達成 CSS 無縫循環效果 -->
     <div class="testimonial-track">
       <div
-        v-for="(item, idx) in [...reviews, ...reviews]"
+        v-for="(item, idx) in [...reviewList, ...reviewList]"
         :key="idx"
         class="testimonial-card"
       >
@@ -84,6 +84,10 @@
         <div class="testimonial-stars">{{ item.stars }}</div>
         <p class="testimonial-text">{{ item.text }}</p>
       </div>
+    </div>
+
+    <div class="testimonial-more reveal">
+      <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink>
     </div>
   </section>
 
@@ -329,7 +333,7 @@ import { RouterLink } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
-import { reviews } from '@/data/reviews'
+import { fetchLandingPageReviews, type Review } from '@/data/reviews'
 import { fetchAllInstructors, type Instructor } from '@/data/instructors'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
@@ -341,11 +345,13 @@ const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
 const instructors = ref<Instructor[]>([])
+const reviewList = ref<Review[]>([])
 const isTopThreeOnly = ref(false)
 const activeTab = ref<string>(shopTabs[0])
 
 onMounted(async () => {
   instructors.value = await fetchAllInstructors()
+  reviewList.value = await fetchLandingPageReviews()
 })
 
 const filteredProducts = computed(() => {
@@ -615,6 +621,8 @@ const filteredProducts = computed(() => {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+.testimonial-more { text-align: center; margin-top: 40px; }
 
 /* ── 營養師 ───────────────────────────────────── */
 .nutritionists { padding: 100px 0; }
