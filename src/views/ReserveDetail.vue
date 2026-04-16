@@ -61,6 +61,17 @@
                   <span class="date-num">{{ date }}</span>
                 </button>
               </div>
+
+              <div class="calendar-status-legend">
+                <div class="legend-item">
+                  <span class="status-indicator available"></span>
+                  <span class="status-text">可預約</span>
+                </div>
+                <div class="legend-item">
+                  <span class="status-indicator reserved"></span>
+                  <span class="status-text">已額滿</span>
+                </div>
+              </div>
             </div>
             <input type="hidden" v-model="form.date" required />
           </div>
@@ -90,14 +101,14 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label>您的姓名</label>
-            <input type="text" v-model="form.name" placeholder="請輸入姓名" required />
+          <div class="form-group form-floating">
+            <input type="text" class="form-control" id="floatName" v-model="form.name" placeholder="" required />
+            <label for="floatName" class="form-label">您的姓名</label>
           </div>
 
-          <div class="form-group">
-            <label>聯絡電話</label>
-            <input type="tel" v-model="form.phone" placeholder="請輸入電話" required />
+          <div class="form-group form-floating">
+            <input type="tel" class="form-control" id="floatPhone" v-model="form.phone" placeholder="" required />
+            <label for="floatPhone" class="form-label">聯絡電話</label>
           </div>
 
           <div class="form-group">
@@ -453,6 +464,79 @@ onMounted(async () => {
   color: #c0392b;
 }
 
+.calendar-status-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-top: 15px;
+  padding: 0 5px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.status-indicator.available {
+  background-color: rgba(46, 204, 113, 0.2);
+  border: 1px solid #27ae60;
+}
+
+.status-indicator.reserved {
+  background-color: rgba(231, 76, 60, 0.2);
+  border: 1px solid #c0392b;
+}
+
+.form-group {
+  margin-bottom: 30px;
+}
+
+.form-floating {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.form-floating > .form-control {
+  height: calc(3.5rem + 2px);
+  padding: 1.625rem 0.75rem 0.625rem;
+  line-height: 1.25;
+}
+
+.form-floating > label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 1rem 0.75rem;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid transparent;
+  transform-origin: 0 0;
+  transition: opacity .1s ease-in-out, transform .1s ease-in-out;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-bottom: 0; /* Reset global label margin */
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  opacity: .65;
+  transform: scale(.85) translateY(-.5rem) translateX(.15rem);
+}
+
 .form-group label {
   display: block;
   font-weight: 600;
@@ -461,6 +545,7 @@ onMounted(async () => {
   color: var(--text-primary);
 }
 
+.form-control,
 input[type="text"],
 input[type="tel"],
 textarea {
