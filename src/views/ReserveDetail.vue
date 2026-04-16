@@ -52,7 +52,8 @@
                   :class="{ 
                     active: isSelected(date),
                     disabled: isPast(date),
-                    today: isToday(date)
+                    today: isToday(date),
+                    ...getDayClass(date)
                   }"
                   :disabled="isPast(date)"
                   @click="selectDate(date)"
@@ -71,14 +72,21 @@
             <div class="time-grid">
               <button 
                 type="button"
-                v-for="time in availableTimes" 
-                :key="time"
+                v-for="item in filteredTimes" 
+                :key="item.time"
                 class="time-btn"
-                :class="{ active: form.time === time }"
-                @click="form.time = time"
+                :class="{ active: form.time === item.time, 'is-reserved': item.isReserved }"
+                :disabled="item.isReserved"
+                @click="form.time = item.time"
               >
-                {{ time }}
+                {{ item.time }}
               </button>
+              <div v-if="filteredTimes.length === 0 && form.date" class="no-times">
+                此日期無排班
+              </div>
+              <div v-if="!form.date" class="no-times">
+                請先選擇日期
+              </div>
             </div>
           </div>
 
@@ -118,16 +126,9 @@ const route = useRoute()
 const router = useRouter()
 
 const instructors = ref([])
-onMounted(async () => {
-  instructors.value = await fetchAllInstructors()
-})
-
+const availability = ref([]) // 儲存排班與預約狀況
 const instructorId = computed(() => Number(route.params.id))
 const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
-
-const availableTimes = [
-  '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'
-]
 
 const form = ref({
   date: '',
@@ -150,6 +151,47 @@ const firstDayOfMonth = computed(() => {
   return new Date(currentYear.value, currentMonth.value, 1).getDay()
 })
 
+// 封裝獲取排班的邏輯
+const fetchAvailabilityData = async (id: number) => {
+  try {
+    const res = await fetch(`/api/Instructor/Availability/${id}`)
+    if (res.ok) {
+      availability.value = await res.json()
+    } else {
+      availability.value = []
+    }
+  } catch (error) {
+    console.error('Failed to fetch availability:', error)
+    availability.value = []
+  }
+}
+
+// 判斷月曆格子狀態
+function getDayClass(dateNum: number) {
+  const d = new Date(currentYear.value, currentMonth.value, dateNum)
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  
+  const dayAvailability = availability.value.filter(a => a.date.split('T')[0] === dateStr)
+  
+  if (dayAvailability.length === 0) return {}
+  
+  const allReserved = dayAvailability.every(a => a.isReserved)
+  if (allReserved) return { 'status-reserved': true }
+  
+  return { 'status-available': true }
+}
+
+// 根據選擇的日期，篩選可預約的時段
+const filteredTimes = computed(() => {
+  if (!form.value.date) return []
+  return availability.value
+    .filter(a => a.date.split('T')[0] === form.value.date)
+    .map(a => ({
+      time: a.timeSlot,
+      isReserved: a.isReserved
+    }))
+})
+
 function prevMonth() {
   if (currentMonth.value === 0) {
     currentYear.value--
@@ -170,12 +212,14 @@ function nextMonth() {
 
 function selectDate(date: number) {
   const d = new Date(currentYear.value, currentMonth.value, date)
-  form.value.date = d.toISOString().split('T')[0]
+  form.value.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  form.value.time = '' // 切換日期時清空已選時段
 }
 
 function isSelected(date: number) {
-  const d = new Date(currentYear.value, currentMonth.value, date).toISOString().split('T')[0]
-  return form.value.date === d
+  const d = new Date(currentYear.value, currentMonth.value, date)
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return form.value.date === dateStr
 }
 
 function isPast(date: number) {
@@ -198,21 +242,30 @@ function handleReserve() {
   router.push('/')
 }
 
-watch(instructorId, () => {
-  // 當更換營養師時重置表單
-  form.value = {
-    date: '',
-    time: '',
-    name: '',
-    phone: '',
-    note: ''
+// 監聽 ID 變化，重新獲取資料
+watch(instructorId, async (newId) => {
+  if (newId) {
+    await fetchAvailabilityData(newId)
+    // 當更換營養師時重置表單
+    form.value = {
+      date: '',
+      time: '',
+      name: '',
+      phone: '',
+      note: ''
+    }
   }
 })
 
-onMounted(() => {
-  if (route.params.id && !instructor.value) {
-    alert('找不到該營養師資訊')
-    router.push('/reserve')
+onMounted(async () => {
+  instructors.value = await fetchAllInstructors()
+  if (instructorId.value) {
+    await fetchAvailabilityData(instructorId.value)
+
+    if (!instructor.value) {
+      alert('找不到該營養師資訊')
+      router.push('/reserve')
+    }
   }
 })
 </script>
@@ -404,6 +457,17 @@ onMounted(() => {
   cursor: default;
 }
 
+.calendar-day.status-available {
+  background-color: rgba(46, 204, 113, 0.15); /* 綠色背景 */
+  color: #27ae60;
+  font-weight: 700;
+}
+
+.calendar-day.status-reserved {
+  background-color: rgba(231, 76, 60, 0.15); /* 紅色背景 */
+  color: #c0392b;
+}
+
 .form-group label {
   display: block;
   font-weight: 600;
@@ -455,6 +519,23 @@ input:focus, textarea:focus {
   background: var(--bg-dark);
   color: #fff;
   border-color: var(--bg-dark);
+}
+
+.time-btn.is-reserved {
+  background-color: #f2f2f2;
+  color: #ccc;
+  text-decoration: line-through;
+  cursor: not-allowed;
+  border-color: #eee;
+}
+
+.no-times {
+  grid-column: span 3;
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 textarea {
