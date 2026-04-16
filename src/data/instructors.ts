@@ -30,9 +30,13 @@ export const getInstructorImagePath = (instructorId: number): string => {
   return `/api/Instructor/Image/${instructorId}`;
 }
 
-export const fetchAllInstructors = async (name: string = ''): Promise<Instructor[]> => {
+export const fetchAllInstructors = async (name: string = '', year?: number, month?: number): Promise<Instructor[]> => {
   try {
-    const response = await fetch(`/api/Instructor?name=${name}`)
+    let url = `/api/Instructor?name=${name}`;
+    if (year) url += `&year=${year}`;
+    if (month !== undefined) url += `&month=${month}`;
+
+    const response = await fetch(url)
     if (!response.ok) throw new Error('無法獲取營養師資料')
     const data = await response.json()
     

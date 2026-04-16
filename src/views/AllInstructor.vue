@@ -78,25 +78,37 @@
       </div>
     </section>
 
-    <!-- 搜尋欄 (放在排名與列表之間) -->
-    <div class="search-section">
-      <div class="container">
-        <div class="search-container">
-          <div class="search-box">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="搜尋營養師名稱..." 
-              @input="handleSearch"
-            />
+        <!-- 搜尋與篩選區 -->
+        <div class="search-section">
+          <div class="container">
+            <div class="filter-controls">
+              <!-- 日期選擇 -->
+              <div class="date-filters">
+                <select v-model="selectedYear" @change="handleSearch">
+                  <option v-for="y in yearOptions" :key="y" :value="y">{{ y }} 年</option>
+                </select>
+                <select v-model="selectedMonth" @change="handleSearch">
+                  <option :value="0">全年排名</option>
+                  <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                </select>
+              </div>
+
+              <!-- 搜尋框 -->
+              <div class="search-box">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  v-model="searchQuery" 
+                  type="text" 
+                  placeholder="搜尋營養師名稱..." 
+                  @input="handleSearch"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
     <section class="instructors-grid-section" id="all-list">
       <div class="container">
@@ -147,15 +159,27 @@ const FilteredInstructors = ref([])
 const TopThreeInstructors = ref([])
 const searchQuery = ref('')
 
+// 排名時間篩選 (預設為 2026 年 4 月)
+const selectedYear = ref(2026)
+const selectedMonth = ref(4)
+const yearOptions = [2024, 2025, 2026]
+
 const loadInstructors = async (name = '') => {
-  const data = await fetchAllInstructors(name)
-  if (name === '') {
-    // 第一次載入時，設定所有營養師與排名前三
+  // 將時間篩選傳入 fetchAllInstructors
+  const data = await fetchAllInstructors(name, selectedYear.value, selectedMonth.value)
+  
+  if (name === '' && selectedYear.value === 2026 && selectedMonth.value === 4) {
+    // 初始化或重置時，設定所有營養師與排名前三
     AllInstructors.value = data
     TopThreeInstructors.value = data.slice(0, 3)
     FilteredInstructors.value = data
+  } else if (name !== '') {
+    // 僅搜尋名稱時，只更新過濾後的列表
+    FilteredInstructors.value = data
   } else {
-    // 搜尋時只更新過濾後的列表
+    // 僅切換時間時，全量更新 (包含排名)
+    AllInstructors.value = data
+    TopThreeInstructors.value = data.slice(0, 3)
     FilteredInstructors.value = data
   }
 }
@@ -177,13 +201,37 @@ onMounted(() => {
 }
 
 .search-section {
-  margin-top: -40px; /* 稍微向上靠攏排名區 */
+  margin-top: -40px; 
   margin-bottom: 40px;
 }
 
-.search-container {
+.filter-controls {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.date-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.date-filters select {
+  padding: 10px 20px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.date-filters select:focus {
+  border-color: var(--accent);
 }
 
 .search-box {

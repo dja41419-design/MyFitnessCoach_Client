@@ -99,7 +99,7 @@
           </p>
         </div>
         <div class="reveal rd2">
-          <RouterLink to="/AllInstructor" target="_blank" class="btn-outline">顯示全部營養師</RouterLink>
+          <RouterLink to="/AllInstructor" class="btn-outline">顯示全部營養師</RouterLink>
           <a href="#pricing" class="btn-outline" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
         </div>
       </div>
