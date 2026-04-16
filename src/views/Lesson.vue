@@ -32,10 +32,9 @@
       <div class="container">
         <div class="plans-grid">
           <div
-            v-for="(plan, idx) in plans"
+            v-for="plan in plans"
             :key="plan.id"
-            class="plan-card reveal"
-            :class="[isFeatured(plan) ? 'featured' : '', `rd${idx % 4}`]"
+            class="plan-card"
           >
             <!-- 圖片（有才顯示） -->
             <div v-if="plan.imageUrl" class="plan-img-wrap">
@@ -44,9 +43,6 @@
 
             <!-- 卡片主體 -->
             <div class="plan-body">
-
-              <!-- 推薦標籤 -->
-              <span v-if="isFeatured(plan)" class="plan-badge">推薦方案</span>
 
               <!-- 點數 -->
               <div class="plan-points-label">{{ plan.points }} 點</div>
@@ -69,7 +65,6 @@
               <!-- CTA 按鈕 -->
               <button
                 class="plan-btn"
-                :class="isFeatured(plan) ? 'accent' : 'light'"
                 :aria-label="`加入購物車 ${plan.planName}`"
                 @click="addToCart(plan)"
               >
@@ -137,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
 import { topUpPlans as fallbackPlans } from '@/data/topUpPlans'
@@ -147,16 +142,6 @@ const CART_KEY = 'lessonCart'
 
 const plans = ref([])
 const loading = ref(true)
-
-// 點數最多的方案視為「推薦方案」，套用深色卡片樣式
-const featuredId = computed(() => {
-  if (!plans.value.length) return null
-  return plans.value.reduce((prev, curr) => curr.points > prev.points ? curr : prev).id
-})
-
-function isFeatured(plan) {
-  return plan.id === featuredId.value
-}
 
 function formatPrice(price) {
   return Math.floor(price).toLocaleString()
@@ -173,7 +158,7 @@ function addToCart(plan) {
         price: plan.price,
         points: plan.points,
         description: plan.description,
-        imageUrl: plan.imageUrl ?? null,
+        imageUrl: plan.imageUrl,
       })
       localStorage.setItem(CART_KEY, JSON.stringify(cart))
     }
@@ -187,11 +172,22 @@ async function fetchPlans() {
   const res = await fetch('/api/LessonApi/plans')
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
-  // API 有資料時使用 API 資料，否則使用本地備用資料
-  plans.value = data.length > 0 ? data : fallbackPlans
+  if (data.length > 0) {
+    // API 資料 imageUrl 若為空或 null，補上本地備用圖片路徑（依 id 對應）
+    plans.value = data.map(plan => {
+      const fallback = fallbackPlans.find(f => f.id === plan.id)?.imageUrl ?? null
+      return {
+        ...plan,
+        imageUrl: (plan.imageUrl && plan.imageUrl.trim() !== '') ? plan.imageUrl : fallback,
+      }
+    })
+  } else {
+    plans.value = fallbackPlans
+  }
 }
 
 onMounted(async () => {
+  window.scrollTo(0, 0)
   try {
     await fetchPlans()
   } catch (err) {
@@ -289,7 +285,6 @@ useReveal()
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  align-items: start;
 }
 
 /* ── 方案卡片 ── */
@@ -309,23 +304,22 @@ useReveal()
   box-shadow: 0 20px 50px rgba(26, 22, 19, 0.08);
 }
 
-.plan-card.featured {
-  background: var(--bg-dark);
-  border-color: transparent;
-  color: var(--text-light);
-}
-
 /* 圖片 */
 .plan-img-wrap {
-  height: 180px;
+  height: 160px;
   overflow: hidden;
   flex-shrink: 0;
+  background: #fdfcfb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
 }
 
 .plan-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   transition: transform 0.6s;
 }
 
@@ -341,20 +335,6 @@ useReveal()
   flex: 1;
 }
 
-/* 推薦標籤 */
-.plan-badge {
-  display: inline-block;
-  background: var(--accent);
-  color: var(--text-primary);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 4px 14px;
-  border-radius: 100px;
-  margin-bottom: 16px;
-  align-self: flex-start;
-}
-
 /* 點數 */
 .plan-points-label {
   font-size: 0.72rem;
@@ -363,10 +343,6 @@ useReveal()
   letter-spacing: 0.12em;
   color: var(--accent-dark);
   margin-bottom: 8px;
-}
-
-.plan-card.featured .plan-points-label {
-  color: var(--accent);
 }
 
 /* 方案名稱 */
@@ -409,11 +385,6 @@ useReveal()
   opacity: 0.5;
 }
 
-.plan-card.featured .plan-divider {
-  background: rgba(245, 240, 235, 0.15);
-  opacity: 1;
-}
-
 /* 說明 */
 .plan-desc {
   font-size: 0.88rem;
@@ -421,10 +392,6 @@ useReveal()
   line-height: 1.7;
   flex: 1;
   margin-bottom: 28px;
-}
-
-.plan-card.featured .plan-desc {
-  color: rgba(245, 240, 235, 0.6);
 }
 
 /* CTA 按鈕 */
@@ -441,39 +408,17 @@ useReveal()
   margin-top: auto;
 }
 
-.plan-btn.light {
+.plan-btn {
   background: transparent;
   border: 1.5px solid var(--border);
   color: var(--text-primary);
 }
 
-.plan-btn.light:hover {
+.plan-btn:hover {
   background: var(--bg-dark);
   color: var(--text-light);
   border-color: var(--bg-dark);
   transform: translateY(-2px);
-}
-
-.plan-card.featured .plan-btn.light {
-  border-color: rgba(245, 240, 235, 0.3);
-  color: var(--text-light);
-}
-
-.plan-card.featured .plan-btn.light:hover {
-  background: rgba(245, 240, 235, 0.12);
-  border-color: rgba(245, 240, 235, 0.5);
-}
-
-.plan-btn.accent {
-  background: var(--accent);
-  color: var(--text-primary);
-  border: 1.5px solid transparent;
-}
-
-.plan-btn.accent:hover {
-  background: var(--accent-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(196, 168, 130, 0.35);
 }
 
 /* ── 載入 / 空狀態 ── */

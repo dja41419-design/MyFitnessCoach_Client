@@ -1,5 +1,5 @@
-// 儲值方案備用資料（結構與後端 TopUpPlanDto 一致）
-// API 正常回傳後此資料不會被使用
+// 儲值方案備用資料（結構與後端 TopUpPlanDto 一致，來源：MyFitnessCoachDb_0409.sql）
+// API 正常回傳資料後此備用資料不會被使用
 
 export interface TopUpPlanDto {
   id: number
@@ -15,32 +15,52 @@ export interface TopUpPlanDto {
 export const topUpPlans: TopUpPlanDto[] = [
   {
     id: 1,
-    planName: '單次體驗',
-    imageUrl: null,
-    price: 800,
+    planName: '單堂體驗方案',
+    imageUrl: '/images/plans/plan_01.jpg',
+    price: 1000,
     points: 1,
-    description: '適合初次嘗試的你。享受一次完整的一對一諮詢，由營養師為你量身規劃基礎飲食建議。',
+    description: '購買 1 點，適合初次體驗諮詢課程的學員。',
     isActive: true,
     sortOrder: 1,
   },
   {
     id: 2,
-    planName: '經典套組',
-    imageUrl: null,
-    price: 3600,
-    points: 5,
-    description: '最多人選擇的方案，含 5 點諮詢點數（每點省 $80）。解鎖完整飲食追蹤功能與 BMR / TDEE 智慧分析。',
+    planName: '雙效入門方案',
+    imageUrl: '/images/plans/plan_02.jpg',
+    price: 1800,
+    points: 2,
+    description: '購買 2 點，享 9 折優惠，適合有短期諮詢需求的你。',
     isActive: true,
     sortOrder: 2,
   },
   {
     id: 3,
-    planName: '進階方案',
-    imageUrl: null,
-    price: 6800,
-    points: 10,
-    description: '深度體態管理首選，含 10 點諮詢點數（每點省 $120）。優先預約熱門營養師，獲取進階數據整合分析與每月體態追蹤報告。',
+    planName: '五星進階方案',
+    imageUrl: '/images/plans/plan_03.jpg',
+    price: 4000,
+    points: 5,
+    description: '購買 5 點，享 8 折優惠，單次諮詢低至 800 元！',
     isActive: true,
     sortOrder: 3,
+  },
+  {
+    id: 4,
+    planName: '十分超值方案',
+    imageUrl: '/images/plans/plan_04.jpg',
+    price: 7000,
+    points: 10,
+    description: '購買 10 點，享 7 折優惠，穩定長期諮詢的最佳選擇。',
+    isActive: true,
+    sortOrder: 4,
+  },
+  {
+    id: 5,
+    planName: '尊榮鐵粉方案',
+    imageUrl: '/images/plans/plan_05.jpg',
+    price: 12000,
+    points: 20,
+    description: '購買 20 點，享 6 折最高優惠，單次只要 600 元，買到賺到！',
+    isActive: true,
+    sortOrder: 5,
   },
 ]
