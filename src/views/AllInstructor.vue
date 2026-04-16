@@ -128,12 +128,24 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" class="book-link">
-                馬上預約諮詢
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </RouterLink>
+              <div class="card-footer-action">
+                <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" class="book-link">
+                  馬上預約諮詢
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </RouterLink>
+                <!-- 評分顯示 (條件判斷) -->
+                <div class="rating-display">
+                  <template v-if="nutri.rating > 0">
+                    <span class="rating-num">{{ nutri.rating.toFixed(1) }}</span>
+                    <span class="rating-label">平均得分</span>
+                  </template>
+                  <template v-else>
+                    <span class="no-rating-text">尚未有任何評分</span>
+                  </template>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -558,6 +570,43 @@ onMounted(() => {
   gap: 12px;
   color: var(--accent-dark);
   border-color: var(--accent-dark);
+}
+
+/* 評分顯示樣式 */
+.card-footer-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+
+.rating-display {
+  text-align: right;
+  line-height: 1;
+}
+
+.rating-num {
+  display: block;
+  font-size: 2.5rem; /* 加大字體 */
+  font-weight: 900; /* 加粗 */
+  color: #f6c23e;
+  font-family: var(--font-display);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.05); /* 加入微陰影 */
+}
+
+.rating-label {
+  font-size: 0.7rem;
+  color: var(--accent-dark); /* 改為更明顯的深色 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.no-rating-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.8;
 }
 
 .simple-footer {

@@ -8,6 +8,7 @@ export interface Instructor {
   img: string
   bio: string
   tags: string[]
+  rating: number
 }
 
 export interface Availability {
@@ -47,7 +48,8 @@ export const fetchAllInstructors = async (name: string = '', year?: number, mont
       // 使用 getInstructorImagePath 獲取圖片路徑
       img: getInstructorImagePath(i.id),
       bio: i.description,
-      tags: [] 
+      tags: [],
+      rating: i.averageRating || 0
     }))
   } catch (error) {
     console.error('Error fetching instructors:', error)
