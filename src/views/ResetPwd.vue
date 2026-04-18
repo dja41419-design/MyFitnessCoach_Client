@@ -1,14 +1,9 @@
 <template>
   <div class="reset-page">
-    <!-- 左側圖片 -->
-    <div class="reset-photo" aria-hidden="true">
-      <img src="/assets/loginPhoto.png" alt="" />
-    </div>
+    <router-link to="/" class="reset-back">← 回上頁</router-link>
 
-    <!-- 右側表單 -->
+    <!-- 表單置中 -->
     <div class="reset-form-wrap">
-      <router-link to="/" class="reset-back">← 回首頁</router-link>
-
       <div class="reset-card">
         <div class="reset-logo">
           <img src="/assets/logo.png" alt="My Fitness Coach" class="reset-logo-img" />
@@ -72,16 +67,33 @@
                 </svg>
               </button>
             </div>
-            <!-- 密碼強度 -->
-            <div v-if="form.newPassword" class="strength-wrap">
-              <div class="strength-bar-wrap" aria-hidden="true">
-                <span class="strength-segment" :class="{ active: strength >= 1, weak: strength === 1, medium: strength === 2, strong: strength === 3 }"></span>
-                <span class="strength-segment" :class="{ active: strength >= 2, medium: strength === 2, strong: strength === 3 }"></span>
-                <span class="strength-segment" :class="{ active: strength >= 3, strong: strength === 3 }"></span>
+            <!-- 即時規則檢查 + 密碼強度 -->
+            <div v-if="form.newPassword" class="pwd-feedback">
+              <!-- 規則清單 -->
+              <ul class="pwd-rules">
+                <li :class="rules.minLen ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.minLen ? '✓' : '✗' }} 至少 8 個字元
+                </li>
+                <li :class="rules.hasUpper ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasUpper ? '✓' : '✗' }} 包含大寫字母
+                </li>
+                <li :class="rules.hasNumber ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasNumber ? '✓' : '✗' }} 包含數字
+                </li>
+                <li :class="rules.hasSymbol ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasSymbol ? '✓' : '✗' }} 包含特殊字元
+                </li>
+              </ul>
+              <!-- 強度條 -->
+              <div class="strength-row">
+                <div class="strength-bar-wrap" aria-hidden="true">
+                  <span class="strength-segment" :class="{ active: strength >= 1, weak: strength === 1, medium: strength === 2, strong: strength === 3 }"></span>
+                  <span class="strength-segment" :class="{ active: strength >= 2, medium: strength === 2, strong: strength === 3 }"></span>
+                  <span class="strength-segment" :class="{ active: strength >= 3, strong: strength === 3 }"></span>
+                </div>
+                <span class="strength-label" :class="strengthClass">{{ strengthText }}</span>
               </div>
-              <span class="strength-label" :class="strengthClass">密碼強度：{{ strengthText }}</span>
             </div>
-            <p class="pwd-hint">至少要有 8 個字元。請勿使用與其他網站帳戶相同的密碼，或是任何容易破解的密碼（例如寵物的名字）。</p>
             <span v-if="errors.newPassword" class="form-error">{{ errors.newPassword }}</span>
           </div>
 
@@ -110,7 +122,10 @@
                 </svg>
               </button>
             </div>
-            <span v-if="errors.confirmPassword" class="form-error">{{ errors.confirmPassword }}</span>
+            <!-- 即時比對提示 -->
+            <span v-if="form.confirmPassword && form.confirmPassword === form.newPassword" class="form-match">✓ 密碼相符</span>
+            <span v-else-if="form.confirmPassword && form.confirmPassword !== form.newPassword" class="form-error">密碼不一致</span>
+            <span v-if="errors.confirmPassword && !form.confirmPassword" class="form-error">{{ errors.confirmPassword }}</span>
           </div>
 
           <!-- 成功訊息 -->
@@ -144,14 +159,22 @@ const apiError = ref('')
 const successMessage = ref('')
 const isLoading = ref(false)
 
-const strength = computed((): number => {
+const rules = computed(() => {
   const p = form.newPassword
-  if (!p) return 0
-  let score = 0
-  if (p.length >= 8) score++
-  if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++
-  if (/[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p)) score++
-  return Math.max(1, score) as 1 | 2 | 3
+  return {
+    minLen:    p.length >= 8,
+    hasUpper:  /[A-Z]/.test(p),
+    hasNumber: /[0-9]/.test(p),
+    hasSymbol: /[^A-Za-z0-9]/.test(p),
+  }
+})
+
+const strength = computed((): number => {
+  if (!form.newPassword) return 0
+  const passed = Object.values(rules.value).filter(Boolean).length
+  if (passed <= 1) return 1
+  if (passed <= 3) return 2
+  return 3
 })
 
 const strengthText = computed(() => ['', '弱', '中等', '強'][strength.value])
@@ -199,44 +222,30 @@ async function handleSubmit() {
 <style scoped>
 .reset-page {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg);
   font-family: var(--font-body);
-}
-
-/* 左側圖片 */
-.reset-photo {
-  flex: 1;
-  overflow: hidden;
-  display: none;
-}
-.reset-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 右側表單區 */
-.reset-form-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  position: relative;
+  padding: 0 24px 48px;
 }
 
 .reset-back {
-  position: absolute;
-  top: 32px;
-  left: 32px;
+  align-self: flex-start;
+  margin: 32px 0 0;
   font-size: 0.85rem;
   color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.2s;
 }
 .reset-back:hover { color: var(--text-primary); }
+
+/* 表單置中 */
+.reset-form-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .reset-card {
   width: 100%;
@@ -340,19 +349,39 @@ async function handleSubmit() {
   color: #c0392b;
 }
 
-/* 密碼提示文字 */
-.pwd-hint {
+.form-match {
   font-size: 0.78rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  color: #27ae60;
+  font-weight: 600;
 }
 
-/* 密碼強度 */
-.strength-wrap {
+/* 即時規則 + 強度區塊 */
+.pwd-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pwd-rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pwd-rules li {
+  font-size: 0.78rem;
+  transition: color 0.2s;
+}
+.rule-pass { color: #27ae60; font-weight: 600; }
+.rule-fail { color: var(--text-secondary); }
+
+.strength-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
+/* 密碼強度條 */
 .strength-bar-wrap {
   display: flex;
   gap: 4px;
@@ -437,8 +466,4 @@ async function handleSubmit() {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* RWD */
-@media (min-width: 768px) {
-  .reset-photo { display: block; }
-}
 </style>
