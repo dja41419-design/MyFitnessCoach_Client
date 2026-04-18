@@ -87,11 +87,13 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { login } from '@/data/login'
 
 
+
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({ account: '', password: '' })
 const errors = reactive({ account: '', password: '' })
@@ -112,7 +114,10 @@ async function handleSubmit() {
   try {
     const res = await login({ account: form.account.trim(), password: form.password })
     localStorage.setItem('token', res.token)
-    router.push({ name: 'home' })
+    localStorage.setItem('username', res.userName)
+    localStorage.setItem('imageUrl', res.imageUrl ?? '')
+    const returnUrl = route.query.returnUrl as string
+    router.push(returnUrl || { name: 'home' })
   } catch (err) {
     apiError.value = err instanceof Error ? err.message : '登入失敗，請稍後再試'
   } finally {

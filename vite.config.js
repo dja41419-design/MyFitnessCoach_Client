@@ -16,6 +16,16 @@ export default defineConfig({
         target: 'https://localhost:7212',
         changeOrigin: true,
         secure: false
+      },
+      '/StaticFiles': {
+        target: 'https://localhost:7212',
+        changeOrigin: true,
+        secure: false
+      },
+      '/images': {
+        target: 'https://localhost:7212',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

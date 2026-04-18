@@ -6,6 +6,9 @@ import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import ResetPwd from '../views/ResetPwd.vue'
 import ForgetPwd from '../views/ForgetPwd.vue'
+import BodyRecord from '../views/BodyRecord.vue'
+import FoodRecord from '../views/FoodRecord.vue'
+
 
 
 const router = createRouter({
@@ -16,8 +19,11 @@ const router = createRouter({
     { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },//meta:受保護路由
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
-    { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
-    { name: 'forgetpwd', path: '/forgetpassword', component: ForgetPwd }
+    { name: 'resetpwd', path: '/resetpassword', component: ResetPwd, meta: { requiresAuth: true } },
+    { name: 'forgetpwd', path: '/forgetpassword', component: ForgetPwd },
+    { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
+    { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
+
   ]
 })
 
@@ -26,7 +32,7 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
-    return { name: 'login', query: { returnUrl: to.fullPath } }
+    return { name: 'login', query: { returnUrl: to.fullPath } }//將原本要訪問的路徑作為參數傳遞，登入成功後可以導回原本的頁面
   }
 })
 

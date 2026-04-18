@@ -12,15 +12,35 @@
       <div class="nav-links">
         <a href="#nutritionists" @click.prevent="scrollTo('#nutritionists')">營養師團隊</a>
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
-        <a href="#tracking"      @click.prevent="scrollTo('#tracking')">飲食追蹤</a>
+        <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
+        <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
+
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
 
       </div>
 
       
       <div class="d-flex align-items-center nav-right-group">
-        <router-link :to="{name:'register'}" class="nav-cta ">立即加入</router-link>
-        <router-link :to="{name:'login'}" class="nav-cta nav-cta-ghost">會員登入</router-link>
+        <template v-if="!isLoggedIn">
+          <router-link :to="{name:'register'}" class="nav-cta">立即加入</router-link>
+          <router-link :to="{name:'login'}" class="nav-cta nav-cta-ghost">會員登入</router-link>
+        </template>
+        <template v-else>
+          <div class="user-menu" @click.stop="toggleDropdown">
+            <img class="user-avatar" :src="imageUrl || NO_IMAGE" :alt="username" />
+            <span class="user-name">{{ username }}</span>
+            <span class="dropdown-arrow" :class="{ open: isDropdownOpen }">▾</span>
+            <div class="user-dropdown" v-show="isDropdownOpen" @click.stop>
+                <router-link :to="{name:'info'}" class="dropdown-item">修改個人資料</router-link>
+                <router-link :to="{name:'resetpwd'}" class="dropdown-item">修改密碼</router-link>
+                <a href="#" class="dropdown-item">點數查詢</a>
+                <a href="#" class="dropdown-item">課程預約查詢</a>
+                <a href="#" class="dropdown-item">訂單查詢</a>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
+            </div>
+          </div>
+        </template>
       </div>
       
       
@@ -34,10 +54,27 @@
   <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
     <a href="#nutritionists" @click.prevent="menuScrollTo('#nutritionists')">營養師團隊</a>
     <a href="#pricing"       @click.prevent="menuScrollTo('#pricing')">課程方案</a>
+    <RouterLink to="/bodyrecord" @click="isMobileMenuOpen = false">體態紀錄</RouterLink>
+    <RouterLink to="/foodrecord" @click="isMobileMenuOpen = false">飲食紀錄</RouterLink>
     <a href="#tracking"      @click.prevent="menuScrollTo('#tracking')">飲食追蹤</a>
     <a href="#shop"          @click.prevent="menuScrollTo('#shop')">健康商城</a>
-    <a href="#cta"           @click.prevent="menuScrollTo('#cta')">立即加入</a>
-    <router-link :to="{name:'login'}" >會員登入</router-link>
+    <template v-if="!isLoggedIn">
+      <a href="#cta" @click.prevent="menuScrollTo('#cta')">立即加入</a>
+      <router-link :to="{name:'login'}" @click="isMobileMenuOpen = false">會員登入</router-link>
+    </template>
+    <template v-else>
+      <div class="mobile-user-info">
+        <img class="user-avatar" :src="imageUrl || NO_IMAGE" :alt="username" />
+        <span class="user-name">{{ username }}</span>
+      </div>
+      <div class="dropdown-divider"></div>
+      <router-link to="/personalInfo" @click="isMobileMenuOpen = false" class="mobile-menu-item">修改個人資料</router-link>
+      <a href="#" class="mobile-menu-item">帳號安全</a>
+      <a href="#" class="mobile-menu-item">點數查詢</a>
+      <a href="#" class="mobile-menu-item">課程預約查詢</a>
+      <a href="#" class="mobile-menu-item">訂單查詢</a>
+      <button class="mobile-menu-item mobile-logout" @click="handleLogout">會員登出</button>
+    </template>
   </div>
 
   <!-- ========== HERO ========== -->
@@ -322,8 +359,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
@@ -333,11 +370,48 @@ import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
+import { logout } from '@/data/login'
 
+const router = useRouter()
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const activeTab = ref<string>(shopTabs[0])
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
+
+// 登入狀態
+const username = ref(localStorage.getItem('username') || '')
+const isLoggedIn = ref(!!localStorage.getItem('token'))
+
+const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
+
+function toAvatarSrc(url: string): string {
+  if (!url) return NO_IMAGE
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  return `/StaticFiles${url}`
+}
+
+const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
+const isDropdownOpen = ref(false)
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value
+}
+
+function closeDropdown() {
+  isDropdownOpen.value = false
+}
+
+function handleLogout() {
+  logout()
+  localStorage.removeItem('username')
+  username.value = ''
+  imageUrl.value = toAvatarSrc('')
+  isLoggedIn.value = false
+  isDropdownOpen.value = false
+}
+
+onMounted(() => document.addEventListener('click', closeDropdown))
+onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 40
@@ -454,6 +528,99 @@ function handleScroll() {
   background: rgba(26, 22, 19, 0.06);
   transform: translateY(-1px);
   box-shadow: none;
+}
+
+/* ── USER MENU ──────────────────────────────── */
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 100px;
+  transition: background 0.2s;
+  user-select: none;
+}
+.user-menu:hover { background: rgba(26, 22, 19, 0.06); }
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+}
+
+.user-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dropdown-arrow {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  line-height: 1;
+}
+.dropdown-arrow.open { transform: rotate(180deg); }
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(26, 22, 19, 0.12);
+  overflow: hidden;
+  z-index: 200;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--font-body);
+}
+.dropdown-item:hover { background: var(--bg-card); }
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.dropdown-logout { color: #c0392b; }
+.dropdown-logout:hover { background: #fdf0ee; }
+
+/* ── MOBILE MENU USER ITEMS ─────────────────── */
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 8px;
+}
+
+.mobile-logout {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+  color: #c0392b;
 }
 
 .mobile-toggle {
