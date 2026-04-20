@@ -146,9 +146,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import { resetPassword } from '@/data/resetPassword'
+import { changePassword } from '@/data/changePassword'
+import { usePasswordQuality } from '@/composables/usePasswordQuality'
 
 const router = useRouter()
 
@@ -159,26 +160,7 @@ const apiError = ref('')
 const successMessage = ref('')
 const isLoading = ref(false)
 
-const rules = computed(() => {
-  const p = form.newPassword
-  return {
-    minLen:    p.length >= 8,
-    hasUpper:  /[A-Z]/.test(p),
-    hasNumber: /[0-9]/.test(p),
-    hasSymbol: /[^A-Za-z0-9]/.test(p),
-  }
-})
-
-const strength = computed((): number => {
-  if (!form.newPassword) return 0
-  const passed = Object.values(rules.value).filter(Boolean).length
-  if (passed <= 1) return 1
-  if (passed <= 3) return 2
-  return 3
-})
-
-const strengthText = computed(() => ['', '弱', '中等', '強'][strength.value])
-const strengthClass = computed(() => ['', 'text-weak', 'text-medium', 'text-strong'][strength.value])
+const { rules, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'newPassword'))
 
 function validate(): boolean {
   errors.oldPassword = form.oldPassword ? '' : '請輸入舊密碼'
@@ -208,7 +190,7 @@ async function handleSubmit() {
 
   isLoading.value = true
   try {
-    await resetPassword({ oldPassword: form.oldPassword, newPassword: form.newPassword })
+    await changePassword({ oldPassword: form.oldPassword, newPassword: form.newPassword })
     successMessage.value = '密碼已成功修改，即將返回登入頁面…'
     setTimeout(() => router.push({ name: 'login' }), 3000)
   } catch (err) {

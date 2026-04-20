@@ -90,6 +90,31 @@
                 </svg>
               </button>
             </div>
+            <!-- 即時規則檢查 + 密碼強度 -->
+            <div v-if="form.password" class="pwd-feedback">
+              <ul class="pwd-rules">
+                <li :class="rules.minLen ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.minLen ? '✓' : '✗' }} 至少 8 個字元
+                </li>
+                <li :class="rules.hasUpper ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasUpper ? '✓' : '✗' }} 包含大寫字母
+                </li>
+                <li :class="rules.hasNumber ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasNumber ? '✓' : '✗' }} 包含數字
+                </li>
+                <li :class="rules.hasSymbol ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.hasSymbol ? '✓' : '✗' }} 包含特殊字元
+                </li>
+              </ul>
+              <div class="strength-row">
+                <div class="strength-bar-wrap" aria-hidden="true">
+                  <span class="strength-segment" :class="{ active: strength >= 1, weak: strength === 1, medium: strength === 2, strong: strength === 3 }"></span>
+                  <span class="strength-segment" :class="{ active: strength >= 2, medium: strength === 2, strong: strength === 3 }"></span>
+                  <span class="strength-segment" :class="{ active: strength >= 3, strong: strength === 3 }"></span>
+                </div>
+                <span class="strength-label" :class="strengthClass">{{ strengthText }}</span>
+              </div>
+            </div>
             <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
           </div>
 
@@ -179,9 +204,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/data/register'
+import { usePasswordQuality } from '@/composables/usePasswordQuality'
 
 const router = useRouter()
 
@@ -212,6 +238,8 @@ const touched = reactive({
   email: false,
   phone: false
 })
+
+const { rules, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'password'))
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -447,6 +475,55 @@ async function handleSubmit() {
   font-size: 0.78rem;
   color: #c0392b;
 }
+
+.pwd-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pwd-rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pwd-rules li {
+  font-size: 0.78rem;
+  transition: color 0.2s;
+}
+.rule-pass { color: #27ae60; font-weight: 600; }
+.rule-fail { color: var(--text-secondary); }
+
+.strength-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strength-bar-wrap {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.strength-segment {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.strength-segment.active.weak   { background: #c0392b; }
+.strength-segment.active.medium { background: #e67e22; }
+.strength-segment.active.strong { background: #27ae60; }
+
+.strength-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.text-weak   { color: #c0392b; }
+.text-medium { color: #e67e22; }
+.text-strong { color: #27ae60; }
 
 .form-api-error {
   padding: 12px 16px;

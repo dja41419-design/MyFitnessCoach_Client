@@ -4,7 +4,7 @@ import Store from '@/views/Store.vue'
 import Personalnfo from '../views/Personalnfo.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
-import ResetPwd from '../views/ResetPwd.vue'
+import ChangePwd from '../views/ChangePwd.vue'
 import ForgetPwd from '../views/ForgetPwd.vue'
 import BodyRecord from '../views/BodyRecord.vue'
 import FoodRecord from '../views/FoodRecord.vue'
@@ -19,7 +19,7 @@ const router = createRouter({
     { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },//meta:受保護路由
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
-    { name: 'resetpwd', path: '/resetpassword', component: ResetPwd, meta: { requiresAuth: true } },
+    { name: 'changepwd', path: '/changepassword', component: ChangePwd, meta: { requiresAuth: true } },
     { name: 'forgetpwd', path: '/forgetpassword', component: ForgetPwd },
     { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },

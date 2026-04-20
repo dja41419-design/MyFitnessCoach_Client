@@ -1,9 +1,9 @@
-export interface ResetPasswordRequest {
+export interface ChangePasswordRequest {
   oldPassword: string
   newPassword: string
 }
 
-export async function resetPassword(payload: ResetPasswordRequest): Promise<void> {
+export async function changePassword(payload: ChangePasswordRequest): Promise<void> {
   const token = localStorage.getItem('token') ?? ''
   const response = await fetch('/api/auth/password/change', {
     method: 'POST',
