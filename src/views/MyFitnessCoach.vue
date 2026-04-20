@@ -14,7 +14,7 @@
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
         <a href="#tracking"      @click.prevent="scrollTo('#tracking')">飲食追蹤</a>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
-
+        <router-link to="/reserveorders">我的預約</router-link>
       </div>
 
       

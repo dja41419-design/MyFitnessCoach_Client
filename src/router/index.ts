@@ -6,6 +6,7 @@ import AllInstructor from '@/views/AllInstructor.vue'
 import AllReviews from '@/views/AllReviews.vue'
 import Reserve from '@/views/Reserve.vue'
 import ReserveDetail from '@/views/ReserveDetail.vue'
+import ReserveOrders from '@/views/ReserveOrders.vue'
 
 
 const router = createRouter({
@@ -16,6 +17,7 @@ const router = createRouter({
   { name:'info', path: '/personalInfo', component: Personalnfo },
   { name:'AllInstructor', path: '/AllInstructor', component: AllInstructor },
   { name:'AllReviews', path: '/AllReviews', component: AllReviews },
+  { path: '/reserveorders', component: ReserveOrders },
   { 
     path: '/reserve', 
     component: Reserve,
