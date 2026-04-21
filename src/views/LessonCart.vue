@@ -150,14 +150,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import type { CartItem } from '@/types/lesson'
 
 const router = useRouter()
 const CART_KEY = 'lessonCart'
 
-const cartItems = ref([])
+const cartItems = ref<CartItem[]>([])
 const isProcessing = ref(false)
 
 // ── 計算屬性 ──────────────────────────────────────
@@ -170,11 +171,11 @@ const totalPrice = computed(() =>
 )
 
 // ── 工具函式 ──────────────────────────────────────
-function formatPrice(price) {
+function formatPrice(price: number) {
   return Math.floor(price).toLocaleString()
 }
 
-function loadCart() {
+function loadCart(): CartItem[] {
   try {
     return JSON.parse(localStorage.getItem(CART_KEY) || '[]')
   } catch {
@@ -182,11 +183,11 @@ function loadCart() {
   }
 }
 
-function saveCart(items) {
+function saveCart(items: CartItem[]) {
   localStorage.setItem(CART_KEY, JSON.stringify(items))
 }
 
-function removeItem(id) {
+function removeItem(id: number) {
   cartItems.value = cartItems.value.filter(item => item.id !== id)
   saveCart(cartItems.value)
 }

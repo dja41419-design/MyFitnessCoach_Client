@@ -19,8 +19,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import type { EcPayResponse } from '@/types/lesson'
 
 const loading = ref(true)
 const error = ref('')
@@ -28,7 +29,7 @@ const error = ref('')
 async function startPayment() {
   const amount = sessionStorage.getItem('checkoutAmount')
   
-  if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+  if (!amount || isNaN(Number(amount)) || parseInt(amount) <= 0) {
     error.value = '無效的結帳金額，請重新操作。'
     loading.value = false
     return
@@ -45,14 +46,11 @@ async function startPayment() {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('Server error data:', errorData)
-      throw new Error(errorData.error || `伺服器回應錯誤 (${response.status})`)
+      throw new Error(`伺服器回應錯誤 (${response.status})`)
     }
 
-    const data = await response.json()
+    const data: EcPayResponse = await response.json()
     
-    // 動態建立表單並提交 (這種方式最安全，不會觸發 CSP 行內腳本警告)
     const form = document.createElement('form')
     form.method = 'POST'
     form.action = data.action
@@ -68,8 +66,7 @@ async function startPayment() {
     document.body.appendChild(form)
     form.submit()
 
-  } catch (err) {
-    console.error('Payment Error:', err)
+  } catch (err: any) {
     error.value = '金流服務連線失敗：' + err.message
     loading.value = false
   }

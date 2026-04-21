@@ -131,25 +131,26 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
-import { topUpPlans as fallbackPlans } from '@/data/topUpPlans'
+import { topUpPlans as fallbackPlans, type TopUpPlanDto } from '@/data/topUpPlans'
+import type { LessonPlan } from '@/types/lesson'
 
 const router = useRouter()
 const CART_KEY = 'lessonCart'
 
-const plans = ref([])
+const plans = ref<LessonPlan[]>([])
 const loading = ref(true)
 
-function formatPrice(price) {
+function formatPrice(price: number) {
   return Math.floor(price).toLocaleString()
 }
 
-function addToCart(plan) {
+function addToCart(plan: LessonPlan) {
   try {
-    const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    const cart: LessonPlan[] = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
     // 同一方案不重複加入，直接跳轉
     if (!cart.find(item => item.id === plan.id)) {
       cart.push({
@@ -171,18 +172,30 @@ function addToCart(plan) {
 async function fetchPlans() {
   const res = await fetch('/api/LessonApi/plans')
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const data = await res.json()
+  const data: TopUpPlanDto[] = await res.json()
+  
   if (data.length > 0) {
     // API 資料 imageUrl 若為空或 null，補上本地備用圖片路徑（依 id 對應）
     plans.value = data.map(plan => {
       const fallback = fallbackPlans.find(f => f.id === plan.id)?.imageUrl ?? null
       return {
-        ...plan,
+        id: plan.id,
+        planName: plan.planName,
+        price: plan.price,
+        points: plan.points,
+        description: plan.description || '',
         imageUrl: (plan.imageUrl && plan.imageUrl.trim() !== '') ? plan.imageUrl : fallback,
-      }
+      } as LessonPlan
     })
   } else {
-    plans.value = fallbackPlans
+    plans.value = fallbackPlans.map(p => ({
+      id: p.id,
+      planName: p.planName,
+      price: p.price,
+      points: p.points,
+      description: p.description || '',
+      imageUrl: p.imageUrl
+    }))
   }
 }
 
@@ -191,9 +204,14 @@ onMounted(async () => {
   try {
     await fetchPlans()
   } catch (err) {
-    // API 連線失敗（後端未啟動或網路錯誤）時使用本地備用資料
-    console.warn('方案 API 無法連線，使用本地備用資料', err)
-    plans.value = fallbackPlans
+    plans.value = fallbackPlans.map(p => ({
+      id: p.id,
+      planName: p.planName,
+      price: p.price,
+      points: p.points,
+      description: p.description || '',
+      imageUrl: p.imageUrl
+    }))
   } finally {
     loading.value = false
   }

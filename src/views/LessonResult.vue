@@ -35,7 +35,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -43,30 +43,28 @@ const router = useRouter()
 const route = useRoute()
 
 const countdown = ref(5)
-const rtnCode = ref(route.query.RtnCode || '')
-const rtnMsg = ref(route.query.RtnMsg || '交易處理完成')
-const tradeNo = ref(route.query.MerchantTradeNo || '')
+const rtnCode = ref((route.query.RtnCode as string) || '')
+const rtnMsg = ref((route.query.RtnMsg as string) || '交易處理完成')
+const tradeNo = ref((route.query.MerchantTradeNo as string) || '')
 
 const isSuccess = computed(() => rtnCode.value === '1')
 
-let timer = null
+let timer: ReturnType<typeof setInterval> | null = null
 
 function goHome() {
   router.push('/')
 }
 
 onMounted(() => {
-  // 如果交易成功，清空購物車資料
   if (isSuccess.value) {
     localStorage.removeItem('lessonCart')
     sessionStorage.removeItem('checkoutAmount')
-    console.log('交易成功，已清空購物車暫存資料')
   }
 
   timer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
-      clearInterval(timer)
+      if (timer) clearInterval(timer)
       goHome()
     }
   }, 1000)
