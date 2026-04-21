@@ -56,6 +56,13 @@ function goHome() {
 }
 
 onMounted(() => {
+  // 如果交易成功，清空購物車資料
+  if (isSuccess.value) {
+    localStorage.removeItem('lessonCart')
+    sessionStorage.removeItem('checkoutAmount')
+    console.log('交易成功，已清空購物車暫存資料')
+  }
+
   timer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
