@@ -5,6 +5,8 @@ import Personalnfo from '@/views/Personalnfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
 import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
+import LessonPay from '@/views/LessonPay.vue'
+import LessonResult from '@/views/LessonResult.vue'
 
 
 const router = createRouter({
@@ -16,6 +18,8 @@ const router = createRouter({
   { name:'AllInstructor', path: '/AllInstructor', component: AllInstructor },
   { name:'Lesson', path: '/lesson', component: Lesson },
   { name:'LessonCart', path: '/lesson-cart', component: LessonCart },
+  { name:'LessonPay', path: '/lesson-pay', component: LessonPay },
+  { name:'LessonResult', path: '/lesson-result', component: LessonResult },
 ]
 })
 

@@ -101,9 +101,15 @@
                 <span class="total-price">NT${{ formatPrice(totalPrice) }}</span>
               </div>
 
-              <button class="btn-checkout" aria-label="前往結帳">
-                前往結帳
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <!-- 結帳按鈕 -->
+              <button
+                type="button"
+                class="btn-checkout"
+                @click="handleCheckout"
+                :disabled="isProcessing"
+              >
+                {{ isProcessing ? '跳轉中...' : '前往結帳' }}
+                <svg v-if="!isProcessing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
               </button>
@@ -146,11 +152,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
+const router = useRouter()
 const CART_KEY = 'lessonCart'
 
 const cartItems = ref([])
+const isProcessing = ref(false)
 
 // ── 計算屬性 ──────────────────────────────────────
 const totalPoints = computed(() =>
@@ -181,6 +189,23 @@ function saveCart(items) {
 function removeItem(id) {
   cartItems.value = cartItems.value.filter(item => item.id !== id)
   saveCart(cartItems.value)
+}
+
+function handleCheckout() {
+  if (isProcessing.value) return
+  
+  if (totalPrice.value <= 0) {
+    alert('購物車金額不能為 0')
+    return
+  }
+
+  isProcessing.value = true
+  
+  // 將結帳金額存入 sessionStorage，供 LessonPay.vue 使用
+  sessionStorage.setItem('checkoutAmount', totalPrice.value.toString())
+  
+  // 跳轉到支付引導頁面
+  router.push('/lesson-pay')
 }
 
 // ── 初始化 ──────────────────────────────────────
@@ -586,7 +611,7 @@ onMounted(() => {
 /* ── 響應式 ── */
 @media (max-width: 1024px) {
   .cart-layout {
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr 340px;
     gap: 28px;
   }
 }
