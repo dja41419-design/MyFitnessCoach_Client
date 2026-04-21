@@ -27,18 +27,22 @@
           <div class="filter-info">共 {{ totalCount }} 則評價 (第 {{ currentPage }} / {{ totalPages }} 頁)</div>
           <div class="sort-controls">
             <span class="sort-label">排序方式：</span>
-            <div 
-              class="sort-badge"
+            <v-select
+              v-model="sortOrder"
+              :items="sortOptionsList"
+              item-title="label"
+              item-value="value"
+              variant="outlined"
+              density="compact"
+              hide-details
+              class="sort-select"
               @wheel.prevent="handleWheel"
-              title="使用滾輪切換排序"
+              title="可點擊選取或使用滾輪切換"
             >
-              {{ currentSortLabel }}
-              <div class="scroll-hint">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
-                </svg>
-              </div>
-            </div>
+              <template #prepend-inner>
+                <v-icon size="small" color="var(--accent-dark)">mdi-sort</v-icon>
+              </template>
+            </v-select>
           </div>
         </div>
 
@@ -196,7 +200,15 @@ const { reviewList, keywords, totalCount, totalPages, currentPage, loadPagedRevi
 const page = ref(1)
 const pageSize = 9
 const sortOrder = ref('default')
-const sortOptions = ['default', 'high-to-low', 'low-to-high']
+const sortOptions = ['default', 'high-to-low', 'low-to-high', 'likes-high', 'likes-low']
+
+const sortOptionsList = [
+  { label: '預設排序 (新到舊)', value: 'default' },
+  { label: '評價：由高到低', value: 'high-to-low' },
+  { label: '評價：由低到高', value: 'low-to-high' },
+  { label: '讚數：由多到少', value: 'likes-high' },
+  { label: '讚數：由少到多', value: 'likes-low' }
+]
 
 // Modal 相關
 const isModalOpen = ref(false)
@@ -371,12 +383,18 @@ const currentSortLabel = computed(() => {
 
 const sortedReviewList = computed(() => {
   const list = [...reviewList.value]
-  if (sortOrder.value === 'high-to-low') {
-    return list.sort((a, b) => getRatingValue(b.stars) - getRatingValue(a.stars))
-  } else if (sortOrder.value === 'low-to-high') {
-    return list.sort((a, b) => getRatingValue(a.stars) - getRatingValue(b.stars))
+  switch (sortOrder.value) {
+    case 'high-to-low':
+      return list.sort((a, b) => getRatingValue(b.stars) - getRatingValue(a.stars))
+    case 'low-to-high':
+      return list.sort((a, b) => getRatingValue(a.stars) - getRatingValue(b.stars))
+    case 'likes-high':
+      return list.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+    case 'likes-low':
+      return list.sort((a, b) => (a.likeCount || 0) - (b.likeCount || 0))
+    default:
+      return list
   }
-  return list
 })
 </script>
 
@@ -474,46 +492,74 @@ const sortedReviewList = computed(() => {
   color: var(--text-secondary);
 }
 
-.sort-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: ns-resize; /* 指示上下捲動 */
+.sort-select {
+  width: 240px;
   transition: all 0.3s ease;
-  user-select: none;
 }
 
-.sort-badge:hover {
-  border-color: var(--accent-dark);
-  background: var(--bg);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+/* 膠囊輸入框本體 */
+:deep(.sort-select .v-field) {
+  border-radius: 100px !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid var(--border) !important;
+  --v-field-padding-start: 16px;
+  --v-field-padding-end: 12px;
 }
 
-.scroll-hint {
+:deep(.sort-select .v-field__outline) {
+  display: none; /* 隱藏 Vuetify 預設邊框 */
+}
+
+:deep(.sort-select .v-field--focused) {
+  border-color: var(--accent-dark) !important;
+  box-shadow: 0 4px 12px rgba(196, 168, 130, 0.15) !important;
+}
+
+:deep(.sort-select .v-field__input) {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  min-height: 44px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--accent-dark);
-  opacity: 0.6;
-  transition: opacity 0.3s;
 }
 
-.sort-badge:hover .scroll-hint {
-  opacity: 1;
-  animation: bounce-vertical 1.5s infinite;
+/* 下拉清單本體美化 */
+:deep(.v-overlay__content.v-select__content) {
+  border-radius: 16px !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(196, 168, 130, 0.2) !important;
 }
 
-@keyframes bounce-vertical {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+:deep(.v-list) {
+  padding: 8px !important;
+  background: #ffffff !important;
+}
+
+:deep(.v-list-item) {
+  border-radius: 8px !important;
+  margin-bottom: 2px;
+  transition: all 0.2s ease;
+}
+
+:deep(.v-list-item:hover) {
+  background-color: var(--bg) !important;
+}
+
+:deep(.v-list-item--active) {
+  background-color: var(--accent-dark) !important;
+  color: #ffffff !important;
+}
+
+:deep(.v-list-item-title) {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
 }
 
 /* 核心需求：三個排一排，讓內容更醒目 */
