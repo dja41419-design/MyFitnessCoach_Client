@@ -202,9 +202,10 @@ function handleCheckout() {
 
   isProcessing.value = true
   
-  // 將結帳金額存入 sessionStorage，供 LessonPay.vue 使用
+  // 將結帳金額與方案 ID 存入 sessionStorage，供 LessonPay.vue 使用
   sessionStorage.setItem('checkoutAmount', totalPrice.value.toString())
-  
+  sessionStorage.setItem('checkoutPlanIds', cartItems.value.map(item => item.id).join(','))
+
   // 跳轉到支付引導頁面
   router.push('/lesson-pay')
 }

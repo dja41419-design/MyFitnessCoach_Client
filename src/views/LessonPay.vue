@@ -36,8 +36,10 @@ async function startPayment() {
   }
 
   try {
+    const planIds = sessionStorage.getItem('checkoutPlanIds') || ''
     const formData = new URLSearchParams()
     formData.append('totalAmount', amount)
+    formData.append('planIds', planIds)
 
     const response = await fetch('/api/Payment/SendToEcPay', {
       method: 'POST',
