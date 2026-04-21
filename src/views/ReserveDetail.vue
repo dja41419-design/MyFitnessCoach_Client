@@ -118,19 +118,55 @@
             </div>
           </div>
 
+          <div class="quick-fill-container" v-if="memberInfo">
+            <button 
+              type="button" 
+              class="btn-quick-fill" 
+              @click="fillMemberInfo"
+              :disabled="!form.date || !form.time"
+            >
+              <i class="mdi mdi-account-edit-outline"></i> 帶入會員基本資料
+            </button>
+          </div>
+
           <div class="form-group form-floating">
-            <input type="text" class="form-control" id="floatName" v-model="form.name" placeholder="" required />
+            <input 
+              type="text" 
+              class="form-control" 
+              id="floatName" 
+              v-model="form.name" 
+              placeholder="" 
+              required 
+              :disabled="!form.date || !form.time"
+            />
             <label for="floatName" class="form-label">您的姓名</label>
           </div>
 
           <div class="form-group form-floating">
-            <input type="tel" class="form-control" id="floatPhone" v-model="form.phone" placeholder="" required />
+            <input 
+              type="tel" 
+              class="form-control" 
+              id="floatPhone" 
+              v-model="form.phone" 
+              placeholder="" 
+              required 
+              :disabled="!form.date || !form.time"
+            />
             <label for="floatPhone" class="form-label">聯絡電話</label>
           </div>
 
           <div class="form-group">
             <label>備註事項 (選填)</label>
-            <textarea v-model="form.note" placeholder="如有特定想諮詢的問題..."></textarea>
+            <textarea 
+              v-model="form.note" 
+              placeholder="如有特定想諮詢的問題..."
+              :disabled="!form.date || !form.time"
+            ></textarea>
+          </div>
+
+          <div class="booking-policy-note">
+            <i class="mdi mdi-alert-circle-outline"></i>
+            <span>預約須知：諮商開始前 40 分鐘內將無法取消預約，請確認您的行程後再行送出。</span>
           </div>
 
           <button type="submit" class="btn-submit" :disabled="!isFormValid">
@@ -205,7 +241,7 @@ const router = useRouter()
 
 const instructors = ref<Instructor[]>([])
 const availability = ref<Availability[]>([])
-const memberInfo = ref<{ name: string; avatar: string; points: number } | null>(null)
+const memberInfo = ref<{ name: string; avatar: string; points: number; phone?: string } | null>(null)
 const instructorId = computed(() => Number(route.params.id))
 const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
 
@@ -233,6 +269,14 @@ const daysInMonth = computed(() => {
 const firstDayOfMonth = computed(() => {
   return new Date(currentYear.value, currentMonth.value, 1).getDay()
 })
+
+function fillMemberInfo() {
+  if (memberInfo.value) {
+    form.value.name = memberInfo.value.name
+    form.value.phone = memberInfo.value.phone || ''
+    ElMessage.success('已為您帶入基本資料')
+  }
+}
 
 const fetchMemberInfo = async () => {
   try {
@@ -486,6 +530,63 @@ onMounted(async () => {
   0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7); }
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(39, 174, 96, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+}
+
+/* 快速填寫按鈕樣式 */
+.quick-fill-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-quick-fill {
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent-dark);
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-quick-fill:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(196, 168, 130, 0.2);
+}
+
+.btn-quick-fill i {
+  font-size: 1.1rem;
+}
+
+/* 預約須知提醒 */
+.booking-policy-note {
+  margin-top: 20px;
+  background-color: #fff8f1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-left: 4px solid #ff9800;
+}
+
+.booking-policy-note i {
+  color: #ff9800;
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.booking-policy-note span {
+  font-size: 0.85rem;
+  color: #856404;
+  line-height: 1.5;
 }
 
 /* 付款彈窗樣式 */

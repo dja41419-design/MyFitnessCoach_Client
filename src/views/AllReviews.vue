@@ -24,7 +24,7 @@
       <div class="container">
         <!-- 排序控制 -->
         <div v-if="reviewList.length > 0" class="reviews-filter">
-          <div class="filter-info">共 {{ reviewList.length }} 則評價</div>
+          <div class="filter-info">共 {{ totalCount }} 則評價 (第 {{ currentPage }} / {{ totalPages }} 頁)</div>
           <div class="sort-controls">
             <span class="sort-label">排序方式：</span>
             <div 
@@ -61,10 +61,30 @@
             </div>
             <div class="testimonial-stars">{{ item.stars }}</div>
             <p class="testimonial-text">{{ item.text }}</p>
+            <div class="card-footer-stats">
+              <span class="like-stat" :class="{ 'is-liked': item.isLiked }">
+                <v-icon size="small" :color="item.isLiked ? 'red-lighten-1' : 'grey-lighten-1'">
+                  {{ item.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}
+                </v-icon>
+                {{ item.likeCount || 0 }}
+              </span>
+            </div>
           </div>
         </div>
         <div v-else class="no-reviews">
           <p>目前尚無評價資料</p>
+        </div>
+
+        <!-- 分頁元件 -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <v-pagination
+            v-model="page"
+            :length="totalPages"
+            :total-visible="7"
+            @update:model-value="handlePageChange"
+            color="var(--accent-dark)"
+            rounded="circle"
+          ></v-pagination>
         </div>
       </div>
     </section>
@@ -137,6 +157,19 @@
               </template>
             </p>
           </div>
+
+          <div class="modal-actions-bar">
+            <v-btn
+              prepend-icon="mdi-heart"
+              variant="flat"
+              color="red-lighten-4"
+              class="like-btn"
+              @click="likeReview(selectedReview)"
+              rounded="pill"
+            >
+              幫助很大 ({{ selectedReview.likeCount || 0 }})
+            </v-btn>
+          </div>
         </div>
       </v-card>
     </v-dialog>
@@ -155,10 +188,13 @@ import { onMounted, ref, computed, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useReviews } from '@/composables/useReviews'
 import type { Review } from '@/data/reviews'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
-const { reviewList, keywords, loadAllReviews } = useReviews()
+const { reviewList, keywords, totalCount, totalPages, currentPage, loadPagedReviews } = useReviews()
 
+const page = ref(1)
+const pageSize = 9
 const sortOrder = ref('default')
 const sortOptions = ['default', 'high-to-low', 'low-to-high']
 
@@ -177,8 +213,15 @@ interface TextSegment {
 const textSegments = ref<TextSegment[]>([])
 
 onMounted(async () => {
-  await loadAllReviews()
+  await loadPagedReviews(page.value, pageSize)
 })
+
+const handlePageChange = async (newPage: number) => {
+  page.value = newPage
+  await loadPagedReviews(page.value, pageSize)
+  // 捲動回頂部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const openReview = (review: Review) => {
   selectedReview.value = review
@@ -231,6 +274,55 @@ const toggleSegment = (segment: TextSegment) => {
   if (!segment.isSensitive) return
   segment.revealed = !segment.revealed
   segment.text = segment.revealed ? segment.original : segment.masked
+}
+
+const likeReview = async (review: any) => {
+  // 確保能拿到 ID (相容大小寫寫法)
+  const rid = review.reservationId || review.ReservationId
+  if (!rid) {
+    console.error('Cannot find reservationId', review)
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/Review/Like/${rid}`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+    
+    if (response.status === 401) {
+      ElMessageBox.confirm('點讚功能僅限會員使用，是否前往登入？', '尚未登入', {
+        confirmButtonText: '前往登入',
+        cancelButtonText: '先看看',
+        type: 'info'
+      }).then(() => {
+        router.push('/Account/Login')
+      }).catch(() => {})
+      return
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      // 更新當前物件 (可能是 Modal 裡的或者是列表裡的)
+      review.likeCount = data.likeCount
+      review.isLiked = data.isLiked
+      
+      // 同步更新列表中所有匹配的項目 (確保全域一致)
+      reviewList.value.forEach(r => {
+        const targetId = r.reservationId || (r as any).ReservationId
+        if (targetId === rid) {
+          r.likeCount = data.likeCount
+          r.isLiked = data.isLiked
+        }
+      })
+      
+      if (data.isLiked) {
+        ElMessage.success({ message: '已加入幫助清單', duration: 1000 })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to like review:', error)
+  }
 }
 
 const formatDate = (dateStr: string, detailed = false) => {
@@ -499,6 +591,22 @@ const sortedReviewList = computed(() => {
   overflow: hidden;
 }
 
+.card-footer-stats {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.like-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* Modal 樣式優化 */
 :deep(.v-overlay__content) {
   border-radius: 32px !important; /* 強制超大圓角 */
@@ -659,6 +767,25 @@ const sortedReviewList = computed(() => {
   color: var(--text-primary);
   font-style: italic;
   white-space: pre-line;
+}
+
+.modal-actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px dashed var(--border);
+}
+
+.like-btn {
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  transition: all 0.3s ease !important;
+}
+
+.like-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(255, 82, 82, 0.2) !important;
 }
 
 .sensitive-segment {

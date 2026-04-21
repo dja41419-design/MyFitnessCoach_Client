@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { fetchLandingPageReviews, fetchAllReviews, type Review } from '@/data/reviews'
+import { fetchLandingPageReviews, fetchAllReviews, fetchPagedReviews, type Review } from '@/data/reviews'
 
 // 簡單的關鍵字 API 串接 (假設後端有提供)
 const fetchKeywords = async (): Promise<string[]> => {
@@ -19,6 +19,9 @@ const fetchKeywords = async (): Promise<string[]> => {
 export function useReviews() {
   const reviewList = ref<Review[]>([])
   const keywords = ref<string[]>([])
+  const totalCount = ref(0)
+  const totalPages = ref(0)
+  const currentPage = ref(1)
 
   const loadKeywords = async () => {
     keywords.value = await fetchKeywords()
@@ -69,10 +72,33 @@ export function useReviews() {
     }
   }
 
+  const loadPagedReviews = async (page: number, pageSize: number) => {
+    try {
+      await loadKeywords()
+      const data = await fetchPagedReviews(page, pageSize)
+      if (data) {
+        reviewList.value = data.reviews.map(r => ({
+          ...r,
+          originalText: r.text,
+          text: maskText(r.text)
+        }))
+        totalCount.value = data.totalCount
+        totalPages.value = data.totalPages
+        currentPage.value = data.currentPage
+      }
+    } catch (e) {
+      console.error('Failed to load paged reviews', e)
+    }
+  }
+
   return {
     reviewList,
     keywords, // 導出關鍵字供組件使用
+    totalCount,
+    totalPages,
+    currentPage,
     loadReviews,
-    loadAllReviews
+    loadAllReviews,
+    loadPagedReviews
   }
 }
