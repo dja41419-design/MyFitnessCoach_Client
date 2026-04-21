@@ -38,7 +38,7 @@
           <div class="form-group">
             <div class="form-label-row">
               <label for="password" class="form-label">密碼</label>
-              <router-link :to="{name:'forgetpwd'}" class="forgot-link">忘記密碼？</router-link>
+              <router-link :to="{name:'forgotpwd'}" class="forgot-link">忘記密碼？</router-link>
             </div>
             <input
               id="password"
