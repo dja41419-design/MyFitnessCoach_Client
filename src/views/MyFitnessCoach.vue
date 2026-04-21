@@ -14,12 +14,9 @@
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
         <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
         <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
-
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
-
       </div>
 
-      
       <div class="d-flex align-items-center nav-right-group">
         <template v-if="!isLoggedIn">
           <router-link :to="{name:'register'}" class="nav-cta">立即加入</router-link>
@@ -31,22 +28,20 @@
             <span class="user-name">{{ username }}</span>
             <span class="dropdown-arrow" :class="{ open: isDropdownOpen }">▾</span>
             <div class="user-dropdown" v-show="isDropdownOpen" @click.stop>
-                <router-link :to="{name:'info'}" class="dropdown-item">修改個人資料</router-link>
-                <router-link :to="{name:'changepwd'}" class="dropdown-item">修改密碼</router-link>
-                <a href="#" class="dropdown-item">點數查詢</a>
-                <a href="#" class="dropdown-item">課程預約查詢</a>
-                <a href="#" class="dropdown-item">訂單查詢</a>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
+              <router-link :to="{name:'info'}" class="dropdown-item">修改個人資料</router-link>
+              <router-link :to="{name:'changepwd'}" class="dropdown-item">修改密碼</router-link>
+              <a href="#" class="dropdown-item">點數查詢</a>
+              <a href="#" class="dropdown-item">課程預約查詢</a>
+              <a href="#" class="dropdown-item">訂單查詢</a>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
             </div>
           </div>
         </template>
-      </div>
-      
-      
 
-      <!-- 手機漢堡按鈕 -->
-      <button class="mobile-toggle" @click="toggleMenu" aria-label="Menu">☰</button>
+        <!-- 手機漢堡按鈕 -->
+        <button class="mobile-toggle" @click="toggleMenu" aria-label="Menu">☰</button>
+      </div>
     </div>
   </nav>
 
@@ -125,7 +120,8 @@
     </div>
 
     <div class="testimonial-more reveal">
-      <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink>
+      <!-- TODO: /AllReviews 頁面完成後取消註解 -->
+      <!-- <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink> -->
     </div>
   </section>
 
@@ -385,40 +381,40 @@ const activeTab = ref<string>(shopTabs[0])
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-// 登入狀態
-const username = ref(localStorage.getItem('username') || '')
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+// // 登入狀態
+// const username = ref(localStorage.getItem('username') || '')
+// const isLoggedIn = ref(!!localStorage.getItem('token'))
 
-const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
+// const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
-function toAvatarSrc(url: string): string {
-  if (!url) return NO_IMAGE
-  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
-  return `/StaticFiles${url}`
-}
+// function toAvatarSrc(url: string): string {
+//   if (!url) return NO_IMAGE
+//   if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+//   return `/StaticFiles${url}`
+// }
 
-const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
-const isDropdownOpen = ref(false)
+// const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
+// const isDropdownOpen = ref(false)
 
-function toggleDropdown() {
-  isDropdownOpen.value = !isDropdownOpen.value
-}
+// function toggleDropdown() {
+//   isDropdownOpen.value = !isDropdownOpen.value
+// }
 
-function closeDropdown() {
-  isDropdownOpen.value = false
-}
+// function closeDropdown() {
+//   isDropdownOpen.value = false
+// }
 
-function handleLogout() {
-  logout()
-  localStorage.removeItem('username')
-  username.value = ''
-  imageUrl.value = toAvatarSrc('')
-  isLoggedIn.value = false
-  isDropdownOpen.value = false
-}
+// function handleLogout() {
+//   logout()
+//   localStorage.removeItem('username')
+//   username.value = ''
+//   imageUrl.value = toAvatarSrc('')
+//   isLoggedIn.value = false
+//   isDropdownOpen.value = false
+// }
 
-onMounted(() => document.addEventListener('click', closeDropdown))
-onUnmounted(() => document.removeEventListener('click', closeDropdown))
+// onMounted(() => document.addEventListener('click', closeDropdown))
+// onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 // 登入狀態
 const username = ref(localStorage.getItem('username') || '')
@@ -457,8 +453,6 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 const { allInstructors, loadInstructors } = useInstructors()
 const { reviewList, loadReviews } = useReviews()
-
-const activeTab = ref<string>(shopTabs[0])
 
 onMounted(async () => {
   await Promise.all([
@@ -520,10 +514,11 @@ function handleScroll() {
 .nav-right-group{
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .nav-right-group .nav-cta {
-  margin-right: 20px;
+  margin-right: 0;
 }
 
 .nav-logo {
