@@ -25,13 +25,16 @@ interface UseRevealOptions {
 export function useReveal(options: UseRevealOptions = {}): void {
   const { threshold = 0.15, rootMargin = '0px', root = null } = options
   let observer: IntersectionObserver | null = null
+  let mutationObserver: MutationObserver | null = null
+
+  const observeElements = (container: Element | Document) => {
+    const elements = container.querySelectorAll<Element>('.reveal:not(.visible)')
+    elements.forEach((el) => observer!.observe(el))
+  }
 
   onMounted(() => {
     const scope = unref(root) ?? document
-    const elements = scope.querySelectorAll<Element>('.reveal:not(.visible)')
-
-    if (elements.length === 0) return
-
+    
     observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -44,10 +47,22 @@ export function useReveal(options: UseRevealOptions = {}): void {
       { threshold, rootMargin },
     )
 
-    elements.forEach((el) => observer!.observe(el))
+    observeElements(scope)
+
+    // 使用 MutationObserver 監聽動態加入的元素
+    mutationObserver = new MutationObserver(() => {
+      observeElements(scope)
+    })
+
+    const observeTarget = unref(root) ?? document.body
+    mutationObserver.observe(observeTarget, {
+      childList: true,
+      subtree: true,
+    })
   })
 
   onUnmounted(() => {
     observer?.disconnect()
+    mutationObserver?.disconnect()
   })
 }

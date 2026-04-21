@@ -1,7 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
-import Personalnfo from '../views/Personalnfo.vue'
+import Personalnfo from '@/views/Personalnfo.vue'
+import AllInstructor from '@/views/AllInstructor.vue'
+import Reserve from '@/views/Reserve.vue'
+import ReserveDetail from '@/views/ReserveDetail.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import ChangePwd from '../views/ChangePwd.vue'
@@ -25,7 +28,13 @@ const router = createRouter({
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
     { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
-
+    { name:'AllInstructor', path: '/AllInstructor', component: AllInstructor },
+    { path: '/reserve', 
+      component: Reserve,
+      children: [
+        { path: '', redirect: '/reserve/1' },
+        { name: 'ReserveDetail', path: ':id', component: ReserveDetail }
+      ]},
   ]
 })
 

@@ -108,7 +108,7 @@
     <!-- 渲染兩組達成 CSS 無縫循環效果 -->
     <div class="testimonial-track">
       <div
-        v-for="(item, idx) in reviews"
+        v-for="(item, idx) in [...reviewList, ...reviewList]"
         :key="idx"
         class="testimonial-card"
       >
@@ -123,6 +123,10 @@
         <p class="testimonial-text">{{ item.text }}</p>
       </div>
     </div>
+
+    <div class="testimonial-more reveal">
+      <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink>
+    </div>
   </section>
 
   <!-- ========== 營養師團隊 ========== -->
@@ -136,14 +140,17 @@
             自選營養師、自選時段，你的健康你做主。
           </p>
         </div>
-        <a href="#pricing" class="btn-outline reveal rd2" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
+        <div class="reveal rd2">
+          <RouterLink to="/AllInstructor" class="btn-outline">顯示全部營養師</RouterLink>
+          <a href="#pricing" class="btn-outline" @click.prevent="scrollTo('#pricing')">課程套組方案</a>
+        </div>
       </div>
 
       <!-- 輪播軌道 -->
       <div class="nutri-track-wrap">
         <div class="nutri-track" ref="nutriTrackRef">
           <div
-            v-for="(nutri, idx) in instructors"
+            v-for="(nutri, idx) in allInstructors"
             :key="nutri.name"
             class="nutri-card reveal"
             :class="`rd${idx}`"
@@ -158,12 +165,12 @@
               <div class="nutri-tags">
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
-              <a href="#" class="book-link">
-                馬上預約
+              <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" target="_blank" class="book-link">
+                馬上預約諮詢
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="m9 18 6-6-6-6" />
                 </svg>
-              </a>
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -292,7 +299,7 @@
       <!-- 商品卡片 -->
       <div class="shop-grid">
         <div
-          v-for="(product, idx) in shopProducts"
+          v-for="(product, idx) in filteredProducts"
           :key="product.name"
           class="shop-card reveal"
           :class="`rd${idx}`"
@@ -313,7 +320,7 @@
       </div>
 
       <div class="shop-more reveal">
-        <a href="#" class="btn-outline">探索更多商品</a>
+        <RouterLink to="/store" class="btn-outline">探索更多商品</RouterLink>
       </div>
     </div>
   </section>
@@ -359,13 +366,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
-import { reviews } from '@/data/reviews'
-import { instructors } from '@/data/instructors'
+import { useInstructors } from '@/composables/useInstructors'
+import { useReviews } from '@/composables/useReviews'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
 import { shopTabs, shopProducts } from '@/data/shop'
@@ -413,10 +420,63 @@ function handleLogout() {
 onMounted(() => document.addEventListener('click', closeDropdown))
 onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
+// 登入狀態
+const username = ref(localStorage.getItem('username') || '')
+const isLoggedIn = ref(!!localStorage.getItem('token'))
+
+const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
+
+function toAvatarSrc(url: string): string {
+  if (!url) return NO_IMAGE
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  return `/StaticFiles${url}`
+}
+
+const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
+const isDropdownOpen = ref(false)
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value
+}
+
+function closeDropdown() {
+  isDropdownOpen.value = false
+}
+
+function handleLogout() {
+  logout()
+  localStorage.removeItem('username')
+  username.value = ''
+  imageUrl.value = toAvatarSrc('')
+  isLoggedIn.value = false
+  isDropdownOpen.value = false
+}
+
+onMounted(() => document.addEventListener('click', closeDropdown))
+onUnmounted(() => document.removeEventListener('click', closeDropdown))
+
+const { allInstructors, loadInstructors } = useInstructors()
+const { reviewList, loadReviews } = useReviews()
+
+const activeTab = ref<string>(shopTabs[0])
+
+onMounted(async () => {
+  await Promise.all([
+    loadInstructors(),
+    loadReviews()
+  ])
+})
+
+const filteredProducts = computed(() => {
+  if (activeTab.value === '全部') return shopProducts
+  return shopProducts.filter(p => p.category === activeTab.value)
+})
+
+// handleScroll 已由 useNavbar 處理，若無特殊用途可移除
+
 function handleScroll() {
   isScrolled.value = window.scrollY > 40
 }
-
 
 </script>
 
@@ -786,6 +846,8 @@ function handleScroll() {
   100% { transform: translateX(-50%); }
 }
 
+.testimonial-more { text-align: center; margin-top: 40px; }
+
 /* ── 營養師 ───────────────────────────────────── */
 .nutritionists { padding: 100px 0; }
 
@@ -847,7 +909,7 @@ function handleScroll() {
 
 .nutri-img-wrap { overflow: hidden; height: 300px; position: relative; }
 
-.nutri-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
+.nutri-img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 0.6s; }
 .nutri-card:hover .nutri-img { transform: scale(1.04); }
 
 .nutri-body { padding: 28px; }
@@ -1321,6 +1383,152 @@ function handleScroll() {
 .rd2 { transition-delay: 0.2s; }
 .rd3 { transition-delay: 0.3s; }
 .rd4 { transition-delay: 0.4s; }
+
+/* ── 領獎台 (Kahoot 樣式) ───────────────────────── */
+.podium-container {
+  margin-top: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 480px;
+  padding-bottom: 20px;
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.podium-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 排序：2, 1, 3 */
+.rank-2 { order: 1; }
+.rank-1 { order: 2; z-index: 2; }
+.rank-3 { order: 3; }
+
+.podium-card {
+  width: 100%;
+  max-width: 240px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px rgba(26, 22, 19, 0.08);
+  text-align: center;
+  border: 1px solid rgba(212, 204, 194, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.podium-item:hover .podium-card {
+  transform: translateY(-8px);
+}
+
+.podium-img-wrap {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.rank-1 .podium-img-wrap {
+  width: 120px;
+  height: 120px;
+  border-color: var(--accent);
+}
+
+.podium-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crown {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-size: 2rem;
+  z-index: 3;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.podium-info h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.podium-specialty {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.podium-base {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.4s ease;
+}
+
+.podium-base::after {
+  content: attr(data-rank);
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.base-1 { 
+  height: 200px; 
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%); 
+  box-shadow: 0 10px 25px rgba(196, 168, 130, 0.3);
+}
+.base-2 { 
+  height: 140px; 
+  background: linear-gradient(180deg, #bdc3c7 0%, #7f8c8d 100%); 
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.base-3 { 
+  height: 100px; 
+  background: linear-gradient(180deg, #d35400 0%, #a04000 100%); 
+  box-shadow: 0 10px 15px rgba(211, 84, 0, 0.2);
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .podium-container { min-height: 400px; padding: 0 10px; }
+  .podium { gap: 8px; }
+  .podium-card { padding: 15px 8px; }
+  .podium-img-wrap { width: 60px; height: 60px; }
+  .rank-1 .podium-img-wrap { width: 80px; height: 80px; }
+  .podium-info h3 { font-size: 0.95rem; }
+  .podium-specialty { font-size: 0.65rem; }
+  .podium-base::after { font-size: 2.2rem; }
+  .base-1 { height: 140px; }
+  .base-2 { height: 100px; }
+  .base-3 { height: 70px; }
+  .crown { font-size: 1.4rem; top: -10px; }
+}
 
 /* ── 手機選單 ─────────────────────────────────── */
 .mobile-menu {
