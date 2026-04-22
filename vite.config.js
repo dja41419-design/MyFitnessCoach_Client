@@ -27,7 +27,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
-      '/images': {
+      '/images/members': {
         target: 'https://localhost:7212',
         changeOrigin: true,
         secure: false

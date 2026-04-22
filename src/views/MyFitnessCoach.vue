@@ -30,7 +30,7 @@
             <div class="user-dropdown" v-show="isDropdownOpen" @click.stop>
               <router-link :to="{name:'info'}" class="dropdown-item">修改個人資料</router-link>
               <router-link :to="{name:'changepwd'}" class="dropdown-item">修改密碼</router-link>
-              <a href="#" class="dropdown-item">點數查詢</a>
+              <router-link to="/points" class="dropdown-item">點數查詢</router-link>
               <router-link to="/reserveorders" class="dropdown-item">課程預約查詢</router-link>
               <a href="#" class="dropdown-item">訂單查詢</a>
               <div class="dropdown-divider"></div>

@@ -14,7 +14,8 @@ import ResetPwd from '@/views/ResetPwd.vue'
 import BodyRecord from '@/views/BodyRecord.vue'
 import FoodRecord from '@/views/FoodRecord.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
-import UserLayout from '@/components/UserLayout.vue'import Lesson from '@/views/Lesson.vue'
+import PointCheck from '@/views/PointCheck.vue'
+import UserLayout from '@/components/UserLayout.vue'
 import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
@@ -48,6 +49,7 @@ const router = createRouter({
         { name: 'info', path: '/personalInfo', component: Personalnfo },
         { name: 'changepwd', path: '/changepassword', component: ChangePwd },
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
+        { name: 'points', path: '/points', component: PointCheck },
       ]
     },
 
