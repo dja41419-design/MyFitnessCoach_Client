@@ -46,7 +46,6 @@
             <p class="coupon-card-desc">{{ c.description }}</p>
             <div class="coupon-card-meta">
               <span>{{ formatDateRange(c.startAt, c.endAt) }}</span>
-              <span v-if="c.remainingQuota !== null">剩 {{ c.remainingQuota }} 張</span>
             </div>
             <button
               class="coupon-card-btn"

@@ -81,7 +81,7 @@
                   :value="mc.id"
                 >{{ mc.coupon.name }}</option>
               </select>
-              <RouterLink to="/coupons" class="cart-coupon-link">管理優惠券 →</RouterLink>
+              <RouterLink to="/coupons" class="cart-coupon-link">我的優惠券 →</RouterLink>
             </div>
             <p
               v-if="discountPreview && !discountPreview.isValid && discountPreview.message"

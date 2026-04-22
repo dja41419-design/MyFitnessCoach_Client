@@ -32,6 +32,7 @@
               <router-link :to="{name:'changepwd'}" class="dropdown-item">修改密碼</router-link>
               <router-link to="/points" class="dropdown-item">點數查詢</router-link>
               <router-link to="/reserveorders" class="dropdown-item">課程預約查詢</router-link>
+              <router-link to="/coupons" class="dropdown-item">我的優惠券</router-link>
               <a href="#" class="dropdown-item">訂單查詢</a>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
@@ -77,6 +78,7 @@
       <a href="#" class="mobile-menu-item">帳號安全</a>
       <a href="#" class="mobile-menu-item">點數查詢</a>
       <router-link to="/reserveorders" @click="isMobileMenuOpen = false" class="mobile-menu-item">課程預約查詢</router-link>
+      <router-link to="/coupons" @click="isMobileMenuOpen = false" class="mobile-menu-item">我的優惠券</router-link>
       <a href="#" class="mobile-menu-item">訂單查詢</a>
       <button class="mobile-menu-item mobile-logout" @click="handleLogout">會員登出</button>
     </template>
