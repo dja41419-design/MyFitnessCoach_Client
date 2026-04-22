@@ -99,7 +99,7 @@
               <el-tag type="info" effect="plain" size="small">評價期已過</el-tag>
             </template>
             
-            <el-button size="small" type="primary" plain @click="$router.push(`/reserve/${res.instructorId}`)">再次預約</el-button>
+            <el-button size="small" type="primary" plain @click="window.open(`/reserve/${res.instructorId}`, '_blank')">再次預約</el-button>
           </div>
         </div>
       </div>

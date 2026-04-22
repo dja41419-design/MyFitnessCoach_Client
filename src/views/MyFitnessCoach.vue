@@ -15,7 +15,6 @@
         <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
         <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
-        <router-link to="/reserveorders">我的預約</router-link>
       </div>
 
       <div class="d-flex align-items-center nav-right-group">
@@ -32,7 +31,7 @@
               <router-link :to="{name:'info'}" class="dropdown-item">修改個人資料</router-link>
               <router-link :to="{name:'changepwd'}" class="dropdown-item">修改密碼</router-link>
               <a href="#" class="dropdown-item">點數查詢</a>
-              <a href="#" class="dropdown-item">課程預約查詢</a>
+              <router-link to="/reserveorders" class="dropdown-item">課程預約查詢</router-link>
               <a href="#" class="dropdown-item">訂單查詢</a>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
@@ -67,7 +66,7 @@
       <router-link to="/personalInfo" @click="isMobileMenuOpen = false" class="mobile-menu-item">修改個人資料</router-link>
       <a href="#" class="mobile-menu-item">帳號安全</a>
       <a href="#" class="mobile-menu-item">點數查詢</a>
-      <a href="#" class="mobile-menu-item">課程預約查詢</a>
+      <router-link to="/reserveorders" @click="isMobileMenuOpen = false" class="mobile-menu-item">課程預約查詢</router-link>
       <a href="#" class="mobile-menu-item">訂單查詢</a>
       <button class="mobile-menu-item mobile-logout" @click="handleLogout">會員登出</button>
     </template>
@@ -121,8 +120,7 @@
     </div>
 
     <div class="testimonial-more reveal">
-      <!-- TODO: /AllReviews 頁面完成後取消註解 -->
-      <!-- <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink> -->
+      <RouterLink to="/AllReviews" class="btn-outline">查看所有評論</RouterLink>
     </div>
   </section>
 
