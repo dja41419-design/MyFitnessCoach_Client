@@ -1,32 +1,17 @@
 <template>
   <div class="my-reservations">
-    <!-- 精簡會員狀態條 (JVID 風格) -->
-    <div class="user-status-bar" v-if="memberInfo">
-      <div class="user-info-group">
-        <div class="user-avatar-mini">
-          <img :src="memberInfo.avatar || '/assets/logo.png'" alt="User" />
-        </div>
-        <span class="user-name">{{ memberInfo.name }}</span>
-        <div class="user-points-badge">
-          <i class="mdi mdi-rhombus"></i>
-          <span class="points-count">{{ memberInfo.points }}</span>
-        </div>
+    <header class="section-header">
+      <div class="header-content">
+        <h2 class="section-title">課程預約查詢</h2>
+        <p class="section-desc">查看您過去與未來的營養諮詢預約</p>
       </div>
-      <div class="status-label">
-        <i class="mdi mdi-history"></i> 預約管理中心
-      </div>
-    </div>
 
-    <div class="header">
-      <h1>我的預約紀錄</h1>
-      <p class="subtitle">查看您過去與未來的營養諮詢預約</p>
-      
       <!-- 取消政策提醒 -->
       <div class="cancellation-policy-notice">
-        <i class="mdi mdi-information-outline"></i>
-        <span>預約提醒：若距離諮商開始時間<strong>不足 40 分鐘</strong>，系統將無法受理取消預約。</span>
+        <i class="mdi mdi-alert-circle-outline"></i>
+        <span>取消預約請於諮商 <strong>40 分鐘前</strong> 辦理。</span>
       </div>
-    </div>
+    </header>
 
     <div v-if="loading" class="status-box">
       <el-skeleton :rows="5" animated />
@@ -39,7 +24,7 @@
     </div>
 
     <div v-else class="reservation-list">
-      <div v-for="res in reservations" :key="res.id" class="reservation-card">
+      <div v-for="res in paginatedReservations" :key="res.id" class="reservation-card">
         <div class="card-header">
           <div class="instructor-info">
             <span class="instructor-name">{{ res.instructorName }} 營養師</span>
@@ -103,6 +88,18 @@
           </div>
         </div>
       </div>
+
+      <!-- 分頁控制 -->
+      <div class="pagination-wrapper" v-if="reservations.length > pageSize">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="reservations.length"
+          layout="prev, pager, next"
+          background
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 評價彈窗 -->
@@ -156,29 +153,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface Reservation {
   id: number
-  memberId: number
   instructorId: number
   instructorName: string
   scheduleDate: string
   timeSlot: string
   status: string
-  target?: string
-  memorandum?: string
-  price?: number
-  pointCost?: number
+  target: string | null
+  memorandum: string | null
+  price: number | null
+  pointCost: number | null
   paymentMethod: string
   createAt: string
   hasReview: boolean
 }
 
 interface MemberInfo {
-  name: string
-  avatar: string
+  username: string
+  imageUrl: string
   points: number
 }
 
@@ -186,6 +182,21 @@ const reservations = ref<Reservation[]>([])
 const memberInfo = ref<MemberInfo | null>(null)
 const keywords = ref<string[]>([])
 const loading = ref(true)
+
+// 分頁相關
+const currentPage = ref(1)
+const pageSize = ref(5) // 每頁顯示 5 筆
+
+const paginatedReservations = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return reservations.value.slice(start, end)
+})
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 // 評價相關
 const reviewModalVisible = ref(false)
@@ -479,105 +490,57 @@ onMounted(() => {
 
 <style scoped>
 .my-reservations {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 60px 20px;
+  padding: 0; 
   min-height: 80vh;
 }
 
-.user-status-bar {
-  background: #fdfaf5;
-  border: 1px solid rgba(196, 168, 130, 0.2);
-  border-radius: 100px;
-  padding: 10px 24px;
-  margin-bottom: 40px;
+.section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
 }
 
-.user-info-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-avatar-mini {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1.5px solid var(--accent);
-}
-
-.user-avatar-mini img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.user-name {
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.section-desc {
   font-size: 0.95rem;
-}
-
-.user-points-badge {
-  display: flex;
-  align-items: center; gap: 4px;
-  background: #fff;
-  padding: 4px 12px;
-  border-radius: 100px;
-  border: 1px solid rgba(196, 168, 130, 0.3);
-  margin-left: 8px;
-}
-
-.user-points-badge i { color: #d4b892; font-size: 1rem; }
-.points-count { font-weight: 700; color: var(--accent-dark); font-size: 0.9rem; }
-
-.status-label {
-  font-size: 0.85rem;
   color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  margin: 0;
 }
 
-.header {
-  margin-bottom: 40px;
-  text-align: center;
-}
-
-.header h1 {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  color: var(--text-primary);
-  margin-bottom: 10px;
-}
-
-.subtitle { color: var(--text-secondary); font-size: 1.1rem; }
-
+/* 優化提醒框樣式 */
 .cancellation-policy-notice {
-  margin-top: 20px;
-  background-color: #fff4e5;
+  background-color: #fff;
   border: 1px solid #ffd599;
+  border-left: 4px solid #ff9800;
   border-radius: 8px;
-  padding: 12px 20px;
-  display: inline-flex;
+  padding: 10px 16px;
+  display: flex;
   align-items: center;
   gap: 10px;
   color: #663c00;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.05);
 }
 
 .cancellation-policy-notice i {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #ff9800;
 }
 
 .cancellation-policy-notice strong {
   color: #d32f2f;
+  text-decoration: underline;
 }
 
 .status-box {
@@ -631,7 +594,7 @@ onMounted(() => {
 
 .status-pending { background: #fff8e1; color: #f57c00; }
 .status-completed { background: #e8f5e9; color: #2e7d32; }
-.status-cancelled { background: #ffeea; color: #c62828; }
+.status-cancelled { background: #fdf0ee; color: #c62828; }
 
 .reservation-time { color: var(--text-secondary); font-size: 0.95rem; }
 
@@ -671,6 +634,12 @@ onMounted(() => {
 .create-at { font-size: 0.8rem; color: #999; }
 .actions { display: flex; gap: 10px; }
 
+.pagination-wrapper {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
 /* 評價彈窗樣式 */
 .review-form { display: flex; flex-direction: column; gap: 20px; }
 .review-target { text-align: center; margin-bottom: 10px; }
@@ -680,7 +649,16 @@ onMounted(() => {
 .ml-2 { margin-left: 8px; }
 
 @media (max-width: 768px) {
-  .user-status-bar { flex-direction: column; border-radius: 20px; gap: 10px; text-align: center; }
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .cancellation-policy-notice {
+    width: 100%;
+  }
+
   .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
   .card-footer { flex-direction: column; gap: 15px; align-items: flex-start; }
   .actions { width: 100%; display: flex; justify-content: flex-end; }
