@@ -31,4 +31,9 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
 
 export function logout(): void {
   localStorage.removeItem('token')
+  localStorage.removeItem('username')
+  localStorage.removeItem('imageUrl')
+  // 清空前端購物車 state + localStorage,避免下一個訪客看到前一位使用者的商品
+  // 動態 import 避免循環依賴(useCart 會 import fetchWithAuth,fetchWithAuth 會 import router)
+  import('@/composables/useCart').then(m => m.clearCartOnLogout())
 }
