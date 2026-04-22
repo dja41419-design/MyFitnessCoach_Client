@@ -15,6 +15,12 @@ import ResetPwd from '@/views/ResetPwd.vue'
 import BodyRecord from '@/views/BodyRecord.vue'
 import FoodRecord from '@/views/FoodRecord.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
+import UserLayout from '@/components/UserLayout.vue'import Lesson from '@/views/Lesson.vue'
+import Lesson from '@/views/Lesson.vue'
+import LessonCart from '@/views/LessonCart.vue'
+import LessonPay from '@/views/LessonPay.vue'
+import LessonResult from '@/views/LessonResult.vue'
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -33,6 +39,23 @@ const router = createRouter({
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
     { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
+    { name: 'Lesson', path: '/lesson', component: Lesson },
+    { name: 'LessonCart', path: '/lesson-cart', component: LessonCart },
+    { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
+    { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
+
+    // 使用者帳戶相關頁面，共用 UserLayout
+    {
+      path: '/user',
+      component: UserLayout,
+      meta: { requiresAuth: true },
+      children: [
+        { name: 'info', path: '/personalInfo', component: Personalnfo },
+        { name: 'changepwd', path: '/changepassword', component: ChangePwd },
+        { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
+      ]
+    },
+
     {
       path: '/reserve',
       component: Reserve,

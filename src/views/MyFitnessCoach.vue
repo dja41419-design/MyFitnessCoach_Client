@@ -190,10 +190,18 @@
   <!-- ========== 課程方案 ========== -->
   <section class="pricing" id="pricing">
     <div class="container">
-      <div style="text-align:center;">
-        <div class="scroll-label reveal">課程套組方案</div>
-        <h2 class="pricing-title reveal rd1">選擇最適合你的方案</h2>
-        <p class="pricing-subtitle reveal rd2">套組結帳後自動轉換為儲值點數，預約時可彈性扣抵使用</p>
+      <div class="pricing-header">
+        <div style="text-align:center;">
+          <div class="scroll-label reveal">課程套組方案</div>
+          <h2 class="pricing-title reveal rd1">選擇最適合你的方案</h2>
+          <p class="pricing-subtitle reveal rd2">套組結帳後自動轉換為儲值點數，預約時可彈性扣抵使用</p>
+        </div>
+        <RouterLink to="/lesson" class="btn-all-plans reveal rd2" aria-label="查看所有儲值方案">
+          查看所有方案
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </RouterLink>
       </div>
 
       <div class="pricing-grid">
@@ -279,7 +287,7 @@
       </div>
 
       <!-- 分類 Tab -->
-      <div class="shop-tabs reveal">
+      <!-- <div class="shop-tabs reveal">
         <button
           v-for="tab in shopTabs"
           :key="tab"
@@ -289,7 +297,7 @@
         >
           {{ tab }}
         </button>
-      </div>
+      </div> -->
 
       <!-- 商品卡片 -->
       <div class="shop-grid">
@@ -964,6 +972,36 @@ function handleScroll() {
 
 /* ── 課程方案 ─────────────────────────────────── */
 .pricing { padding: 100px 0; }
+
+.pricing-header {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.btn-all-plans {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-all-plans:hover {
+  background: var(--bg-dark);
+  color: var(--text-light);
+  border-color: var(--bg-dark);
+  gap: 10px;
+}
 
 /* inline style 替代：統一在 class 管理 */
 .pricing-title {
