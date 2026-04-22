@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
 import ProductDetail from '@/views/ProductDetail.vue'
+import Cart from '@/views/Cart.vue'
 import Personalnfo from '@/views/Personalnfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
 import AllReviews from '@/views/AllReviews.vue'
@@ -15,7 +16,7 @@ import ResetPwd from '@/views/ResetPwd.vue'
 import BodyRecord from '@/views/BodyRecord.vue'
 import FoodRecord from '@/views/FoodRecord.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
-import UserLayout from '@/components/UserLayout.vue'import Lesson from '@/views/Lesson.vue'
+import UserLayout from '@/components/UserLayout.vue'
 import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
@@ -28,6 +29,7 @@ const router = createRouter({
     { name: 'home', path: '/', component: MyFitnessCoach },
     { path: '/store', component: Store },
     { name: 'ProductDetail', path: '/store/:id', component: ProductDetail },
+    { name: 'Cart', path: '/cart', component: Cart },
     { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },

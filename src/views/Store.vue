@@ -9,6 +9,14 @@
           <h1 class="reveal">健康食品商城</h1>
           <p class="reveal rd1">官方直營、品質保證。嚴選優質健康食品，讓你的飲食計畫更輕鬆執行。</p>
         </div>
+        <RouterLink to="/cart" class="cart-icon-link" aria-label="前往購物車">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          <span v-if="itemCount > 0" class="cart-icon-badge">{{ itemCount }}</span>
+        </RouterLink>
       </div>
 
       <!-- 搜尋 + 排序列 -->
@@ -130,7 +138,7 @@
             >
               查看完整詳情
             </RouterLink>
-            <button class="modal-cart-btn" disabled>加入購物車（即將推出）</button>
+            <button class="modal-cart-btn" @click="handleAddToCart(selectedProduct)">加入購物車</button>
           </div>
         </div>
       </div>
@@ -141,7 +149,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { ElNotification } from 'element-plus'
 import { useReveal } from '@/composables/useReveal'
+import { useCart } from '@/composables/useCart'
 
 interface CategoryDto {
   id: number
@@ -221,6 +231,27 @@ function openProduct(product: ProductDto): void {
   isModalOpen.value = true
 }
 
+const { addItem, itemCount } = useCart()
+
+function handleAddToCart(p: ProductDto): void {
+  addItem({
+    id: p.id,
+    name: p.name,
+    unitPrice: p.unitPrice,
+    originalPrice: p.originalPrice,
+    imageUrl: p.imageUrl,
+    categoryName: p.categoryName,
+  })
+  isModalOpen.value = false
+  ElNotification({
+    title: '已加入購物車',
+    message: p.name,
+    type: 'success',
+    duration: 2500,
+    position: 'top-right',
+  })
+}
+
 watch(activeCategory, fetchProducts)
 
 onMounted(async () => {
@@ -260,6 +291,51 @@ useReveal()
 /* ── 頁面標題 ── */
 .store-header {
   margin-bottom: 48px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* ── 購物車 icon ── */
+.cart-icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  background: transparent;
+  text-decoration: none;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  margin-top: 16px;
+}
+
+.cart-icon-link:hover {
+  border-color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.cart-icon-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--bg-dark);
+  color: var(--text-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .store-header h1 {
@@ -570,8 +646,12 @@ useReveal()
   font-size: 0.88rem;
   font-family: var(--font-body);
   font-weight: 600;
-  cursor: not-allowed;
-  opacity: 0.45;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.modal-cart-btn:hover {
+  opacity: 0.85;
 }
 
 /* ── Loading & Empty ── */

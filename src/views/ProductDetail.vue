@@ -2,7 +2,17 @@
   <main class="detail-page">
     <div class="detail-container">
 
-      <RouterLink to="/store" class="detail-back" aria-label="返回商城">← 返回商城</RouterLink>
+      <div class="detail-topbar">
+        <RouterLink to="/store" class="detail-back" aria-label="返回商城">← 返回商城</RouterLink>
+        <RouterLink to="/cart" class="cart-icon-link" aria-label="前往購物車">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          <span v-if="itemCount > 0" class="cart-icon-badge">{{ itemCount }}</span>
+        </RouterLink>
+      </div>
 
       <!-- Loading -->
       <div v-if="loading" class="detail-status">
@@ -46,7 +56,7 @@
             <p class="detail-desc">{{ product.description }}</p>
           </div>
 
-          <button class="detail-cart-btn" disabled>加入購物車（即將推出）</button>
+          <button class="detail-cart-btn" @click="handleAddToCart">加入購物車</button>
         </div>
       </div>
 
@@ -57,6 +67,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { ElNotification } from 'element-plus'
+import { useCart } from '@/composables/useCart'
 
 interface ProductDto {
   id: number
@@ -74,6 +86,28 @@ interface ProductDto {
 const route = useRoute()
 const product = ref<ProductDto | null>(null)
 const loading = ref<boolean>(true)
+
+const { addItem, itemCount } = useCart()
+
+function handleAddToCart(): void {
+  if (!product.value) return
+  const p = product.value
+  addItem({
+    id: p.id,
+    name: p.name,
+    unitPrice: p.unitPrice,
+    originalPrice: p.originalPrice,
+    imageUrl: p.imageUrl,
+    categoryName: p.categoryName,
+  })
+  ElNotification({
+    title: '已加入購物車',
+    message: p.name,
+    type: 'success',
+    duration: 2500,
+    position: 'top-right',
+  })
+}
 
 function hasDiscount(p: ProductDto): boolean {
   return p.originalPrice > p.unitPrice
@@ -115,18 +149,63 @@ onMounted(fetchProduct)
   padding: 0 24px;
 }
 
-/* ── 返回 ── */
+/* ── 頂部列（返回 + 購物車 icon） ── */
+.detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
 .detail-back {
   display: inline-block;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  margin-bottom: 32px;
   transition: color 0.3s;
   text-decoration: none;
 }
 
 .detail-back:hover {
   color: var(--text-primary);
+}
+
+.cart-icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  background: transparent;
+  text-decoration: none;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.cart-icon-link:hover {
+  border-color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.cart-icon-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--bg-dark);
+  color: var(--text-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* ── 狀態 ── */
@@ -263,8 +342,12 @@ onMounted(fetchProduct)
   font-size: 0.95rem;
   font-family: var(--font-body);
   font-weight: 600;
-  cursor: not-allowed;
-  opacity: 0.45;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.detail-cart-btn:hover {
+  opacity: 0.85;
 }
 
 /* ── 響應式 ── */
