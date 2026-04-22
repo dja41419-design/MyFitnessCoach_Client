@@ -15,11 +15,15 @@ export interface CouponDto {
   startAt: string
   endAt: string
   remainingQuota: number | null
+  bannerImageUrl: string | null
+  /** 1-31:此券只在每月該日顯示。null=隨時可見 */
+  visibleOnlyOnDayOfMonth: number | null
 }
 
 export interface MemberCouponDto {
   id: number                  // MemberCoupon.Id（試算 / 結帳用這個）
   claimedAt: string
+  expiresAt: string | null    // 個人到期日(由 Coupon.ValidDaysAfterClaim 推算)
   usedAt: string | null
   isUsed: boolean
   coupon: CouponDto

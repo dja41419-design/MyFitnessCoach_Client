@@ -74,7 +74,13 @@
             <h3 class="coupon-card-name">{{ mc.coupon.name }}</h3>
             <p class="coupon-card-desc">{{ mc.coupon.description }}</p>
             <div class="coupon-card-meta">
-              <span>{{ formatDateRange(mc.coupon.startAt, mc.coupon.endAt) }}</span>
+              <span v-if="mc.expiresAt" class="coupon-card-expiry">
+                {{ formatDate(mc.expiresAt) }} 到期({{ daysLeft(mc.expiresAt) }})
+              </span>
+              <span v-else-if="mc.coupon.visibleOnlyOnDayOfMonth" class="coupon-card-expiry">
+                今日 23:59 截止
+              </span>
+              <span v-else>{{ formatDateRange(mc.coupon.startAt, mc.coupon.endAt) }}</span>
             </div>
             <RouterLink to="/cart" class="coupon-card-btn coupon-card-btn--link">前往使用</RouterLink>
           </article>
@@ -170,6 +176,17 @@ function formatDate(iso: string | null): string {
 
 function formatDateRange(startIso: string, endIso: string): string {
   return `${formatDate(startIso)} - ${formatDate(endIso)}`
+}
+
+function daysLeft(iso: string | null): string {
+  if (!iso) return ''
+  const target = new Date(iso)
+  const now = new Date()
+  const diffMs = target.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return '已過期'
+  if (diffDays === 0) return '今日到期'
+  return `剩 ${diffDays} 天`
 }
 </script>
 
@@ -335,6 +352,10 @@ function formatDateRange(startIso: string, endIso: string): string {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin-top: 4px;
+}
+.coupon-card-expiry {
+  color: var(--accent-dark);
+  font-weight: 600;
 }
 .coupon-card-btn {
   margin-top: 12px;
