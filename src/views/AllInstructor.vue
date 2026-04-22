@@ -129,7 +129,7 @@
                 <span v-for="tag in nutri.tags" :key="tag" class="nutri-tag">{{ tag }}</span>
               </div>
               <div class="card-footer-action">
-                <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" class="book-link">
+                <RouterLink :to="{ name: 'ReserveDetail', params: { id: nutri.id } }" class="book-link" target="_blank">
                   馬上預約諮詢
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="m9 18 6-6-6-6" />
