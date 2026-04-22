@@ -29,7 +29,6 @@ const router = createRouter({
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
-<<<<<<< HEAD
     
     // 使用者帳戶相關頁面，共用 UserLayout
     {
@@ -40,17 +39,11 @@ const router = createRouter({
         { name: 'info', path: '/personalInfo', component: Personalnfo },
         { name: 'changepwd', path: '/changepassword', component: ChangePwd },
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
-        // 未來可以在這裡加入點數查詢和訂單查詢
       ]
     },
 
     { 
       path: '/reserve', 
-=======
-    { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
-    {
-      path: '/reserve',
->>>>>>> f4f0775968dcff0c6bf92825fddfc419777b9d86
       component: Reserve,
       children: [
         { path: '', redirect: '/reserve/1' },

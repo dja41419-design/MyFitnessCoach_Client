@@ -429,6 +429,10 @@ const submitReview = async () => {
   }
 }
 
+const goToReserve = (instructorId: number) => {
+  window.open(`/reserve/${instructorId}`, '_blank')
+}
+
 const getStatusClass = (status: string) => {
   switch (status) {
     case '已預約': return 'status-pending'
