@@ -7,6 +7,7 @@ import Register from '../views/Register.vue'
 import ChangePwd from '../views/ChangePwd.vue'
 import ForgotPwd from '../views/ForgotPwd.vue'
 import ResetPwd from '../views/ResetPwd.vue'
+import ActivateAccount from '../views/ActivateAccount.vue'
 import BodyRecord from '../views/BodyRecord.vue'
 import FoodRecord from '../views/FoodRecord.vue'
 
@@ -23,6 +24,7 @@ const router = createRouter({
     { name: 'changepwd', path: '/changepassword', component: ChangePwd, meta: { requiresAuth: true } },
     { name: 'forgotpwd', path: '/forgotpassword', component: ForgotPwd },
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
+    { name: 'activate', path: '/activate', component: ActivateAccount },
     { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
 
