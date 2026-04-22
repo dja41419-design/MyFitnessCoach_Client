@@ -243,7 +243,8 @@ const openReview = (review: Review) => {
 
 const goToReservation = (instructorId: number) => {
   if (!instructorId) return
-  router.push({ name: 'ReserveDetail', params: { id: instructorId.toString() } })
+  const url = router.resolve({ name: 'ReserveDetail', params: { id: instructorId.toString() } }).href
+  window.open(url, '_blank')
 }
 
 const prepareSegments = (rawText: string) => {
