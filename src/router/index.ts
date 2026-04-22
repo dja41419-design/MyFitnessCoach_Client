@@ -15,6 +15,7 @@ import BodyRecord from '@/views/BodyRecord.vue'
 import FoodRecord from '@/views/FoodRecord.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
 import UserLayout from '@/components/UserLayout.vue'
+import GoogleCallback from '@/views/GoogleCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,6 +30,7 @@ const router = createRouter({
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
+    { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
     
     // 使用者帳戶相關頁面，共用 UserLayout
     {
