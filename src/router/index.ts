@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
+import ProductDetail from '@/views/ProductDetail.vue'
 import Personalnfo from '@/views/Personalnfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
 import AllReviews from '@/views/AllReviews.vue'
@@ -20,6 +21,7 @@ const router = createRouter({
   routes: [
     { name: 'home', path: '/', component: MyFitnessCoach },
     { path: '/store', component: Store },
+    { name: 'ProductDetail', path: '/store/:id', component: ProductDetail },
     { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },

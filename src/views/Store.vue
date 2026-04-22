@@ -122,7 +122,16 @@
               NT${{ formatPrice(selectedProduct.originalPrice) }}
             </span>
           </div>
-          <button class="modal-cart-btn" disabled>加入購物車（即將推出）</button>
+          <div class="modal-actions">
+            <RouterLink
+              :to="`/store/${selectedProduct.id}`"
+              class="modal-detail-btn"
+              aria-label="查看完整詳情"
+            >
+              查看完整詳情
+            </RouterLink>
+            <button class="modal-cart-btn" disabled>加入購物車（即將推出）</button>
+          </div>
         </div>
       </div>
     </div>
@@ -525,6 +534,31 @@ useReveal()
   gap: 16px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal-detail-btn {
+  padding: 12px 24px;
+  border-radius: 100px;
+  border: 1.5px solid var(--bg-dark);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+.modal-detail-btn:hover {
+  background: var(--bg-dark);
+  color: var(--text-light);
 }
 
 .modal-cart-btn {
