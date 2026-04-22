@@ -11,13 +11,25 @@
         </div>
       </div>
 
+      <!-- 搜尋框 -->
+      <div class="store-search reveal rd1">
+        <input
+          v-model="searchKeyword"
+          type="search"
+          placeholder="搜尋商品名稱..."
+          class="store-search-input"
+          aria-label="搜尋商品名稱"
+          @input="handleSearch"
+        />
+      </div>
+
       <!-- 分類 Tab -->
       <div class="store-tabs reveal rd2">
         <button
           class="store-tab"
           :class="{ active: activeCategory === null }"
           aria-label="顯示全部商品"
-          @click="activeCategory = null"
+          @click="setCategory(null)"
         >
           全部
         </button>
@@ -27,7 +39,7 @@
           class="store-tab"
           :class="{ active: activeCategory === cat.id }"
           :aria-label="`篩選${cat.categoryName}分類`"
-          @click="activeCategory = cat.id"
+          @click="setCategory(cat.id)"
         >
           {{ cat.categoryName }}
         </button>
@@ -39,9 +51,9 @@
       </div>
 
       <!-- 商品 Grid -->
-      <div v-else-if="filteredProducts.length > 0" class="store-grid">
+      <div v-else-if="products.length > 0" class="store-grid">
         <div
-          v-for="product in filteredProducts"
+          v-for="product in products"
           :key="product.id"
           class="store-card reveal"
         >
@@ -65,7 +77,8 @@
 
       <!-- 空狀態 -->
       <div v-else class="store-empty">
-        <p>目前此分類沒有商品</p>
+        <p v-if="searchKeyword.trim()">找不到符合「{{ searchKeyword.trim() }}」的商品</p>
+        <p v-else>目前此分類沒有商品</p>
       </div>
 
     </div>
@@ -73,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
 
@@ -100,12 +113,10 @@ interface ProductDto {
 const categories = ref<CategoryDto[]>([])
 const products = ref<ProductDto[]>([])
 const activeCategory = ref<number | null>(null)
+const searchKeyword = ref<string>('')
 const loading = ref<boolean>(true)
 
-const filteredProducts = computed<ProductDto[]>(() => {
-  if (activeCategory.value === null) return products.value
-  return products.value.filter(p => p.categoryId === activeCategory.value)
-})
+let searchTimer: ReturnType<typeof setTimeout>
 
 function hasDiscount(product: ProductDto): boolean {
   return product.originalPrice > product.unitPrice
@@ -121,16 +132,29 @@ async function fetchCategories(): Promise<void> {
 }
 
 async function fetchProducts(): Promise<void> {
-  const res = await fetch('/api/StoreApi/products')
+  loading.value = true
+  const params = new URLSearchParams()
+  if (searchKeyword.value.trim()) params.set('name', searchKeyword.value.trim())
+  if (activeCategory.value !== null) params.set('categoryId', String(activeCategory.value))
+  const res = await fetch(`/api/StoreApi/products?${params}`)
   products.value = await res.json()
+  loading.value = false
 }
 
+function handleSearch(): void {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(fetchProducts, 400)
+}
+
+function setCategory(id: number | null): void {
+  activeCategory.value = id
+}
+
+watch(activeCategory, fetchProducts)
+
 onMounted(async () => {
-  try {
-    await Promise.all([fetchCategories(), fetchProducts()])
-  } finally {
-    loading.value = false
-  }
+  await fetchCategories()
+  await fetchProducts()
 })
 
 useReveal()
@@ -181,6 +205,33 @@ useReveal()
   max-width: 480px;
   margin-top: 10px;
   line-height: 1.6;
+}
+
+/* ── 搜尋框 ── */
+.store-search {
+  margin-bottom: 20px;
+}
+
+.store-search-input {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 16px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  transition: border-color 0.3s;
+  outline: none;
+}
+
+.store-search-input:focus {
+  border-color: var(--accent);
+}
+
+.store-search-input::placeholder {
+  color: var(--text-secondary);
 }
 
 /* ── 分類 Tab ── */
