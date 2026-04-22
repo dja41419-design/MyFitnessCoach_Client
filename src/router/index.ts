@@ -10,19 +10,19 @@ import ReserveDetail from '@/views/ReserveDetail.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-  { path: '/', component: MyFitnessCoach },
-  { path: '/store', component: Store },
-  { name:'info', path: '/personalInfo', component: Personalnfo },
-  { name:'AllInstructor', path: '/AllInstructor', component: AllInstructor },
-  { 
-    path: '/reserve', 
-    component: Reserve,
-    children: [
-      { path: '', redirect: '/reserve/1' },
-      { name: 'ReserveDetail', path: ':id', component: ReserveDetail }
-    ]
-  },
-]
+    { path: '/', component: MyFitnessCoach },
+    { path: '/store', component: Store },
+    { name: 'info', path: '/personalInfo', component: Personalnfo },
+    { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
+    {
+      path: '/reserve',
+      component: Reserve,
+      children: [
+        { path: '', redirect: '/reserve/1' },
+        { name: 'ReserveDetail', path: ':id', component: ReserveDetail }
+      ]
+    },
+  ]
 })
 
 export default router
