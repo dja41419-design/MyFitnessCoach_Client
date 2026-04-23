@@ -23,6 +23,7 @@ import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
 import ActivateAccount from '@/views/ActivateAccount.vue'
 
+import GoogleCallback from '@/views/GoogleCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -45,6 +46,8 @@ const router = createRouter({
     { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
     { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
 
+    { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
+    
     // 使用者帳戶相關頁面，共用 UserLayout
     {
       path: '/user',
