@@ -29,6 +29,10 @@
         <p>讀取中...</p>
       </div>
 
+      <div v-else-if="errorMsg" class="state-container error-state">
+        <p>⚠ {{ errorMsg }}</p>
+      </div>
+
       <div v-else-if="records.length === 0" class="state-container">
         <div class="empty-icon">
           <i class="mdi mdi-rhombus-outline"></i>
@@ -77,6 +81,7 @@ interface PointRecord {
 
 const balance = ref(0)
 const loading = ref(true)
+const errorMsg = ref('')
 const records = ref<PointRecord[]>([])
 
 // 格式化日期
@@ -91,17 +96,22 @@ function formatDate(dateStr: string) {
 // 獲取真實資料
 async function fetchPointData() {
   loading.value = true
+  errorMsg.value = ''
   try {
+    const token = localStorage.getItem('token')
     const response = await fetch('/api/Points/my-points', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token ?? ''}`
       }
     })
-    
-    if (!response.ok) throw new Error('無法取得點數資料')
-    
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}))
+      throw new Error(`HTTP ${response.status}：${body?.error ?? '無法取得點數資料'}`)
+    }
+
     const data = await response.json()
-    balance.value = Math.floor(data.balance) // 轉換為整數顯示
+    balance.value = Math.floor(data.balance)
     records.value = data.history.map((r: any) => ({
       id: r.id,
       date: r.date,
@@ -109,7 +119,8 @@ async function fetchPointData() {
       amount: r.amount,
       status: r.status
     }))
-  } catch (err) {
+  } catch (err: any) {
+    errorMsg.value = err.message ?? '發生未知錯誤'
     console.error('Fetch error:', err)
   } finally {
     loading.value = false
@@ -221,6 +232,10 @@ onMounted(() => {
   text-align: center;
   padding: 60px 0;
   color: var(--text-secondary);
+}
+
+.error-state {
+  color: #c0392b;
 }
 
 .empty-icon {
