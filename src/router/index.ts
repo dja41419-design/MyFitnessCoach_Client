@@ -21,6 +21,7 @@ import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
+import ActivateAccount from '@/views/ActivateAccount.vue'
 
 
 const router = createRouter({
@@ -30,10 +31,8 @@ const router = createRouter({
     { path: '/store', component: Store },
     { name: 'ProductDetail', path: '/store/:id', component: ProductDetail },
     { name: 'Cart', path: '/cart', component: Cart },
-    { name: 'info', path: '/personalInfo', component: Personalnfo, meta: { requiresAuth: true } },
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
-    { name: 'changepwd', path: '/changepassword', component: ChangePwd, meta: { requiresAuth: true } },
     { name: 'forgotpwd', path: '/forgotpassword', component: ForgotPwd },
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
     { name: 'activate', path: '/activate', component: ActivateAccount },
@@ -41,7 +40,6 @@ const router = createRouter({
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
-    { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
     { name: 'Lesson', path: '/lesson', component: Lesson },
     { name: 'LessonCart', path: '/lesson-cart', component: LessonCart },
     { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
