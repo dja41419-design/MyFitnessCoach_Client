@@ -1,9 +1,9 @@
 export interface RegisterRequest {
-  name: string
+  userName: string
   account: string
   password: string
   email: string
-  phone: string
+  mobile: string
 }
 
 export interface RegisterResponse {
@@ -23,7 +23,12 @@ export async function register(payload: RegisterRequest): Promise<RegisterRespon
   }
 
   if (!response.ok) {
-    throw new Error('伺服器錯誤，請稍後再試')
+    const err = await response.json().catch(() => ({}))
+    const firstFieldError =
+      err?.errors && typeof err.errors === 'object'
+        ? (Object.values(err.errors as Record<string, string[]>).flat()[0] as string | undefined)
+        : undefined
+    throw new Error(err?.message ?? firstFieldError ?? err?.title ?? '伺服器錯誤，請稍後再試')
   }
 
   return response.json()

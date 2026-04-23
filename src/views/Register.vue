@@ -315,11 +315,11 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     await register({
-      name: form.name.trim(),
+      userName: form.name.trim(),
       account: form.account.trim(),
       password: form.password,
       email: form.email.trim(),
-      phone: form.phone.trim()
+      mobile: form.phone.trim()
     })
     successEmail.value = form.email.trim()
     setTimeout(() => router.push({ name: 'login' }), 5000)
@@ -635,6 +635,12 @@ async function handleSubmit() {
 
 /* RWD */
 @media (min-width: 768px) {
-  .register-photo { display: block; }
+  .register-photo {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+  }
 }
 </style>
