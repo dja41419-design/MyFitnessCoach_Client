@@ -1,5 +1,8 @@
 <template>
   <div class="user-layout">
+    <div class="container">
+      <router-link to="/" class="back-home">← 回首頁</router-link>
+    </div>
     <div class="container layout-inner">
       <!-- 側邊導覽欄 -->
       <aside class="user-sidebar">
@@ -71,8 +74,20 @@ function handleLogout() {
 .user-layout {
   min-height: 100vh;
   background: var(--bg);
-  padding: 140px 0 60px; /* 增加頂部間距確保不被 Navbar 擋住 */
+  padding: 120px 0 60px;
 }
+
+.back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+.back-home:hover { color: var(--accent-dark); }
 
 .layout-inner {
   display: flex; /* 改為 flex 佈局 */

@@ -636,7 +636,8 @@ onMounted(() => {
 }
 
 .create-at { font-size: 0.8rem; color: #999; }
-.actions { display: flex; gap: 10px; }
+.actions { display: flex; gap: 10px; align-items: center; }
+.actions :deep(.el-tooltip__trigger) { display: inline-flex; }
 
 .pagination-wrapper {
   margin-top: 40px;

@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
+import ProductDetail from '@/views/ProductDetail.vue'
+import Cart from '@/views/Cart.vue'
 import Personalnfo from '@/views/Personalnfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
 import AllReviews from '@/views/AllReviews.vue'
@@ -20,25 +22,32 @@ import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
+import ActivateAccount from '@/views/ActivateAccount.vue'
 
+import GoogleCallback from '@/views/GoogleCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { name: 'home', path: '/', component: MyFitnessCoach },
     { path: '/store', component: Store },
+    { name: 'ProductDetail', path: '/store/:id', component: ProductDetail },
+    { name: 'Cart', path: '/cart', component: Cart },
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
     { name: 'forgotpwd', path: '/forgotpassword', component: ForgotPwd },
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
+    { name: 'activate', path: '/activate', component: ActivateAccount },
     { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
     { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
-    { name:'Lesson', path: '/lesson', component: Lesson },
-    { name:'LessonCart', path: '/lesson-cart', component: LessonCart },
-    { name:'LessonPay', path: '/lesson-pay', component: LessonPay },
-    { name:'LessonResult', path: '/lesson-result', component: LessonResult },
+    { name: 'Lesson', path: '/lesson', component: Lesson },
+    { name: 'LessonCart', path: '/lesson-cart', component: LessonCart },
+    { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
+    { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
+
+    { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
     
     // 使用者帳戶相關頁面，共用 UserLayout
     {
@@ -53,8 +62,8 @@ const router = createRouter({
       ]
     },
 
-    { 
-      path: '/reserve', 
+    {
+      path: '/reserve',
       component: Reserve,
       children: [
         { path: '', redirect: '/reserve/1' },

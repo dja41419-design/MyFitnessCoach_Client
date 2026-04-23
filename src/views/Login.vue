@@ -89,6 +89,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { login } from '@/data/login'
+import { mergeGuestCartOnLogin } from '@/composables/useCart'
 
 
 
@@ -116,6 +117,10 @@ async function handleSubmit() {
     localStorage.setItem('token', res.token)
     localStorage.setItem('username', res.userName)
     localStorage.setItem('imageUrl', res.imageUrl ?? '')
+
+    // 登入成功後:將 localStorage 的 guest 購物車合併到 DB,然後從 DB 重新載入
+    await mergeGuestCartOnLogin()
+
     const returnUrl = route.query.returnUrl as string
     router.push(returnUrl || { name: 'home' })
   } catch (err) {
@@ -126,7 +131,20 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  window.location.href = '/api/auth/google'
+  const clientId = "830841818320-kl0kcce6r0kk6jlct20dl6cbm4r4i81s.apps.googleusercontent.com";
+  const redirectUri = window.location.origin + "/google-callback";
+  const scope = "https://www.googleapis.com/auth/calendar.events email profile openid";
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=${redirectUri}&` +
+    `response_type=code&` +
+    `scope=${scope}&` +
+    `access_type=offline&` +
+    `prompt=consent&` +
+    `include_granted_scopes=true`;
+
+  window.location.href = authUrl;
 }
 </script>
 
