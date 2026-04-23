@@ -2,7 +2,7 @@
   <div class="pwd-container">
     <div class="section-header">
       <h2 class="section-title">修改密碼</h2>
-      <p class="section-desc">請輸入舊密碼並設定新的帳戶密碼</p>
+      <p class="section-desc">  請輸入舊密碼並設定新的帳戶密碼：</p>
     </div>
 
     <div class="pwd-card">
@@ -204,6 +204,9 @@ async function handleSubmit() {
 
 .section-header {
   margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .section-title {
