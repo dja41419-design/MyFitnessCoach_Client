@@ -43,6 +43,11 @@ onMounted(async () => {
       })
     });
 
+    if (response.status === 401) {
+      error.value = "驗證失敗，請重新登入網站後再試一次。";
+      return;
+    }
+
     const data = await response.json();
 
     if (response.ok) {
