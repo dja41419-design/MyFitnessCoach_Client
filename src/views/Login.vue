@@ -89,6 +89,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { login } from '@/data/login'
+import { mergeGuestCartOnLogin } from '@/composables/useCart'
 
 
 
@@ -116,6 +117,10 @@ async function handleSubmit() {
     localStorage.setItem('token', res.token)
     localStorage.setItem('username', res.userName)
     localStorage.setItem('imageUrl', res.imageUrl ?? '')
+
+    // 登入成功後:將 localStorage 的 guest 購物車合併到 DB,然後從 DB 重新載入
+    await mergeGuestCartOnLogin()
+
     const returnUrl = route.query.returnUrl as string
     router.push(returnUrl || { name: 'home' })
   } catch (err) {

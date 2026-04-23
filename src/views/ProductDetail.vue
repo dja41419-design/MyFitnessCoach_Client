@@ -170,24 +170,38 @@ onMounted(fetchProduct)
 }
 
 .cart-icon-link {
-  position: relative;
+  position: fixed;
+  top: 100px;
+  right: 24px;
+  z-index: 50;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 1.5px solid var(--border);
   color: var(--text-primary);
-  background: transparent;
+  background: var(--bg);
   text-decoration: none;
   transition: all 0.3s;
   flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(26, 22, 19, 0.08);
 }
 
 .cart-icon-link:hover {
   border-color: var(--text-primary);
   background: var(--bg-card);
+  box-shadow: 0 4px 16px rgba(26, 22, 19, 0.12);
+}
+
+@media (max-width: 768px) {
+  .cart-icon-link {
+    top: 80px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .cart-icon-badge {
