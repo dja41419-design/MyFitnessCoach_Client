@@ -39,6 +39,16 @@
           </div>
         </template>
 
+        <!-- 購物車入口(訪客也可見,固定放在最右) -->
+        <RouterLink to="/cart" class="nav-cart-link" aria-label="前往購物車">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          <span v-if="itemCount > 0" class="nav-cart-badge">{{ itemCount }}</span>
+        </RouterLink>
+
         <!-- 手機漢堡按鈕 -->
         <button class="mobile-toggle" @click="toggleMenu" aria-label="Menu">☰</button>
       </div>
@@ -76,9 +86,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
+import { useCart } from '@/composables/useCart'
 import { logout } from '@/data/login'
 
 const { isScrolled, isMobileMenuOpen, toggleMenu } = useNavbar()
+const { itemCount } = useCart()
 
 // 登入狀態(從 localStorage 讀取,與 MyFitnessCoach.vue 一致)
 const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
@@ -162,6 +174,46 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 .nav-right-group .nav-cta {
   margin-right: 0;
+}
+
+/* ── 購物車入口(navbar 內嵌版) ─────────────── */
+.nav-cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  background: transparent;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.nav-cart-link:hover {
+  border-color: var(--text-primary);
+  background: rgba(26, 22, 19, 0.06);
+}
+
+.nav-cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--bg-dark);
+  color: var(--text-light);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .nav-logo {

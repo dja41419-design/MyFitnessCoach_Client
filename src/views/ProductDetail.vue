@@ -6,14 +6,6 @@
 
       <div class="detail-topbar">
         <RouterLink to="/store" class="detail-back" aria-label="返回商城">← 返回商城</RouterLink>
-        <RouterLink to="/cart" class="cart-icon-link" aria-label="前往購物車">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-          </svg>
-          <span v-if="itemCount > 0" class="cart-icon-badge">{{ itemCount }}</span>
-        </RouterLink>
       </div>
 
       <!-- Loading -->
@@ -90,7 +82,7 @@ const route = useRoute()
 const product = ref<ProductDto | null>(null)
 const loading = ref<boolean>(true)
 
-const { addItem, itemCount } = useCart()
+const { addItem } = useCart()
 
 function handleAddToCart(): void {
   if (!product.value) return
@@ -170,59 +162,6 @@ onMounted(fetchProduct)
 
 .detail-back:hover {
   color: var(--text-primary);
-}
-
-.cart-icon-link {
-  position: fixed;
-  top: 100px;
-  right: 24px;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  color: var(--text-primary);
-  background: var(--bg);
-  text-decoration: none;
-  transition: all 0.3s;
-  flex-shrink: 0;
-  box-shadow: 0 2px 12px rgba(26, 22, 19, 0.08);
-}
-
-.cart-icon-link:hover {
-  border-color: var(--text-primary);
-  background: var(--bg-card);
-  box-shadow: 0 4px 16px rgba(26, 22, 19, 0.12);
-}
-
-@media (max-width: 768px) {
-  .cart-icon-link {
-    top: 80px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-  }
-}
-
-.cart-icon-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--bg-dark);
-  color: var(--text-light);
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
 }
 
 /* ── 狀態 ── */
