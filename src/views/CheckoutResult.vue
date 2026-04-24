@@ -41,9 +41,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useCart } from '@/composables/useCart'
 
 const router = useRouter()
 const route = useRoute()
+const { clearCart } = useCart()
 
 const countdown = ref(5)
 
@@ -68,7 +70,9 @@ function goNext(): void {
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-onMounted(() => {
+onMounted(async () => {
+  if (isSuccess.value) await clearCart()
+
   timer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
