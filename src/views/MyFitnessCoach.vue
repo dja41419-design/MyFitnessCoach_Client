@@ -286,37 +286,30 @@
         <RouterLink to="/store" target="_blank" class="btn-outline reveal rd2">查看全部商品</RouterLink>
       </div>
 
-      <!-- 分類 Tab -->
-      <!-- <div class="shop-tabs reveal">
-        <button
-          v-for="tab in shopTabs"
-          :key="tab"
-          class="shop-tab"
-          :class="{ active: activeTab === tab }"
-          @click="activeTab = tab"
-        >
-          {{ tab }}
-        </button>
-      </div> -->
-
       <!-- 商品卡片 -->
       <div class="shop-grid">
         <div
-          v-for="(product, idx) in filteredProducts"
-          :key="product.name"
+          v-for="(product, idx) in landingProducts"
+          :key="product.id"
           class="shop-card reveal"
           :class="`rd${idx}`"
         >
           <div class="shop-img-wrap">
-            <span v-if="product.badge" class="shop-card-badge">{{ product.badge }}</span>
-            <img :src="product.img" :alt="product.name" class="shop-img" />
+            <span v-if="hasDiscount(product)" class="shop-card-badge">特價</span>
+            <img
+              :src="getProductImagePath(product.id)"
+              :alt="product.name"
+              class="shop-img"
+            />
           </div>
           <div class="shop-body">
-            <div class="shop-category">{{ product.category }}</div>
+            <div class="shop-category">{{ product.categoryName }}</div>
             <h3>{{ product.name }}</h3>
             <div class="shop-price">
-              {{ product.price }}
-              <span v-if="product.original" class="original">{{ product.original }}</span>
+              {{ formatPrice(product.unitPrice) }}
+              <span v-if="hasDiscount(product)" class="original">
+                {{ formatPrice(product.originalPrice) }}
+              </span>
             </div>
           </div>
         </div>
@@ -369,7 +362,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
@@ -378,13 +371,13 @@ import { useInstructors } from '@/composables/useInstructors'
 import { useReviews } from '@/composables/useReviews'
 import { plans } from '@/data/plans'
 import { trackingItems } from '@/data/tracking'
-import { shopTabs, shopProducts } from '@/data/shop'
 import { footerCols } from '@/data/footer'
 import { logout } from '@/data/login'
+import { useProducts } from '@/composables/useProducts'
+import { getProductImagePath, type Product } from '@/data/products'
 
 const router = useRouter()
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
-const activeTab = ref<string>(shopTabs[0])
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
@@ -460,18 +453,23 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 const { allInstructors, loadInstructors } = useInstructors()
 const { reviewList, loadReviews } = useReviews()
+const { landingProducts, loadLandingProducts } = useProducts()
 
 onMounted(async () => {
   await Promise.all([
     loadInstructors(),
-    loadReviews()
+    loadReviews(),
+    loadLandingProducts(4)
   ])
 })
 
-const filteredProducts = computed(() => {
-  if (activeTab.value === '全部') return shopProducts
-  return shopProducts.filter(p => p.category === activeTab.value)
-})
+function formatPrice(n: number): string {
+  return `NT$${Math.floor(n).toLocaleString()}`
+}
+
+function hasDiscount(p: Product): boolean {
+  return p.originalPrice > p.unitPrice
+}
 
 // handleScroll 已由 useNavbar 處理，若無特殊用途可移除
 
