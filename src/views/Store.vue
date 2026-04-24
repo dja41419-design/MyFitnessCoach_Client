@@ -1,4 +1,6 @@
 <template>
+  <AppNavbar />
+
   <main class="store-page">
     <div class="store-container">
 
@@ -172,6 +174,7 @@ import { RouterLink } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useReveal } from '@/composables/useReveal'
 import { useCart } from '@/composables/useCart'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface CategoryDto {
   id: number

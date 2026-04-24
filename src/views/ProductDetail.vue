@@ -1,4 +1,6 @@
 <template>
+  <AppNavbar />
+
   <main class="detail-page">
     <div class="detail-container">
 
@@ -69,6 +71,7 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface ProductDto {
   id: number
