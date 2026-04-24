@@ -1,4 +1,6 @@
 <template>
+  <AppNavbar />
+
   <main class="cart-page">
     <div class="cart-container">
 
@@ -86,6 +88,7 @@
 import { RouterLink, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 const router = useRouter()
 
