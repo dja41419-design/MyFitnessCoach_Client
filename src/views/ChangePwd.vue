@@ -140,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, toRef } from 'vue'
+import { ref, reactive, toRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { changePassword } from '@/data/changePassword'
 import { usePasswordQuality } from '@/composables/usePasswordQuality'
@@ -154,14 +154,16 @@ const apiError = ref('')
 const successMessage = ref('')
 const isLoading = ref(false)
 
-const { rules, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'newPassword'))
+const { rules, isValid, firstFailureMessage, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'newPassword'))
+
+watch(() => form.oldPassword, () => { errors.oldPassword = '' })
+watch(() => form.newPassword, () => { errors.newPassword = '' })
+watch(() => form.confirmPassword, () => { errors.confirmPassword = '' })
 
 function validate(): boolean {
   errors.oldPassword = form.oldPassword ? '' : '請輸入舊密碼'
-  if (!form.newPassword) {
-    errors.newPassword = '請輸入新密碼'
-  } else if (form.newPassword.length < 8) {
-    errors.newPassword = '密碼至少需要 8 個字元'
+  if (!isValid.value) {
+    errors.newPassword = firstFailureMessage.value
   } else if (form.newPassword === form.oldPassword) {
     errors.newPassword = '新密碼不可與舊密碼相同'
   } else {
