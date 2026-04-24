@@ -131,7 +131,7 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  const clientId = "830841818320-kl0kcce6r0kk6jlct20dl6cbm4r4i81s.apps.googleusercontent.com";
+  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
   const redirectUri = window.location.origin + "/google-callback";
   const scope = "https://www.googleapis.com/auth/calendar.events email profile openid";
   
