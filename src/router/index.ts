@@ -23,6 +23,8 @@ import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
 import ActivateAccount from '@/views/ActivateAccount.vue'
+import Checkout from '@/views/Checkout.vue'
+import CheckoutResult from '@/views/CheckoutResult.vue'
 
 import GoogleCallback from '@/views/GoogleCallback.vue'
 
@@ -46,6 +48,8 @@ const router = createRouter({
     { name: 'LessonCart', path: '/lesson-cart', component: LessonCart },
     { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
     { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
+    { name: 'Checkout', path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
+    { name: 'CheckoutResult', path: '/checkout-result', component: CheckoutResult },
 
     { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
     
