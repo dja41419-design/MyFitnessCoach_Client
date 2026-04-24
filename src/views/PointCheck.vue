@@ -46,7 +46,7 @@
             <tr>
               <th>日期</th>
               <th>項目</th>
-              <th>異動</th>
+              <th style="text-align: center;">異動</th>
               <th>狀態</th>
             </tr>
           </thead>
@@ -54,7 +54,7 @@
             <tr v-for="record in records" :key="record.id">
               <td class="date-cell">{{ formatDate(record.date) }}</td>
               <td>{{ record.description }}</td>
-              <td :class="['amount-cell', record.amount >= 0 ? 'positive' : 'negative']">
+              <td :class="['amount-cell', record.amount >= 0 ? 'positive' : 'negative']" style="text-align: center;">
                 {{ record.amount >= 0 ? '+' : '' }}{{ record.amount }}
               </td>
               <td>
@@ -63,6 +63,19 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- 分頁元件 -->
+        <div class="pagination-container" v-if="totalPages > 1">
+          <v-pagination
+            v-model="page"
+            :length="totalPages"
+            :total-visible="7"
+            @update:model-value="handlePageChange"
+            color="var(--accent-dark)"
+            rounded="circle"
+            density="comfortable"
+          ></v-pagination>
+        </div>
       </div>
     </div>
   </div>
@@ -84,6 +97,11 @@ const loading = ref(true)
 const errorMsg = ref('')
 const records = ref<PointRecord[]>([])
 
+// 分頁相關
+const page = ref(1)
+const pageSize = 10
+const totalPages = ref(1)
+
 // 格式化日期
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('zh-TW', {
@@ -94,12 +112,12 @@ function formatDate(dateStr: string) {
 }
 
 // 獲取真實資料
-async function fetchPointData() {
+async function fetchPointData(targetPage = 1) {
   loading.value = true
   errorMsg.value = ''
   try {
     const token = localStorage.getItem('token')
-    const response = await fetch('/api/Points/my-points', {
+    const response = await fetch(`/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}`, {
       headers: {
         'Authorization': `Bearer ${token ?? ''}`
       }
@@ -112,6 +130,9 @@ async function fetchPointData() {
 
     const data = await response.json()
     balance.value = Math.floor(data.balance)
+    totalPages.value = data.totalPages
+    page.value = data.currentPage
+    
     records.value = data.history.map((r: any) => ({
       id: r.id,
       date: r.date,
@@ -124,6 +145,15 @@ async function fetchPointData() {
     console.error('Fetch error:', err)
   } finally {
     loading.value = false
+  }
+}
+
+function handlePageChange(newPage: number) {
+  fetchPointData(newPage)
+  // 捲動回紀錄頂部
+  const card = document.querySelector('.records-card')
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
@@ -277,7 +307,7 @@ onMounted(() => {
 .amount-cell {
   font-weight: 700;
   font-family: var(--font-display);
-  font-size: 2rem !important;
+  font-size: 1.25rem !important;
   letter-spacing: -0.02em;
 }
 
@@ -295,6 +325,12 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+.pagination-container {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
