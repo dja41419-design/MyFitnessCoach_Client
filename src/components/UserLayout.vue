@@ -1,5 +1,8 @@
 <template>
   <div class="user-layout">
+    <div class="container">
+      <router-link to="/" class="back-home">← 回首頁</router-link>
+    </div>
     <div class="container layout-inner">
       <!-- 側邊導覽欄 -->
       <aside class="user-sidebar">
@@ -17,10 +20,9 @@
           <router-link to="/changepassword" class="menu-item" active-class="active">
             <i class="mdi mdi-lock-reset"></i> 修改密碼
           </router-link>
-          <!-- 暫時導向到 # 用於佔位，避免同時觸發 active -->
-          <a href="#points" class="menu-item">
+          <router-link to="/points" class="menu-item" active-class="active">
             <i class="mdi mdi-rhombus"></i> 點數查詢
-          </a>
+          </router-link>
           <router-link to="/reserveorders" class="menu-item" active-class="active">
             <i class="mdi mdi-calendar-check"></i> 課程預約查詢
           </router-link>
@@ -72,8 +74,20 @@ function handleLogout() {
 .user-layout {
   min-height: 100vh;
   background: var(--bg);
-  padding: 140px 0 60px; /* 增加頂部間距確保不被 Navbar 擋住 */
+  padding: 120px 0 60px;
 }
+
+.back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+.back-home:hover { color: var(--accent-dark); }
 
 .layout-inner {
   display: flex; /* 改為 flex 佈局 */

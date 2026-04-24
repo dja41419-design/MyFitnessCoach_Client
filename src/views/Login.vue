@@ -131,7 +131,20 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  window.location.href = '/api/auth/google'
+  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
+  const redirectUri = window.location.origin + "/google-callback";
+  const scope = "https://www.googleapis.com/auth/calendar.events email profile openid";
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=${redirectUri}&` +
+    `response_type=code&` +
+    `scope=${scope}&` +
+    `access_type=offline&` +
+    `prompt=consent&` +
+    `include_granted_scopes=true`;
+
+  window.location.href = authUrl;
 }
 </script>
 

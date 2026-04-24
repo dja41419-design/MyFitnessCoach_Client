@@ -83,9 +83,11 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+
+const router = useRouter()
 
 const { items, itemCount, subtotal, updateQty, removeItem, clearCart } = useCart()
 
@@ -117,7 +119,7 @@ async function handleClear(): Promise<void> {
 }
 
 function handleCheckout(): void {
-  ElMessage.info('結帳功能即將推出')
+  router.push('/checkout')
 }
 </script>
 

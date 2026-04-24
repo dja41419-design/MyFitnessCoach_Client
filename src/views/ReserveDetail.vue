@@ -248,6 +248,30 @@ const instructor = computed(() => instructors.value.find(i => i.id === instructo
 const paymentModalVisible = ref(false)
 const paymentMethod = ref('')
 const submitting = ref(false)
+const isGoogleConnected = ref(false)
+
+const checkGoogleStatus = async () => {
+  try {
+    const res = await fetch('https://localhost:7212/api/GoogleAuth/CheckStatus', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      isGoogleConnected.value = data.isConnected
+    }
+  } catch (err) {
+    console.error('Check Google status failed:', err)
+  }
+}
+
+const connectGoogleCalendar = () => {
+  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com"; // <-- 記得換掉
+  const redirectUri = window.location.origin + "/google-callback";
+  const scope = "https://www.googleapis.com/auth/calendar.events";
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=true`;
+  window.location.href = authUrl;
+}
 
 const form = ref({
   date: '',
@@ -398,15 +422,45 @@ async function submitFinalReservation() {
 
     if (response.ok) {
       paymentModalVisible.value = false
-      ElMessageBox.alert(
-        `預約成功！\n\n營養師：${instructor.value?.name}\n時間：${form.value.date} ${form.value.time}\n付款方式：${paymentMethod.value}`,
-        '預約確認',
-        {
-          confirmButtonText: '確定',
-          type: 'success',
-          callback: () => { router.push('/reserveorders') }
-        }
-      )
+      
+      if (isGoogleConnected.value) {
+        // A. 已授權狀態
+        ElMessageBox.confirm(
+          '預約成功！行程已自動同步至您的 Google 日曆。',
+          '預約成功',
+          {
+            confirmButtonText: '開啟google日曆',
+            cancelButtonText: '查看預約紀錄',
+            type: 'success',
+            distinguishCancelAndClose: true
+          }
+        ).then(() => {
+          // 點擊「開啟google日曆」
+          window.open('https://calendar.google.com/', '_blank');
+          router.push('/reserveorders');
+        }).catch((action) => {
+          // 點擊「查看預約紀錄」或關閉彈窗
+          router.push('/reserveorders');
+        });
+      } else {
+        // B. 尚未授權狀態
+        ElMessageBox.confirm(
+          '預約成功！連結 Google 日曆後可自動同步行程，是否現在同步？',
+          '預約成功',
+          {
+            confirmButtonText: '同步google行事曆',
+            cancelButtonText: '暫不同步',
+            type: 'success',
+            distinguishCancelAndClose: true
+          }
+        ).then(() => {
+          // 點擊「同步google行事曆」
+          connectGoogleCalendar();
+        }).catch((action) => {
+          // 點擊「暫不同步」或關閉彈窗
+          router.push('/reserveorders');
+        });
+      }
     } else {
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
@@ -433,6 +487,7 @@ watch(instructorId, async (newId) => {
 
 onMounted(async () => {
   fetchMemberInfo()
+  checkGoogleStatus()
   instructors.value = await fetchAllInstructors()
   if (instructorId.value) {
     await fetchAvailabilityData(instructorId.value)
