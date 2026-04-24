@@ -64,9 +64,8 @@ function toAvatarSrc(url: string | null): string {
 
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl')))
 
-function handleLogout() {
-  logout()
-  localStorage.removeItem('username')
+async function handleLogout() {
+  await logout()
   router.push({ name: 'login' })
 }
 </script>

@@ -14,6 +14,7 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(payload)
   })
 
@@ -29,11 +30,35 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
   return response.json()
 }
 
-export function logout(): void {
-  localStorage.removeItem('token')
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    })
+  } catch {
+    // 呼叫失敗仍繼續清前端狀態，避免 UI 卡住
+  }
   localStorage.removeItem('username')
   localStorage.removeItem('imageUrl')
   // 清空前端購物車 state + localStorage,避免下一個訪客看到前一位使用者的商品
   // 動態 import 避免循環依賴(useCart 會 import fetchWithAuth,fetchWithAuth 會 import router)
-  import('@/composables/useCart').then(m => m.clearCartOnLogout())
+  const m = await import('@/composables/useCart')
+  m.clearCartOnLogout()
+}
+
+export interface CurrentUser {
+  userId: number
+  userName: string
+  imageUrl?: string
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  const response = await fetch('/api/auth/me', {
+    method: 'GET',
+    credentials: 'include'
+  })
+  if (response.status === 401) return null
+  if (!response.ok) return null
+  return response.json()
 }

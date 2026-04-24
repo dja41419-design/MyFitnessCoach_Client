@@ -423,9 +423,9 @@ useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 // onMounted(() => document.addEventListener('click', closeDropdown))
 // onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
-// 登入狀態
+// 登入狀態：改用 username 作為 UX hint（真正授權由後端 HttpOnly cookie + 401 控制）
 const username = ref(localStorage.getItem('username') || '')
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+const isLoggedIn = ref(!!localStorage.getItem('username'))
 
 const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
@@ -446,9 +446,8 @@ function closeDropdown() {
   isDropdownOpen.value = false
 }
 
-function handleLogout() {
-  logout()
-  localStorage.removeItem('username')
+async function handleLogout() {
+  await logout()
   username.value = ''
   imageUrl.value = toAvatarSrc('')
   isLoggedIn.value = false

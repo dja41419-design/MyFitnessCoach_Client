@@ -1,16 +1,14 @@
+import { fetchWithAuth } from './fetchWithAuth'
+
 export interface ChangePasswordRequest {
   oldPassword: string
   newPassword: string
 }
 
 export async function changePassword(payload: ChangePasswordRequest): Promise<void> {
-  const token = localStorage.getItem('token') ?? ''
-  const response = await fetch('/api/auth/ChangePassword', {
+  const response = await fetchWithAuth('/api/auth/ChangePassword', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
 

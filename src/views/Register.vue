@@ -39,6 +39,7 @@
               :class="{ 'is-error': errors.name }"
               placeholder="請輸入姓名"
               autocomplete="name"
+              maxlength="50"
               @blur="onBlur('name')"
               @input="onInput('name')"
             />
@@ -54,8 +55,9 @@
               type="text"
               class="form-input"
               :class="{ 'is-error': errors.account }"
-              placeholder="請輸入帳號（英文字母或數字）"
+              placeholder="請輸入帳號（英數字 4-20 碼）"
               autocomplete="username"
+              maxlength="20"
               @blur="onBlur('account')"
               @input="onInput('account')"
             />
@@ -72,8 +74,9 @@
                 :type="showPassword ? 'text' : 'password'"
                 class="form-input"
                 :class="{ 'is-error': errors.password }"
-                placeholder="請輸入密碼（至少 8 個字元）"
+                placeholder="請輸入密碼（8-12 碼）"
                 autocomplete="new-password"
+                maxlength="12"
                 @blur="onBlur('password')"
                 @input="onInput('password')"
               />
@@ -93,8 +96,8 @@
             <!-- 即時規則檢查 + 密碼強度 -->
             <div v-if="form.password" class="pwd-feedback">
               <ul class="pwd-rules">
-                <li :class="rules.minLen ? 'rule-pass' : 'rule-fail'">
-                  {{ rules.minLen ? '✓' : '✗' }} 至少 8 個字元
+                <li :class="rules.minLen && rules.maxLen ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.minLen && rules.maxLen ? '✓' : '✗' }} 長度 8-12 碼
                 </li>
                 <li :class="rules.hasUpper ? 'rule-pass' : 'rule-fail'">
                   {{ rules.hasUpper ? '✓' : '✗' }} 包含大寫字母
@@ -104,6 +107,9 @@
                 </li>
                 <li :class="rules.hasSymbol ? 'rule-pass' : 'rule-fail'">
                   {{ rules.hasSymbol ? '✓' : '✗' }} 包含特殊字元
+                </li>
+                <li :class="rules.noKeyboardSeq ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.noKeyboardSeq ? '✓' : '✗' }} 不含鍵盤連續字串（asdfgh、qwerty、123456…）
                 </li>
               </ul>
               <div class="strength-row">
@@ -130,6 +136,7 @@
                 :class="{ 'is-error': errors.confirmPassword }"
                 placeholder="請再次輸入密碼"
                 autocomplete="new-password"
+                maxlength="12"
                 @blur="onBlur('confirmPassword')"
                 @input="onInput('confirmPassword')"
               />
@@ -158,6 +165,7 @@
               :class="{ 'is-error': errors.email }"
               placeholder="請輸入電子信箱"
               autocomplete="email"
+              maxlength="100"
               @blur="onBlur('email')"
               @input="onInput('email')"
             />
@@ -175,6 +183,7 @@
               :class="{ 'is-error': errors.phone }"
               placeholder="請輸入手機號碼（09xxxxxxxx）"
               autocomplete="tel"
+              maxlength="10"
               @blur="onBlur('phone')"
               @input="onInput('phone')"
             />
@@ -208,6 +217,13 @@ import { ref, reactive, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/data/register'
 import { usePasswordQuality } from '@/composables/usePasswordQuality'
+import {
+  EMAIL_REGEX,
+  MOBILE_REGEX,
+  ACCOUNT_REGEX,
+  hasHtmlSpecialChar,
+  NAME_MAX_LENGTH,
+} from '@/utils/validators'
 
 const router = useRouter()
 
@@ -239,7 +255,7 @@ const touched = reactive({
   phone: false
 })
 
-const { rules, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'password'))
+const { rules, strength, strengthText, strengthClass, isValid: isPasswordValid, firstFailureMessage: passwordFailureMessage } = usePasswordQuality(toRef(form, 'password'))
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -250,15 +266,20 @@ const successEmail = ref('')
 // 單一欄位驗證規則
 function validateOne(field: keyof typeof errors): string {
   switch (field) {
-    case 'name':
-      return form.name.trim() ? '' : '請輸入姓名'
+    case 'name': {
+      const name = form.name.trim()
+      if (!name) return '請輸入姓名'
+      if (name.length > NAME_MAX_LENGTH) return `姓名長度不可超過 ${NAME_MAX_LENGTH} 碼`
+      if (hasHtmlSpecialChar(name)) return '姓名不可包含特殊符號（< > " \' & / \\ `）'
+      return ''
+    }
     case 'account':
       return form.account.trim()
-        ? /^[A-Za-z0-9]+$/.test(form.account.trim()) ? '' : '帳號只能包含英文字母與數字'
+        ? ACCOUNT_REGEX.test(form.account.trim()) ? '' : '帳號須為 4-20 碼英文字母或數字'
         : '請輸入帳號'
     case 'password':
       return form.password
-        ? form.password.length >= 8 ? '' : '密碼至少需要 8 個字元'
+        ? isPasswordValid.value ? '' : passwordFailureMessage.value
         : '請輸入密碼'
     case 'confirmPassword':
       return form.confirmPassword
@@ -266,11 +287,11 @@ function validateOne(field: keyof typeof errors): string {
         : '請再次輸入密碼'
     case 'email':
       return form.email.trim()
-        ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) ? '' : '請輸入有效的電子信箱'
+        ? EMAIL_REGEX.test(form.email.trim()) ? '' : '請輸入有效的電子信箱'
         : '請輸入電子信箱'
     case 'phone':
       return form.phone.trim()
-        ? /^09\d{8}$/.test(form.phone.trim()) ? '' : '請輸入有效的手機號碼（09xxxxxxxx）'
+        ? MOBILE_REGEX.test(form.phone.trim()) ? '' : '請輸入有效的手機號碼（09xxxxxxxx）'
         : '請輸入手機號碼'
   }
 }

@@ -30,6 +30,7 @@
               :class="{ 'is-error': errors.account }"
               placeholder="請輸入帳號"
               autocomplete="username"
+              maxlength="20"
             />
             <span v-if="errors.account" class="form-error">{{ errors.account }}</span>
           </div>
@@ -48,6 +49,7 @@
               :class="{ 'is-error': errors.password }"
               placeholder="請輸入密碼"
               autocomplete="current-password"
+              maxlength="12"
             />
             <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
           </div>
@@ -114,7 +116,6 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     const res = await login({ account: form.account.trim(), password: form.password })
-    localStorage.setItem('token', res.token)
     localStorage.setItem('username', res.userName)
     localStorage.setItem('imageUrl', res.imageUrl ?? '')
 

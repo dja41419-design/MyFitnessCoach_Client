@@ -68,10 +68,11 @@ const router = createRouter({
   ]
 })
 
-//檢查token是否存在，若不存在則導向登入頁面
+// 登入狀態改由 HttpOnly cookie 判斷；前端僅用 username 作為 UX hint
+// 真正授權由後端 cookie + 401 處理，若 cookie 已失效，受保護 API 會回 401 並由 fetchWithAuth 導回登入頁
 router.beforeEach((to) => {
-  const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) {
+  const isLoggedIn = !!localStorage.getItem('username')
+  if (to.meta.requiresAuth && !isLoggedIn) {
     return { name: 'login', query: { returnUrl: to.fullPath } }
   }
 })

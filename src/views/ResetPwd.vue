@@ -23,8 +23,9 @@
                 :type="show.new ? 'text' : 'password'"
                 class="form-input"
                 :class="{ 'is-error': errors.newPassword }"
-                placeholder="請輸入新密碼（至少 8 個字元）"
+                placeholder="請輸入新密碼（8-12 碼）"
                 autocomplete="new-password"
+                maxlength="12"
               />
               <button type="button" class="pwd-toggle-btn" @click="show.new = !show.new" :aria-label="show.new ? '隱藏密碼' : '顯示密碼'">
                 <svg v-if="show.new" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -40,8 +41,8 @@
             </div>
             <div v-if="form.newPassword" class="pwd-feedback">
               <ul class="pwd-rules">
-                <li :class="rules.minLen ? 'rule-pass' : 'rule-fail'">
-                  {{ rules.minLen ? '✓' : '✗' }} 至少 8 個字元
+                <li :class="rules.minLen && rules.maxLen ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.minLen && rules.maxLen ? '✓' : '✗' }} 長度 8-12 碼
                 </li>
                 <li :class="rules.hasUpper ? 'rule-pass' : 'rule-fail'">
                   {{ rules.hasUpper ? '✓' : '✗' }} 包含大寫字母
@@ -51,6 +52,9 @@
                 </li>
                 <li :class="rules.hasSymbol ? 'rule-pass' : 'rule-fail'">
                   {{ rules.hasSymbol ? '✓' : '✗' }} 包含特殊字元
+                </li>
+                <li :class="rules.noKeyboardSeq ? 'rule-pass' : 'rule-fail'">
+                  {{ rules.noKeyboardSeq ? '✓' : '✗' }} 不含鍵盤連續字串
                 </li>
               </ul>
               <div class="strength-row">
@@ -77,6 +81,7 @@
                 :class="{ 'is-error': errors.confirmPassword }"
                 placeholder="請再次輸入新密碼"
                 autocomplete="new-password"
+                maxlength="12"
               />
               <button type="button" class="pwd-toggle-btn" @click="show.confirm = !show.confirm" :aria-label="show.confirm ? '隱藏密碼' : '顯示密碼'">
                 <svg v-if="show.confirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
