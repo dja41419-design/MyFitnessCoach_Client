@@ -4,12 +4,19 @@
       <div class="header-content">
         <h2 class="section-title">課程預約查詢</h2>
         <p class="section-desc">查看您過去與未來的營養諮詢預約</p>
+        <div class="member-summary" v-if="memberInfo">
+          <el-tag :type="memberInfo.cancelCount >= 3 ? 'danger' : 'info'" round effect="plain">
+            <i class="mdi mdi-cancel mr-1"></i> 
+            {{ memberInfo.cancelCount >= 3 ? '您的預約取消次數已達上限 (3/3)' : `您已累計取消：${memberInfo.cancelCount} 次` }}
+          </el-tag>
+        </div>
       </div>
 
       <!-- 取消政策提醒 -->
       <div class="cancellation-policy-notice">
         <i class="mdi mdi-alert-circle-outline"></i>
-        <span>取消預約請於諮商 <strong>40 分鐘前</strong> 辦理。</span>
+        <span v-if="memberInfo?.cancelCount >= 3" class="text-danger">您已取消預約 3 次，系統已暫時關閉您的取消功能，請聯繫客服。</span>
+        <span v-else>取消預約請於諮商 <strong>40 分鐘前</strong> 辦理。</span>
       </div>
     </header>
 
@@ -58,16 +65,16 @@
             <!-- 待諮詢/已預約：可以取消 -->
             <el-tooltip
               v-if="res.status === '已預約'"
-              :content="!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : ''"
+              :content="memberInfo?.cancelCount >= 3 ? '取消次數已達 3 次上限，請洽客服' : (!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : '')"
               placement="top"
-              :disabled="isCancellable(res)"
+              :disabled="isCancellable(res) && memberInfo?.cancelCount < 3"
             >
               <span>
                 <el-button 
                   size="small" 
                   type="danger" 
                   plain 
-                  :disabled="!isCancellable(res)"
+                  :disabled="!isCancellable(res) || memberInfo?.cancelCount >= 3"
                   @click="handleCancel(res)"
                 >
                   取消預約
@@ -176,6 +183,7 @@ interface MemberInfo {
   username: string
   imageUrl: string
   points: number
+  cancelCount: number
 }
 
 const reservations = ref<Reservation[]>([])
@@ -473,7 +481,8 @@ const handleCancel = (res: Reservation) => {
       
       if (response.ok) {
         ElMessage.success('預約已成功取消')
-        fetchReservations()
+        fetchReservations() // 刷新預約列表
+        fetchMemberInfo()   // 即時更新累計取消次數
       } else {
         const error = await response.json()
         ElMessage.error(error.message || '取消失敗')
@@ -520,6 +529,10 @@ onMounted(() => {
   font-size: 0.95rem;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.member-summary {
+  margin-top: 12px;
 }
 
 /* 優化提醒框樣式 */
