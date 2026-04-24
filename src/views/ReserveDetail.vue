@@ -190,21 +190,21 @@
         <div class="payment-options">
           <div 
             class="payment-option" 
-            :class="{ active: paymentMethod === '點數扣款' }"
-            @click="paymentMethod = '點數扣款'"
+            :class="{ active: paymentMethod === 'Points' }"
+            @click="paymentMethod = 'Points'"
           >
             <div class="option-icon"><i class="mdi mdi-rhombus"></i></div>
             <div class="option-text">
               <span class="option-title">點數扣款</span>
               <span class="option-desc">剩餘點數：{{ memberInfo?.points }} P</span>
             </div>
-            <div class="option-check" v-if="paymentMethod === '點數扣款'"><i class="mdi mdi-check-circle"></i></div>
+            <div class="option-check" v-if="paymentMethod === 'Points'"><i class="mdi mdi-check-circle"></i></div>
           </div>
 
           <div 
             class="payment-option" 
-            :class="{ active: paymentMethod === '信用卡' }"
-            @click="paymentMethod = '信用卡'"
+            :class="{ active: paymentMethod === 'CreditCard' }"
+            @click="paymentMethod = 'CreditCard'"
           >
             <div class="option-icon"><i class="mdi mdi-credit-card-outline"></i></div>
             <div class="option-text">

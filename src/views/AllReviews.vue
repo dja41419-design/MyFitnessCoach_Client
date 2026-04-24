@@ -36,12 +36,10 @@
               density="compact"
               hide-details
               class="sort-select"
+              :menu-props="{ contentClass: 'custom-select-menu' }"
               @wheel.prevent="handleWheel"
               title="可點擊選取或使用滾輪切換"
             >
-              <template #prepend-inner>
-                <v-icon size="small" color="var(--accent-dark)">mdi-sort</v-icon>
-              </template>
             </v-select>
           </div>
         </div>
@@ -504,12 +502,22 @@ const sortedReviewList = computed(() => {
   background-color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
   border: 1px solid var(--border) !important;
-  --v-field-padding-start: 16px;
-  --v-field-padding-end: 12px;
+  --v-field-padding-start: 16px; 
+  --v-field-padding-end: 16px;
+}
+
+:deep(.sort-select .v-field__prepend-inner) {
+  padding-top: 0 !important;
+  margin-right: 8px !important;
+}
+
+:deep(.sort-select .v-field__append-inner) {
+  padding-top: 0 !important;
+  margin-left: 0 !important; /* 減少右側箭頭的間距 */
 }
 
 :deep(.sort-select .v-field__outline) {
-  display: none; /* 隱藏 Vuetify 預設邊框 */
+  display: none;
 }
 
 :deep(.sort-select .v-field--focused) {
@@ -523,44 +531,66 @@ const sortedReviewList = computed(() => {
   color: var(--text-primary);
   letter-spacing: 0.02em;
   min-height: 44px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  padding: 0 !important;
   display: flex;
   align-items: center;
+  justify-content: center !important; /* 強制內容置中 */
+  text-align: center;
 }
 
-/* 下拉清單本體美化 */
-:deep(.v-overlay__content.v-select__content) {
-  border-radius: 16px !important;
-  margin-top: 8px !important;
+:deep(.sort-select .v-select__selection) {
+  margin: 0 !important; /* 移除 Vuetify 預設的外邊距 */
+  justify-content: center !important;
+  width: 100%;
+}
+
+:deep(.sort-select .v-select__selection-text) {
+  overflow: visible; /* 防止置中時文字被切掉 */
+}
+
+/* 下拉清單選單容器 (透過 custom-select-menu 強制控制) */
+:deep(.custom-select-menu) {
+  border-radius: 24px !important; /* 加大圓角以貼合膠囊風格 */
+  margin-top: 6px !important;     /* 縮小間距，使其更貼合 */
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid rgba(196, 168, 130, 0.2) !important;
-}
-
-:deep(.v-list) {
-  padding: 8px !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(196, 168, 130, 0.25) !important;
   background: #ffffff !important;
 }
 
-:deep(.v-list-item) {
-  border-radius: 8px !important;
-  margin-bottom: 2px;
-  transition: all 0.2s ease;
+/* 列表容器 */
+:deep(.custom-select-menu .v-list) {
+  padding: 8px !important;
 }
 
-:deep(.v-list-item:hover) {
+/* 列表項目 */
+:deep(.custom-select-menu .v-list-item) {
+  border-radius: 16px !important; /* 項目本身也帶圓角 */
+  margin-bottom: 4px;
+  padding: 12px 20px !important;
+  transition: all 0.25s ease;
+}
+
+:deep(.custom-select-menu .v-list-item:hover) {
   background-color: var(--bg) !important;
+  color: var(--accent-dark) !important;
 }
 
-:deep(.v-list-item--active) {
+/* 選取中的項目狀態 */
+:deep(.custom-select-menu .v-list-item--active) {
   background-color: var(--accent-dark) !important;
   color: #ffffff !important;
 }
 
-:deep(.v-list-item-title) {
-  font-size: 0.9rem !important;
-  font-weight: 600 !important;
+:deep(.custom-select-menu .v-list-item-title) {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  text-align: center; /* 選項文字也置中 */
+}
+
+/* 隱藏選單中的 Check 圖示 */
+:deep(.custom-select-menu .v-list-item__prepend) {
+  display: none !important;
 }
 
 /* 核心需求：三個排一排，讓內容更醒目 */
@@ -880,5 +910,54 @@ const sortedReviewList = computed(() => {
   .testimonial-card { padding: 24px; }
   .modal-body { padding: 32px; }
   .modal-text { font-size: 1.1rem; }
+}
+</style>
+
+/* 全域樣式：處理被 Teleport 的選單 */
+<style>
+/* 膠囊選單外層容器：負責邊框與大圓角 */
+.v-overlay-container .v-overlay__content.custom-select-menu {
+  background: #ffffff !important;
+  border-radius: 28px !important;    /* 大圓角膠囊感 */
+  border: 1.5px solid var(--border) !important; /* 與輸入框一致的邊框 */
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12) !important;
+  margin-top: 8px !important;
+  padding: 0 !important;
+  overflow: hidden !important;       /* 重要：強制內部內容貼合圓角，防止溢出 */
+}
+
+/* 內層列表：設為透明，使用外層容器的背景與圓角 */
+.custom-select-menu .v-list {
+  background: transparent !important;
+  padding: 8px !important;           /* 讓選項與膠囊邊框保持精緻間距 */
+}
+
+.custom-select-menu .v-list-item {
+  border-radius: 20px !important;    /* 選項本身的圓角 */
+  margin-bottom: 4px !important;
+  padding: 12px 24px !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.custom-select-menu .v-list-item:hover {
+  background-color: #fdfaf5 !important;
+  color: var(--accent-dark) !important;
+}
+
+.custom-select-menu .v-list-item--active {
+  background-color: var(--accent-dark) !important;
+  color: #ffffff !important;
+}
+
+.custom-select-menu .v-list-item-title {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+}
+
+/* 移除預設多餘元素 */
+.custom-select-menu .v-list-item__prepend,
+.custom-select-menu .v-list-item__append {
+  display: none !important;
 }
 </style>
