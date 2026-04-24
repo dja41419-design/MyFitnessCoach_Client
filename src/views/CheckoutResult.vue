@@ -64,8 +64,7 @@ const statusMessage = computed(() =>
 )
 
 function goNext(): void {
-  // TODO: 等訂單列表頁完成後，成功時改導向訂單列表
-  router.push(isSuccess.value ? '/store' : '/store')
+  router.push(isSuccess.value ? '/orders' : '/store')
 }
 
 let timer: ReturnType<typeof setInterval> | null = null

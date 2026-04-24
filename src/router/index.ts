@@ -25,6 +25,7 @@ import LessonResult from '@/views/LessonResult.vue'
 import ActivateAccount from '@/views/ActivateAccount.vue'
 import Checkout from '@/views/Checkout.vue'
 import CheckoutResult from '@/views/CheckoutResult.vue'
+import ProductOrders from '@/views/ProductOrders.vue'
 
 import GoogleCallback from '@/views/GoogleCallback.vue'
 
@@ -63,6 +64,7 @@ const router = createRouter({
         { name: 'changepwd', path: '/changepassword', component: ChangePwd },
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
         { name: 'points', path: '/points', component: PointCheck },
+        { name: 'ProductOrders', path: '/orders', component: ProductOrders },
       ]
     },
 
