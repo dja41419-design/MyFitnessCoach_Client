@@ -43,11 +43,18 @@ const router = useRouter()
 const route = useRoute()
 
 const countdown = ref(5)
-const rtnCode = ref((route.query.RtnCode as string) || '')
-const rtnMsg = ref((route.query.RtnMsg as string) || '交易處理完成')
-const tradeNo = ref((route.query.MerchantTradeNo as string) || '')
 
+// 只接受純數字的 RtnCode，其他一律視為失敗
+const rawCode = (route.query.RtnCode as string) ?? ''
+const rtnCode = ref(/^\d+$/.test(rawCode) ? rawCode : '')
+
+// tradeNo 只接受「MF + 17位數字」格式，不符則不顯示
+const rawTrade = (route.query.MerchantTradeNo as string) ?? ''
+const tradeNo = ref(/^MF\d{17}$/.test(rawTrade) ? rawTrade : '')
+
+// rtnMsg 不信任外部傳入，改用本地映射，防止假訊息/注入
 const isSuccess = computed(() => rtnCode.value === '1')
+const rtnMsg = computed(() => isSuccess.value ? '付款完成，點數已存入您的帳戶。' : '交易未完成，請返回重試或聯絡客服。')
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -59,6 +66,7 @@ onMounted(() => {
   if (isSuccess.value) {
     localStorage.removeItem('lessonCart')
     sessionStorage.removeItem('checkoutAmount')
+    sessionStorage.removeItem('checkoutPlanIds')
   }
 
   timer = setInterval(() => {
