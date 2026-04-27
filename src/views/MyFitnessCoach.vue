@@ -15,6 +15,7 @@
         <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
         <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
+        <router-link to="/reserveorders">我的預約</router-link>
       </div>
 
       <div class="d-flex align-items-center nav-right-group">
