@@ -13,8 +13,12 @@ import Register from '@/views/Register.vue'
 import ChangePwd from '@/views/ChangePwd.vue'
 import ForgotPwd from '@/views/ForgotPwd.vue'
 import ResetPwd from '@/views/ResetPwd.vue'
-import BodyRecord from '@/views/BodyRecord.vue'
-import FoodRecord from '@/views/FoodRecord.vue'
+import HealthTracker from '@/views/HealthTracker.vue'
+import DailyDiet from '@/views/DailyDiet.vue'
+import BodyMetrics from '@/views/BodyMetrics.vue'
+import FoodLibrary from '@/views/FoodLibrary.vue'
+import Goals from '@/views/Goals.vue'
+import HealthTrackerReports from '@/views/HealthTrackerReports.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
 import UserLayout from '@/components/UserLayout.vue'
 import Lesson from '@/views/Lesson.vue'
@@ -36,8 +40,19 @@ const router = createRouter({
     { name: 'forgotpwd', path: '/forgotpassword', component: ForgotPwd },
     { name: 'resetpwd', path: '/resetpassword', component: ResetPwd },
     { name: 'activate', path: '/activate', component: ActivateAccount },
-    { name: 'bodyrecord', path: '/bodyrecord', component: BodyRecord, meta: { requiresAuth: true } },
-    { name: 'foodrecord', path: '/foodrecord', component: FoodRecord, meta: { requiresAuth: true } },
+    {
+      path: '/health-tracker',
+      component: HealthTracker,
+      meta: { requiresAuth: true },
+      redirect: '/health-tracker/daily-diet',
+      children: [
+        { name: 'daily-diet',   path: 'daily-diet',   component: DailyDiet },
+        { name: 'body-metrics', path: 'body-metrics',  component: BodyMetrics },
+        { name: 'food-library', path: 'food-library',  component: FoodLibrary },
+        { name: 'goals',        path: 'goals',         component: Goals },
+        { name: 'reports',      path: 'reports',       component: HealthTrackerReports },
+      ],
+    },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
     { name: 'AllReviews', path: '/AllReviews', component: AllReviews },
     { name: 'Lesson', path: '/lesson', component: Lesson },
