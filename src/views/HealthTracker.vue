@@ -41,17 +41,17 @@ const tabs = [
 /* Health-tracker 模組色彩 variables（cascade 到子元件） */
 .health-tracker {
   --ht-surface:       #ffffff;
-  --ht-surface2:      #f0efeb;
-  --ht-border:        #e2dfd9;
-  --ht-text:          #1c1b18;
-  --ht-text2:         #76746e;
-  --ht-text3:         #aaa79f;
-  --ht-green:         #5c7a5c;
-  --ht-green-light:   #eef3ee;
+  --ht-surface2:      var(--bg);             /* #f5f0eb 暖米，對齊全域 */
+  --ht-border:        var(--border);         /* #d4ccc2 對齊全域 */
+  --ht-text:          var(--text-primary);   /* #1a1613 對齊全域 */
+  --ht-text2:         var(--text-secondary); /* #6b5e52 對齊全域 */
+  --ht-text3:         #9a8d80;
+  --ht-green:         var(--accent-dark);    /* #a68b6b 金棕，取代墨綠 */
+  --ht-green-light:   #ede8e0;              /* 暖米淡底，取代綠色淡底 */
   --ht-danger:        #b84f37;
   --ht-warn:          #a07828;
   --ht-info:          #4a7a9e;
-  --ht-radius:        8px;
+  --ht-radius:        12px;
 
   min-height: 100vh;
   background: var(--bg);
@@ -64,25 +64,26 @@ const tabs = [
   display: flex;
   align-items: center;
   padding: 14px 24px;
-  background: var(--ht-surface);
-  border-bottom: 1px solid var(--ht-border);
+  background: var(--bg-dark);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ht-brand {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-light);
   letter-spacing: 0.5px;
 }
 
 .ht-tab-nav {
   display: flex;
+  justify-content: center;
   gap: 6px;
   flex-wrap: wrap;
   padding: 12px 24px;
-  background: var(--ht-surface);
-  border-bottom: 1px solid var(--ht-border);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
 }
 
 .ht-tab-btn {
@@ -94,19 +95,19 @@ const tabs = [
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--ht-text2);
+  color: var(--text-secondary);
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--transition), color var(--transition);
 }
 
 .ht-tab-btn:hover {
-  background: var(--ht-surface2);
-  color: var(--ht-text);
+  background: var(--bg);
+  color: var(--text-primary);
 }
 
 .ht-tab-btn.active {
-  background: var(--ht-green);
-  color: #fff;
+  background: var(--bg-dark);
+  color: var(--text-light);
   font-weight: 600;
 }
 

@@ -608,7 +608,7 @@ function showToast(msg: string) {
 .data-table td.td-text { font-family: var(--font-body); font-size: 12px; white-space: normal; }
 .data-table td.text-secondary { color: var(--ht-text2); }
 .data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover td { background: #fafaf8; }
+.data-table tr:hover td { background: var(--ht-surface2); }
 .th-sort { cursor: pointer; user-select: none; transition: background 0.12s; }
 .th-sort:hover { background: var(--ht-border); }
 .sort-icon { margin-left: 3px; font-size: 9px; color: var(--ht-text3); }
