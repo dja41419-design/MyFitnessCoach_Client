@@ -50,6 +50,12 @@ const router = createRouter({
     { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
     { name: 'Checkout', path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
     { name: 'CheckoutResult', path: '/checkout-result', component: CheckoutResult },
+    {
+      name: 'MyCoupons',
+      path: '/coupons',
+      component: () => import('@/views/MyCoupons.vue'),
+      meta: { requiresAuth: true },
+    },
 
     { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
     

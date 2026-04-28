@@ -65,13 +65,45 @@
 
         <!-- 底部結算 -->
         <div class="cart-summary">
+          <!-- 優惠券區塊（僅登入時顯示） -->
+          <div v-if="loggedIn" class="cart-coupon">
+            <div class="cart-coupon-row">
+              <label class="cart-coupon-label">優惠券</label>
+              <select
+                v-model="selectedCouponId"
+                class="cart-coupon-select"
+                @change="handleCouponChange"
+              >
+                <option :value="null">不使用</option>
+                <option
+                  v-for="mc in usableMyCoupons"
+                  :key="mc.id"
+                  :value="mc.id"
+                >{{ mc.coupon.name }}</option>
+              </select>
+              <RouterLink to="/coupons" class="cart-coupon-link">管理優惠券 →</RouterLink>
+            </div>
+            <p
+              v-if="discountPreview && !discountPreview.isValid && discountPreview.message"
+              class="cart-coupon-msg"
+            >{{ discountPreview.message }}</p>
+          </div>
+
           <div class="cart-summary-row">
             <span>總件數</span>
             <span>{{ itemCount }} 件</span>
           </div>
-          <div class="cart-summary-row cart-total">
-            <span>總金額</span>
+          <div class="cart-summary-row">
+            <span>小計</span>
             <span>NT${{ formatPrice(subtotal) }}</span>
+          </div>
+          <div v-if="appliedDiscount > 0" class="cart-summary-row cart-discount">
+            <span>優惠折扣</span>
+            <span>−NT${{ formatPrice(appliedDiscount) }}</span>
+          </div>
+          <div class="cart-summary-row cart-total">
+            <span>應付總計</span>
+            <span>NT${{ formatPrice(finalTotal) }}</span>
           </div>
           <div class="cart-actions">
             <button class="cart-clear-btn" @click="handleClear">清空購物車</button>
@@ -85,14 +117,61 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import { useCoupon } from '@/composables/useCoupon'
 import AppNavbar from '@/components/AppNavbar.vue'
 
 const router = useRouter()
 
 const { items, itemCount, subtotal, updateQty, removeItem, clearCart } = useCart()
+const {
+  usableMyCoupons,
+  selectedMemberCouponId,
+  discountPreview,
+  loadMyCoupons,
+  applyCoupon,
+  clearCoupon,
+} = useCoupon()
+
+const loggedIn = ref(!!localStorage.getItem('token'))
+
+// 雙向綁定優惠券下拉
+const selectedCouponId = computed<number | null>({
+  get: () => selectedMemberCouponId.value,
+  set: (v) => {
+    selectedMemberCouponId.value = v
+  },
+})
+
+// 套用後實際的折扣 / 應付（無券或試算失敗時退回 0）
+const appliedDiscount = computed(() =>
+  discountPreview.value?.isValid ? discountPreview.value.discountAmount : 0,
+)
+const finalTotal = computed(() => Math.max(0, subtotal.value - appliedDiscount.value))
+
+onMounted(async () => {
+  if (loggedIn.value) {
+    await loadMyCoupons()
+  }
+})
+
+// 商品數量變動時，已選券要自動重新試算
+watch(subtotal, async (newVal) => {
+  if (selectedMemberCouponId.value && newVal > 0) {
+    await applyCoupon(selectedMemberCouponId.value, newVal)
+  }
+})
+
+async function handleCouponChange(): Promise<void> {
+  if (selectedMemberCouponId.value == null) {
+    clearCoupon()
+    return
+  }
+  await applyCoupon(selectedMemberCouponId.value, subtotal.value)
+}
 
 function formatPrice(price: number): string {
   return Math.floor(price).toLocaleString()
@@ -115,6 +194,7 @@ async function handleClear(): Promise<void> {
       type: 'warning',
     })
     clearCart()
+    clearCoupon()
     ElMessage.success('已清空購物車')
   } catch {
     // 使用者取消
@@ -327,6 +407,13 @@ function handleCheckout(): void {
   font-size: 0.92rem;
 }
 
+.cart-discount {
+  color: var(--accent-dark);
+}
+.cart-discount span:last-child {
+  font-weight: 600;
+}
+
 .cart-total {
   padding-top: 16px;
   margin-top: 8px;
@@ -339,6 +426,52 @@ function handleCheckout(): void {
 .cart-total span:last-child {
   font-family: var(--font-display);
   font-size: 1.6rem;
+}
+
+/* 優惠券區塊 */
+.cart-coupon {
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.cart-coupon-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cart-coupon-label {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  min-width: 50px;
+}
+.cart-coupon-select {
+  flex: 1;
+  min-width: 140px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+.cart-coupon-select:focus { border-color: var(--accent); }
+.cart-coupon-link {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.cart-coupon-link:hover { color: var(--text-primary); }
+.cart-coupon-msg {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #c45c5c;
 }
 
 .cart-actions {
