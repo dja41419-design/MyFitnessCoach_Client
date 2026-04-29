@@ -229,7 +229,11 @@ const fetchKeywords = async () => {
 
 const fetchMemberInfo = async () => {
   try {
-    const res = await fetch('/api/Member/Info')
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch('/api/Member/Info', { headers })
     if (res.ok) {
       memberInfo.value = await res.json()
     }
@@ -241,7 +245,11 @@ const fetchMemberInfo = async () => {
 const fetchReservations = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/Reservation/My')
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch('/api/Reservation/My', { headers })
     if (res.ok) {
       reservations.value = await res.json()
     } else {

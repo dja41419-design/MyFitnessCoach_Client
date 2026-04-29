@@ -17,7 +17,7 @@
     </div>
 
     <!-- 精簡會員狀態條 -->
-    <div class="user-status-bar" v-if="memberInfo">
+    <div class="user-status-bar" v-if="memberInfo && isLoggedIn">
       <div class="user-info-group">
         <div class="user-avatar-mini">
           <img :src="memberInfo.avatar || '/assets/logo.png'" alt="User" />
@@ -117,7 +117,7 @@
             </div>
           </div>
 
-          <div class="quick-fill-container" v-if="memberInfo">
+          <div class="quick-fill-container" v-if="memberInfo && isLoggedIn">
             <button 
               type="button" 
               class="btn-quick-fill" 
@@ -241,7 +241,7 @@ const router = useRouter()
 
 const instructors = ref<Instructor[]>([])
 const availability = ref<Availability[]>([])
-const memberInfo = ref<{ name: string; avatar: string; points: number; phone?: string } | null>(null)
+const memberInfo = ref<{ id: number; name: string; avatar: string; points: number; phone?: string } | null>(null)
 const instructorId = computed(() => Number(route.params.id))
 const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
 
@@ -562,7 +562,7 @@ async function submitFinalReservation() {
           router.push('/reserveorders');
         });
       }
-    }
+    } 
   } catch (error) {
     console.error('Reservation failed:', error)
     ElMessageBox.alert('網路錯誤，請稍後再試', '錯誤', { type: 'error' })
