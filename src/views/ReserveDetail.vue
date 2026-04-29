@@ -494,7 +494,7 @@ async function submitFinalReservation() {
 
     const data = await response.json()
 
-    if (paymentMethod.value === '信用卡') {
+    if (paymentMethod.value === 'CreditCard') {
       // 信用卡：轉跳綠界付款
       const formData = new URLSearchParams()
       formData.append('reservationId', String(data.reservationId))
@@ -562,9 +562,6 @@ async function submitFinalReservation() {
           router.push('/reserveorders');
         });
       }
-    } else {
-      const errorData = await response.json()
-      ElMessageBox.alert(errorData.message || '預約失敗，請稍後再試', '錯誤', { type: 'error' })
     }
   } catch (error) {
     console.error('Reservation failed:', error)
