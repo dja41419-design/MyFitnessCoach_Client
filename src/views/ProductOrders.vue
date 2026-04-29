@@ -91,7 +91,45 @@
             </div>
           </div>
 
+          <!-- 申請退換貨 -->
+          <div v-if="order.status === 1 || order.status === 2" class="return-action">
+            <button class="btn-return" @click.stop="openReturnModal(order.id)">
+              <i class="mdi mdi-swap-horizontal"></i> 申請退換貨
+            </button>
+          </div>
+
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退換貨申請彈窗 -->
+  <div v-if="returnModal.visible" class="modal-overlay" @click.self="closeReturnModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>申請退換貨</h3>
+        <button class="modal-close" @click="closeReturnModal"><i class="mdi mdi-close"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">請說明退換貨原因，客服人員將在 1–3 個工作天內與您聯繫。</p>
+        <textarea
+          v-model="returnModal.reason"
+          class="return-textarea"
+          placeholder="請輸入退換貨原因（必填，最多 40 字）"
+          rows="4"
+          maxlength="40"
+        ></textarea>
+        <div class="char-count">{{ returnModal.reason.length }} / 40</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" @click="closeReturnModal">取消</button>
+        <button
+          class="btn-submit"
+          :disabled="!returnModal.reason.trim() || returnModal.submitting"
+          @click="submitReturn"
+        >
+          {{ returnModal.submitting ? '送出中…' : '確認送出' }}
+        </button>
       </div>
     </div>
   </div>
@@ -131,6 +169,13 @@ const loading = ref(true)
 const orders  = ref<Order[]>([])
 const expanded = ref(new Set<number>())
 
+const returnModal = ref({
+  visible: false,
+  orderId: 0,
+  reason: '',
+  submitting: false,
+})
+
 function toggle(id: number): void {
   if (expanded.value.has(id)) expanded.value.delete(id)
   else expanded.value.add(id)
@@ -146,10 +191,42 @@ function formatDate(iso: string): string {
 }
 
 function statusLabel(s: number): string {
-  return ['待付款', '已付款', '已取貨'][s] ?? '未知'
+  return ['待付款', '已付款', '已取貨', '退換貨申請中'][s] ?? '未知'
 }
 function statusClass(s: number): string {
-  return ['tag--pending', 'tag--paid', 'tag--done'][s] ?? ''
+  return ['tag--pending', 'tag--paid', 'tag--done', 'tag--return'][s] ?? ''
+}
+
+function openReturnModal(orderId: number): void {
+  returnModal.value = { visible: true, orderId, reason: '', submitting: false }
+}
+function closeReturnModal(): void {
+  returnModal.value.visible = false
+}
+
+async function submitReturn(): Promise<void> {
+  if (!returnModal.value.reason.trim()) return
+  returnModal.value.submitting = true
+  try {
+    const res = await fetchWithAuth(`/api/ProductOrders/${returnModal.value.orderId}/return`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: returnModal.value.reason.trim() }),
+    })
+    if (res.ok) {
+      const order = orders.value.find(o => o.id === returnModal.value.orderId)
+      if (order) order.status = 3
+      closeReturnModal()
+      alert('退換貨申請已送出，客服將在 1–3 個工作天內與您聯繫。')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.message || '申請失敗，請稍後再試')
+    }
+  } catch {
+    alert('網路錯誤，請稍後再試')
+  } finally {
+    returnModal.value.submitting = false
+  }
 }
 function paymentLabel(m: number): string {
   return m === 1 ? '超商取貨付款' : '線上付款'
@@ -299,4 +376,82 @@ onMounted(async () => {
   margin-top: 4px; padding-top: 10px;
   font-size: 1rem; font-weight: 600; color: var(--text-primary);
 }
+
+/* 退換貨狀態標籤 */
+.tag--return { background: #fde8e8; color: #922b21; }
+
+/* 申請退換貨按鈕 */
+.return-action { display: flex; justify-content: flex-end; }
+.btn-return {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1.5px solid #c0392b;
+  color: #c0392b;
+  border-radius: 100px;
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-return:hover { background: #c0392b; color: white; }
+
+/* 彈窗 */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+.modal-card {
+  background: white;
+  border-radius: var(--radius-lg, 16px);
+  width: 100%; max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.2rem; color: var(--text-secondary);
+  line-height: 1;
+}
+.modal-body { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.modal-hint { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+.return-textarea {
+  width: 100%; padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius, 8px);
+  font-size: 0.9rem; font-family: var(--font-body);
+  resize: vertical; outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.return-textarea:focus { border-color: var(--accent); }
+.char-count { font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+.btn-cancel {
+  padding: 10px 24px; border-radius: 100px;
+  background: transparent; border: 1.5px solid var(--border);
+  color: var(--text-secondary); font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+.btn-submit {
+  padding: 10px 24px; border-radius: 100px;
+  background: #c0392b; border: none;
+  color: white; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-submit:hover:not(:disabled) { background: #922b21; }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
