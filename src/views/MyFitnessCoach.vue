@@ -375,7 +375,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useReveal } from '@/composables/useReveal'
 import { useNutriCarousel } from '@/composables/useNutriCarousel'
@@ -390,6 +390,7 @@ import { useProducts } from '@/composables/useProducts'
 import { getProductImagePath, type Product } from '@/data/products'
 
 const router = useRouter()
+const route = useRoute()
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
@@ -459,6 +460,11 @@ function handleLogout() {
   imageUrl.value = toAvatarSrc('')
   isLoggedIn.value = false
   isDropdownOpen.value = false
+
+  // 若當前路由需登入,登出後踢回登入頁
+  if (route.meta.requiresAuth) {
+    router.push({ name: 'login' })
+  }
 }
 
 onMounted(() => document.addEventListener('click', closeDropdown))

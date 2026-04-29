@@ -86,11 +86,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useNavbar } from '@/composables/useNavbar'
 import { useCart } from '@/composables/useCart'
 import { logout } from '@/data/login'
 
+const route = useRoute()
+const router = useRouter()
 const { isScrolled, isMobileMenuOpen, toggleMenu } = useNavbar()
 const { itemCount } = useCart()
 
@@ -130,6 +132,11 @@ function handleLogout() {
   isDropdownOpen.value = false
   isMobileMenuOpen.value = false
   document.body.style.overflow = ''
+
+  // 若當前路由需登入,登出後踢回登入頁
+  if (route.meta.requiresAuth) {
+    router.push({ name: 'login' })
+  }
 }
 
 onMounted(() => document.addEventListener('click', closeDropdown))
