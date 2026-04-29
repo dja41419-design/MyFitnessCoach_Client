@@ -2,23 +2,22 @@
   <div class="result-page">
     <div class="container">
       <div class="result-card" :class="{ success: isSuccess, failure: !isSuccess }">
-
         <div class="status-icon">
-          <svg v-if="isSuccess" width="64" height="64" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#27ae60" stroke-width="2" />
-            <path d="m9 12 2 2 4-4" stroke="#27ae60" stroke-width="2" />
+          <svg v-if="isSuccess" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke="#27ae60" />
+            <path d="m9 12 2 2 4-4" stroke="#27ae60" />
           </svg>
-          <svg v-else width="64" height="64" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2" />
-            <path d="m15 9-6 6M9 9l6 6" stroke="#c0392b" stroke-width="2" />
+          <svg v-else width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke="#c0392b" />
+            <path d="m15 9-6 6M9 9l6 6" stroke="#c0392b" />
           </svg>
         </div>
 
-        <h1 class="status-title">{{ isSuccess ? '付款成功' : '交易失敗' }}</h1>
+        <h1 class="status-title">{{ isSuccess ? '付款成功' : '付款失敗' }}</h1>
 
         <div class="status-details">
           <p class="status-msg">{{ statusMessage }}</p>
-          <div v-if="tradeNo" class="info-row">
+          <div class="info-row" v-if="tradeNo">
             <span class="label">交易編號：</span>
             <span class="value">{{ tradeNo }}</span>
           </div>
@@ -28,11 +27,8 @@
 
         <div class="redirect-info">
           <p>系統將在 <span class="countdown">{{ countdown }}</span> 秒後自動跳轉</p>
-          <button class="btn-action" @click="goNext">
-            {{ isSuccess ? '查看訂單' : '返回商城' }}
-          </button>
+          <button @click="goReserveOrders" class="btn-home">查看預約紀錄</button>
         </div>
-
       </div>
     </div>
   </div>
@@ -41,42 +37,35 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useCart } from '@/composables/useCart'
 
 const router = useRouter()
 const route = useRoute()
-const { clearCart } = useCart()
-
 const countdown = ref(5)
 
 const rawCode = (route.query.RtnCode as string) ?? ''
-const rtnCode = /^\d+$/.test(rawCode) ? rawCode : ''
+const isSuccess = computed(() => /^\d+$/.test(rawCode) && rawCode === '1')
 
 const rawTrade = (route.query.MerchantTradeNo as string) ?? ''
-// MFP + 17 位數字
-const tradeNo = ref(/^MFP\d{17}$/.test(rawTrade) ? rawTrade : '')
+const tradeNo = ref(/^MFR\d+$/.test(rawTrade) ? rawTrade : '')
 
-const isSuccess = computed(() => rtnCode === '1')
 const statusMessage = computed(() =>
   isSuccess.value
-    ? '訂單已成立，我們將盡快為您處理出貨！'
+    ? '付款完成，您的預約已確認，我們將盡快與您聯繫。'
     : '交易未完成，請返回重試或聯絡客服。'
 )
 
-function goNext(): void {
-  router.push(isSuccess.value ? '/orders' : '/store')
+function goReserveOrders() {
+  router.push('/reserveorders')
 }
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-onMounted(async () => {
-  if (isSuccess.value) await clearCart()
-
+onMounted(() => {
   timer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
       if (timer) clearInterval(timer)
-      goNext()
+      goReserveOrders()
     }
   }, 1000)
 })
@@ -92,19 +81,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: #fdfcfb;
   padding: 24px;
 }
 
 .result-card {
-  background: var(--bg-card);
+  background: white;
   padding: 48px 32px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg, 16px);
   box-shadow: 0 10px 40px rgba(26, 22, 19, 0.06);
   max-width: 440px;
   width: 100%;
   text-align: center;
-  border-top: 6px solid var(--border);
+  border-top: 6px solid #ddd;
 }
 
 .result-card.success { border-top-color: #27ae60; }
@@ -113,64 +102,65 @@ onUnmounted(() => {
 .status-icon { margin-bottom: 24px; }
 
 .status-title {
-  font-family: var(--font-display);
   font-size: 1.8rem;
-  color: var(--text-primary);
+  color: #1a1613;
   margin-bottom: 16px;
 }
 
-.status-details {
-  background: var(--bg);
-  padding: 16px;
-  border-radius: var(--radius);
-  margin-bottom: 32px;
+.status-msg {
+  font-size: 1.1rem;
+  color: #6a635a;
+  margin-bottom: 20px;
 }
 
-.status-msg {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
+.status-details {
+  background: #f9f7f5;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 32px;
 }
 
 .info-row {
   display: flex;
   justify-content: center;
+  font-size: 0.9rem;
+  color: #8a837a;
   gap: 4px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
 }
 
 .divider {
   height: 1px;
-  background: var(--border);
+  background: #eee;
   margin-bottom: 32px;
 }
 
 .redirect-info {
-  color: var(--text-secondary);
+  color: #8a837a;
   font-size: 0.95rem;
 }
 
 .countdown {
   font-weight: 700;
-  color: var(--text-primary);
+  color: #2d2620;
   font-size: 1.1rem;
 }
 
-.btn-action {
-  margin-top: 20px;
+.btn-home {
+  margin-top: 24px;
   display: block;
   width: 100%;
   padding: 14px;
-  background: var(--bg-dark);
-  color: var(--text-light);
+  background: #2d2620;
+  color: white;
   border: none;
   border-radius: 100px;
   font-weight: 600;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
   cursor: pointer;
-  transition: opacity 0.3s;
+  transition: all 0.3s;
 }
-.btn-action:hover { opacity: 0.85; }
+
+.btn-home:hover {
+  background: #1a1613;
+  transform: translateY(-2px);
+}
 </style>

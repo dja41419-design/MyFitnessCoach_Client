@@ -26,9 +26,9 @@
           <router-link to="/reserveorders" class="menu-item" active-class="active">
             <i class="mdi mdi-calendar-check"></i> 課程預約查詢
           </router-link>
-          <a href="#orders" class="menu-item">
+          <router-link to="/orders" class="menu-item" active-class="active">
             <i class="mdi mdi-clipboard-text"></i> 訂單查詢
-          </a>
+          </router-link>
           
           <div class="menu-divider"></div>
           

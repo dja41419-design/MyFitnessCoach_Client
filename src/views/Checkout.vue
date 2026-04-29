@@ -331,12 +331,27 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
 
   try {
-    // TODO: 隊友 CheckoutApi 完成後取消下方註解、刪除 TEST 區塊
-    // const orderRes = await fetchWithAuth('/api/CheckoutApi', { ... })
-    // const { productOrderId } = await orderRes.json()
+    // ── 建立訂單（收件資訊 → ProductOrder）──────────────────
+    const orderRes = await fetchWithAuth('/api/CartApi/checkout', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        receiver:  receiver.value.name.trim(),
+        address:   deliveryMethod.value === 'home'
+                     ? receiver.value.address.trim()
+                     : selectedStore.value.address,
+        mobile:    receiver.value.phone.trim(),
+        taxNumber: receiver.value.taxNumber ? Number(receiver.value.taxNumber) : null,
+        memo:      receiver.value.memo.trim() || null,
+      }),
+    })
 
-    // ── TEST：跳過建立訂單，直接用已存在的 ProductOrder ID ──
-    const productOrderId = 1 // 換成 DB 裡真實存在的 ProductOrder.Id
+    if (!orderRes.ok) {
+      const body = await orderRes.json().catch(() => ({}))
+      throw new Error((body as any).message ?? `建立訂單失敗（${orderRes.status}）`)
+    }
+
+    const { productOrderId } = await orderRes.json() as { productOrderId: number }
 
     // ── 超商取貨付款 ──────────────────────────────────────
     if (deliveryMethod.value === 'cvs') {
