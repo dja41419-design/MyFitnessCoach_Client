@@ -12,8 +12,8 @@
       <div class="nav-links">
         <a href="#nutritionists" @click.prevent="scrollTo('#nutritionists')">營養師團隊</a>
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
-        <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
-        <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
+        <router-link :to="{name:'body-metrics'}">體態紀錄</router-link>
+        <router-link :to="{name:'daily-diet'}">飲食紀錄</router-link>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
       </div>
 

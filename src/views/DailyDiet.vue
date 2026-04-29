@@ -133,70 +133,27 @@
             :class="['result-item', { selected: selectedFoodId === f.id }]"
             @click="selectedFoodId = f.id"
           >
-            <span class="result-name">{{ f.name }}<span v-if="f.custom" class="tag tag-custom ml-4">自訂</span></span>
-            <span class="result-info">{{ servingText(f) }} · {{ f.cal }} kcal · P{{ f.p }} C{{ f.c }} F{{ f.f }}</span>
+            <span class="result-name">{{ f.foodName }}<span v-if="f.isCustom" class="tag tag-custom ml-4">自訂</span></span>
+            <span class="result-info">
+              <template v-if="f.servingSizes[0]">
+                {{ servingText(f.servingSizes[0]) }} · {{ f.servingSizes[0].kcal }} kcal
+                · P{{ f.servingSizes[0].proteinGram }} C{{ f.servingSizes[0].carbGram }} F{{ f.servingSizes[0].fatGram }}
+              </template>
+            </span>
           </div>
           <div v-if="!modalFoodList.length" class="empty-state">無符合結果</div>
         </div>
 
         <!-- 選取的食物 -->
         <div v-if="selectedFood" class="selected-food-panel mb-12">
-          <div class="selected-food-name">{{ selectedFood.name }}</div>
-          <div class="selected-food-info">{{ servingText(selectedFood) }} · {{ selectedFood.cal }} kcal · P{{ selectedFood.p }} C{{ selectedFood.c }} F{{ selectedFood.f }}</div>
+          <div class="selected-food-name">{{ selectedFood.foodName }}</div>
+          <div v-if="selectedFood.servingSizes[0]" class="selected-food-info">
+            {{ servingText(selectedFood.servingSizes[0]) }} · {{ selectedFood.servingSizes[0].kcal }} kcal
+            · P{{ selectedFood.servingSizes[0].proteinGram }} C{{ selectedFood.servingSizes[0].carbGram }} F{{ selectedFood.servingSizes[0].fatGram }}
+          </div>
           <div class="form-group">
             <label class="form-label">份數</label>
             <input type="number" v-model.number="modalServings" min="0.5" step="0.5" class="form-input" style="width:100px" />
-          </div>
-        </div>
-
-        <!-- 自訂食物快速新增 -->
-        <div class="divider"></div>
-        <button class="btn btn-outline btn-sm mb-12" @click="showCustomForm = !showCustomForm">
-          {{ showCustomForm ? '▲ 收起' : '＋ 自訂食物' }}
-        </button>
-        <div v-if="showCustomForm" class="form-grid">
-          <div class="form-group" style="grid-column: span 2">
-            <label class="form-label">食物名稱 *</label>
-            <input type="text" v-model="customForm.name" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">熱量 (kcal) *</label>
-            <input type="number" v-model.number="customForm.cal" min="0" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">蛋白質 (g)</label>
-            <input type="number" v-model.number="customForm.p" min="0" step="0.1" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">碳水 (g)</label>
-            <input type="number" v-model.number="customForm.c" min="0" step="0.1" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">脂肪 (g)</label>
-            <input type="number" v-model.number="customForm.f" min="0" step="0.1" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">份量</label>
-            <input type="number" v-model.number="customForm.baseAmount" min="0" step="0.1" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">單位</label>
-            <input type="text" v-model="customForm.measure" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">克重 (g)</label>
-            <input type="number" v-model.number="customForm.weightInGrams" min="0" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">種類</label>
-            <select v-model="customForm.category" class="form-input">
-              <option value="">選擇類別</option>
-              <option v-for="cat in FOOD_CATEGORIES" :key="cat">{{ cat }}</option>
-            </select>
-          </div>
-          <div style="grid-column: span 2; display: flex; gap: 8px;">
-            <button class="btn btn-primary btn-sm" @click="saveCustomAndAdd">儲存並加入</button>
-            <button class="btn btn-outline btn-sm" @click="showCustomForm = false">取消</button>
           </div>
         </div>
 
@@ -214,14 +171,18 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useHealthTracker, genUid, servingText, FOOD_CATEGORIES, type Food } from '@/composables/useHealthTracker'
+import { useHealthTracker, genUid, servingText } from '@/composables/useHealthTracker'
+import { useFoodLibrary } from '@/composables/useFoodLibrary'
+import type { FoodDto } from '@/data/foodLibrary'
 
 const {
-  foods, dietLogs, goals,
+  dietLogs, goals,
   getDayLog, getDayTotals, getMealTotals,
   saveData, todayStr, prevDay,
   MEAL_META, pct, r0, r1,
 } = useHealthTracker()
+
+const { allFoods, categories } = useFoodLibrary()
 
 const currentDate = ref(todayStr())
 
@@ -284,29 +245,23 @@ const modalVisible   = ref(false)
 const activeMeal     = ref('breakfast')
 const modalSearch    = ref('')
 const modalPage      = ref(1)
-const selectedFoodId = ref<string | null>(null)
+const selectedFoodId = ref<number | null>(null)
 const modalServings  = ref(1)
-const showCustomForm = ref(false)
-
-const customForm = ref({
-  name: '', cal: 0, p: 0, c: 0, f: 0,
-  baseAmount: 1, measure: '份', weightInGrams: 100, category: '',
-})
 
 const MODAL_PAGE_SIZE = 12
 
-const modalFoodList = computed<Food[]>(() => {
-  let list = [...foods.value]
+const modalFoodList = computed<FoodDto[]>(() => {
+  let list = [...allFoods.value]
   if (modalSearch.value) {
     const q = modalSearch.value.toLowerCase()
-    list = list.filter(f => f.name.toLowerCase().includes(q))
+    list = list.filter(f => f.foodName.toLowerCase().includes(q))
   }
   const start = (modalPage.value - 1) * MODAL_PAGE_SIZE
   return list.slice(start, start + MODAL_PAGE_SIZE)
 })
 
-const selectedFood = computed<Food | null>(() =>
-  foods.value.find(f => f.id === selectedFoodId.value) ?? null
+const selectedFood = computed<FoodDto | null>(() =>
+  allFoods.value.find(f => f.id === selectedFoodId.value) ?? null
 )
 
 watch(selectedFood, (f) => {
@@ -318,7 +273,6 @@ function openModal(mealId: string) {
   modalSearch.value    = ''
   selectedFoodId.value = null
   modalServings.value  = 1
-  showCustomForm.value = false
   modalVisible.value   = true
 }
 
@@ -329,39 +283,17 @@ function closeModal() {
 function confirmAdd() {
   const food = selectedFood.value
   if (!food) return
+  const s = food.servingSizes[0]
   const entry = {
-    uid: genUid(), foodId: food.id, name: food.name,
-    cal: food.cal, p: food.p, c: food.c, f: food.f,
-    serving: servingText(food), servings: modalServings.value,
+    uid: genUid(), foodId: String(food.id), name: food.foodName,
+    cal: s?.kcal ?? 0, p: s?.proteinGram ?? 0, c: s?.carbGram ?? 0, f: s?.fatGram ?? 0,
+    serving: s ? servingText(s) : '—', servings: modalServings.value,
   }
   const meal = getDayLog(currentDate.value).meals[activeMeal.value as keyof typeof dayLog.value.meals]
   meal.push(entry)
   saveData()
   closeModal()
-  showToast('已新增 ' + food.name)
-}
-
-function saveCustomAndAdd() {
-  if (!customForm.value.name) { showToast('請填寫食物名稱'); return }
-  if (!customForm.value.cal)  { showToast('請填寫熱量');     return }
-  const newFood: Food = {
-    id: 'u' + genUid(),
-    name: customForm.value.name,
-    category: customForm.value.category || '其他',
-    baseAmount: customForm.value.baseAmount || 1,
-    measure: customForm.value.measure || '份',
-    weightInGrams: customForm.value.weightInGrams || 100,
-    cal: customForm.value.cal,
-    p: customForm.value.p || 0,
-    c: customForm.value.c || 0,
-    f: customForm.value.f || 0,
-    custom: true,
-  }
-  foods.value.push(newFood)
-  selectedFoodId.value = newFood.id
-  showCustomForm.value = false
-  saveData()
-  showToast('已建立自訂食物')
+  showToast('已新增 ' + food.foodName)
 }
 
 // ── Toast ──────────────────────────────────────────────────────

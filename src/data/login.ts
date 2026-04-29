@@ -6,6 +6,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string
   userId: number
+  memberId?: number
   userName: string
   imageUrl?: string
 }
@@ -41,6 +42,7 @@ export async function logout(): Promise<void> {
   }
   localStorage.removeItem('username')
   localStorage.removeItem('imageUrl')
+  localStorage.removeItem('memberId')
   // 清空前端購物車 state + localStorage,避免下一個訪客看到前一位使用者的商品
   // 動態 import 避免循環依賴(useCart 會 import fetchWithAuth,fetchWithAuth 會 import router)
   const m = await import('@/composables/useCart')

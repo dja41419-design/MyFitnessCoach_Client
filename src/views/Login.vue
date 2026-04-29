@@ -118,6 +118,7 @@ async function handleSubmit() {
     const res = await login({ account: form.account.trim(), password: form.password })
     localStorage.setItem('username', res.userName)
     localStorage.setItem('imageUrl', res.imageUrl ?? '')
+    if (res.memberId != null) localStorage.setItem('memberId', String(res.memberId))
 
     // 登入成功後:將 localStorage 的 guest 購物車合併到 DB,然後從 DB 重新載入
     await mergeGuestCartOnLogin()

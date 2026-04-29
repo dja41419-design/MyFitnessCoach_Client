@@ -1,5 +1,12 @@
 <template>
   <div class="food-library">
+    <!-- 載入中 / 錯誤 -->
+    <div v-if="loadError" class="card error-banner">
+      {{ loadError }}
+      <button class="btn btn-outline btn-sm" @click="retryLoad">重試</button>
+    </div>
+    <div v-if="isLoading && !allFoods.length" class="card loading-banner">載入中…</div>
+
     <!-- 篩選列 -->
     <div class="card">
       <div class="filter-bar">
@@ -7,9 +14,9 @@
           type="text" v-model="fs.search" placeholder="搜尋食物名稱…"
           class="form-input search-input" @input="fs.page = 1"
         />
-        <select v-model="fs.category" class="form-input filter-select" @change="fs.page = 1">
-          <option value="">全部種類</option>
-          <option v-for="cat in FOOD_CATEGORIES" :key="cat">{{ cat }}</option>
+        <select v-model="fs.categoryId" class="form-input filter-select" @change="fs.page = 1">
+          <option :value="null">全部種類</option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.categoryName }}</option>
         </select>
         <label class="filter-check-label">
           <input type="checkbox" v-model="fs.favOnly" @change="fs.page = 1" />
@@ -62,46 +69,48 @@
         <div class="form-grid">
           <div class="form-group" style="grid-column: span 2">
             <label class="form-label">食物名稱 *</label>
-            <input type="text" v-model="newFood.name" class="form-input" />
+            <input type="text" v-model="newFood.foodName" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">食物種類 *</label>
-            <select v-model="newFood.category" class="form-input">
-              <option value="">選擇類別</option>
-              <option v-for="cat in FOOD_CATEGORIES" :key="cat">{{ cat }}</option>
+            <select v-model="newFood.categoryId" class="form-input">
+              <option :value="0">選擇類別</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.categoryName }}</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">份量數字</label>
-            <input type="number" v-model.number="newFood.baseAmount" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.baseAmount" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">量測單位</label>
-            <input type="text" v-model="newFood.measure" class="form-input" />
+            <input type="text" v-model="newFood.serving.measure" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">每份克重 (g)</label>
-            <input type="number" v-model.number="newFood.weightInGrams" step="1" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.weightInGrams" step="1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">熱量 (kcal) *</label>
-            <input type="number" v-model.number="newFood.cal" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.kcal" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">蛋白質 (g)</label>
-            <input type="number" v-model.number="newFood.p" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.proteinGram" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">碳水 (g)</label>
-            <input type="number" v-model.number="newFood.c" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.carbGram" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">脂肪 (g)</label>
-            <input type="number" v-model.number="newFood.f" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="newFood.serving.fatGram" step="0.1" min="0" class="form-input" />
           </div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-primary btn-sm" @click="saveNewFood">儲存到食物庫</button>
+          <button class="btn btn-primary btn-sm" :disabled="isSaving" @click="saveNewFood">
+            {{ isSaving ? '儲存中…' : '儲存到食物庫' }}
+          </button>
           <button class="btn btn-outline btn-sm" @click="showAddForm = false">取消</button>
         </div>
       </div>
@@ -146,7 +155,7 @@
           </thead>
           <tbody>
             <tr v-if="!pageItems.length">
-              <td colspan="11" class="empty-state">無符合結果</td>
+              <td colspan="11" class="empty-state">{{ isLoading ? '載入中…' : '無符合結果' }}</td>
             </tr>
             <tr v-for="food in pageItems" :key="food.id">
               <td style="text-align:center">
@@ -157,24 +166,29 @@
                 >{{ isFav(food.id) ? '★' : '☆' }}</button>
               </td>
               <td class="td-text">
-                {{ food.name }}
+                {{ food.foodName }}
                 <span v-if="isFav(food.id)" class="tag tag-fav">★常用</span>
-                <span v-if="food.custom" class="tag tag-custom">自訂</span>
+                <span v-if="food.isCustom" class="tag tag-custom">自訂</span>
               </td>
-              <td class="td-text text-secondary">{{ food.category || '—' }}</td>
-              <td>{{ food.baseAmount }}</td>
-              <td class="td-text">{{ food.measure }}</td>
-              <td>{{ food.weightInGrams }}</td>
-              <td>{{ food.cal }}</td>
-              <td>{{ food.p }}</td>
-              <td>{{ food.c }}</td>
-              <td>{{ food.f }}</td>
+              <td class="td-text text-secondary">{{ food.categoryName || '—' }}</td>
+              <td>{{ food.servingSizes[0]?.baseAmount ?? '—' }}</td>
+              <td class="td-text">{{ food.servingSizes[0]?.measure ?? '—' }}</td>
+              <td>{{ food.servingSizes[0]?.weightInGrams ?? '—' }}</td>
+              <td>{{ food.servingSizes[0]?.kcal ?? '—' }}</td>
+              <td>{{ food.servingSizes[0]?.proteinGram ?? '—' }}</td>
+              <td>{{ food.servingSizes[0]?.carbGram ?? '—' }}</td>
+              <td>{{ food.servingSizes[0]?.fatGram ?? '—' }}</td>
               <td>
                 <div class="action-icons">
+                  <button
+                    :class="['icon-btn', isFav(food.id) ? 'icon-star-on' : '']"
+                    @click="toggleFav(food.id)"
+                    :title="isFav(food.id) ? '移除常用' : '加入常用'"
+                  >{{ isFav(food.id) ? '★' : '☆' }}</button>
                   <button class="icon-btn icon-accent" @click="openQuickAdd(food.id)" title="加入飲食紀錄">🍽️</button>
-                  <template v-if="food.custom">
+                  <template v-if="food.isCustom">
                     <button class="icon-btn" @click="openEdit(food.id)" title="編輯">✏️</button>
-                    <button class="icon-btn icon-danger" @click="deleteFood(food.id)" title="刪除">🗑️</button>
+                    <button class="icon-btn icon-danger" @click="confirmDeleteFood(food.id)" title="刪除">🗑️</button>
                   </template>
                 </div>
               </td>
@@ -195,8 +209,19 @@
       <div class="modal modal-sm">
         <div class="modal-title">加入飲食紀錄</div>
         <div class="selected-food-panel mb-12">
-          <div class="selected-food-name">{{ quickFood.name }}</div>
-          <div class="selected-food-info">{{ servingText(quickFood) }} · {{ quickFood.cal }} kcal · P{{ quickFood.p }} C{{ quickFood.c }} F{{ quickFood.f }}</div>
+          <div class="selected-food-name">{{ quickFood.foodName }}</div>
+          <div v-if="selectedServing" class="selected-food-info">
+            {{ servingTextDto(selectedServing) }} · {{ selectedServing.kcal }} kcal
+            · P{{ selectedServing.proteinGram }} C{{ selectedServing.carbGram }} F{{ selectedServing.fatGram }}
+          </div>
+        </div>
+        <div v-if="quickFood.servingSizes.length > 1" class="form-group mb-12">
+          <label class="form-label">選擇份量</label>
+          <select v-model="quickServingIdx" class="form-input">
+            <option v-for="(s, i) in quickFood.servingSizes" :key="s.id" :value="i">
+              {{ s.baseAmount }}{{ s.measure }}（{{ s.weightInGrams }}g）— {{ s.kcal }} kcal
+            </option>
+          </select>
         </div>
         <div class="form-group mb-12">
           <label class="form-label">選擇餐點</label>
@@ -232,47 +257,49 @@
         <div class="form-grid">
           <div class="form-group" style="grid-column: span 2">
             <label class="form-label">食物名稱 *</label>
-            <input type="text" v-model="editForm.name" class="form-input" />
+            <input type="text" v-model="editForm.foodName" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">食物種類 *</label>
-            <select v-model="editForm.category" class="form-input">
-              <option value="">選擇類別</option>
-              <option v-for="cat in FOOD_CATEGORIES" :key="cat">{{ cat }}</option>
+            <select v-model="editForm.categoryId" class="form-input">
+              <option :value="0">選擇類別</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.categoryName }}</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">份量數字</label>
-            <input type="number" v-model.number="editForm.baseAmount" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.baseAmount" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">量測單位</label>
-            <input type="text" v-model="editForm.measure" class="form-input" />
+            <input type="text" v-model="editForm.serving.measure" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">每份克重 (g)</label>
-            <input type="number" v-model.number="editForm.weightInGrams" step="1" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.weightInGrams" step="1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">熱量 (kcal) *</label>
-            <input type="number" v-model.number="editForm.cal" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.kcal" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">蛋白質 (g)</label>
-            <input type="number" v-model.number="editForm.p" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.proteinGram" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">碳水 (g)</label>
-            <input type="number" v-model.number="editForm.c" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.carbGram" step="0.1" min="0" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">脂肪 (g)</label>
-            <input type="number" v-model.number="editForm.f" step="0.1" min="0" class="form-input" />
+            <input type="number" v-model.number="editForm.serving.fatGram" step="0.1" min="0" class="form-input" />
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" @click="editVisible = false">取消</button>
-          <button class="btn btn-primary" @click="confirmEdit">儲存</button>
+          <button class="btn btn-primary" :disabled="isSaving" @click="confirmEdit">
+            {{ isSaving ? '儲存中…' : '儲存' }}
+          </button>
         </div>
       </div>
     </div>
@@ -283,21 +310,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import {
-  useHealthTracker, genUid, servingText, FOOD_CATEGORIES,
-  compareOp, type Food,
-} from '@/composables/useHealthTracker'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useFoodLibrary, loadFoods, createFood, updateFood, deleteFood, toggleFavorite } from '@/composables/useFoodLibrary'
+import { useHealthTracker, genUid, compareOp } from '@/composables/useHealthTracker'
+import type { FoodDto, ServingSizeDto } from '@/data/foodLibrary'
 
 const {
-  foods, favorites, dietLogs, goals,
+  allFoods, favoriteFoodIds, categories, isLoading, loadError,
+} = useFoodLibrary()
+
+const {
+  dietLogs, goals,
   saveData, getDayLog, todayStr,
   FOOD_PAGE_SIZE, MEAL_META, r0,
 } = useHealthTracker()
 
+const memberId = Number(localStorage.getItem('memberId') ?? '0')
+const isSaving = ref(false)
+
+function servingTextDto(s: ServingSizeDto): string {
+  return `${s.baseAmount}${s.measure}（${s.weightInGrams}g）`
+}
+
+onMounted(() => { loadFoods(memberId) })
+
+async function retryLoad() { await loadFoods(memberId) }
+
 // ── Filter state ───────────────────────────────────────────────
 const fs = reactive({
-  search: '', favOnly: false, category: '',
+  search: '', favOnly: false, categoryId: null as number | null,
   calOp: '≥', calVal: '' as number | '',
   proteinOp: '≥', proteinVal: '' as number | '',
   fatOp: '≥', fatVal: '' as number | '',
@@ -309,56 +350,68 @@ const showAdvanced = ref(false)
 const showAddForm  = ref(false)
 
 function clearFilters() {
-  fs.search = ''; fs.favOnly = false; fs.category = ''
+  fs.search = ''; fs.favOnly = false; fs.categoryId = null
   fs.calVal = ''; fs.proteinVal = ''; fs.fatVal = ''
   fs.sortField = 'default'; fs.sortDir = 'asc'; fs.page = 1
 }
 
 // ── Filtered / sorted foods ────────────────────────────────────
-const filteredFoods = computed<Food[]>(() => {
-  let list = [...foods.value]
+function s0(food: FoodDto) { return food.servingSizes[0] }
+
+const filteredFoods = computed<FoodDto[]>(() => {
+  let list = [...allFoods.value]
   if (fs.search) {
     const q = fs.search.toLowerCase()
-    list = list.filter(f => f.name.toLowerCase().includes(q))
+    list = list.filter(f => f.foodName.toLowerCase().includes(q))
   }
-  if (fs.favOnly) list = list.filter(f => favorites.value.includes(f.id))
-  if (fs.category) list = list.filter(f => f.category === fs.category)
+  if (fs.favOnly)    list = list.filter(f => favoriteFoodIds.value.includes(f.id))
+  if (fs.categoryId) list = list.filter(f => f.categoryId === fs.categoryId)
   if (fs.calVal !== '') {
     const v = Number(fs.calVal)
-    if (!isNaN(v)) list = list.filter(f => compareOp(f.cal, fs.calOp, v))
+    if (!isNaN(v)) list = list.filter(f => compareOp(s0(f)?.kcal ?? 0, fs.calOp, v))
   }
   if (fs.proteinVal !== '') {
     const v = Number(fs.proteinVal)
-    if (!isNaN(v)) list = list.filter(f => compareOp(f.p, fs.proteinOp, v))
+    if (!isNaN(v)) list = list.filter(f => compareOp(s0(f)?.proteinGram ?? 0, fs.proteinOp, v))
   }
   if (fs.fatVal !== '') {
     const v = Number(fs.fatVal)
-    if (!isNaN(v)) list = list.filter(f => compareOp(f.f, fs.fatOp, v))
+    if (!isNaN(v)) list = list.filter(f => compareOp(s0(f)?.fatGram ?? 0, fs.fatOp, v))
   }
 
   if (fs.sortField === 'default') {
     list.sort((a, b) => {
-      const aFav = favorites.value.includes(a.id) ? 0 : 1
-      const bFav = favorites.value.includes(b.id) ? 0 : 1
+      const aFav = favoriteFoodIds.value.includes(a.id) ? 0 : 1
+      const bFav = favoriteFoodIds.value.includes(b.id) ? 0 : 1
       if (aFav !== bFav) return aFav - bFav
-      const aCus = a.custom ? 0 : 1, bCus = b.custom ? 0 : 1
+      const aCus = a.isCustom ? 0 : 1, bCus = b.isCustom ? 0 : 1
       if (aCus !== bCus) return aCus - bCus
-      return (a.category || '').localeCompare(b.category || '') || a.name.localeCompare(b.name)
+      return (a.categoryName ?? '').localeCompare(b.categoryName ?? '') || a.foodName.localeCompare(b.foodName)
     })
   } else if (fs.sortField === 'fav') {
     const dir = fs.sortDir === 'asc' ? 1 : -1
     list.sort((a, b) => {
-      const aF = favorites.value.includes(a.id) ? 0 : 1
-      const bF = favorites.value.includes(b.id) ? 0 : 1
+      const aF = favoriteFoodIds.value.includes(a.id) ? 0 : 1
+      const bF = favoriteFoodIds.value.includes(b.id) ? 0 : 1
       return (aF - bF) * dir
     })
   } else {
-    const field = fs.sortField as keyof Food
-    const dir   = fs.sortDir === 'asc' ? 1 : -1
+    const dir = fs.sortDir === 'asc' ? 1 : -1
     list.sort((a, b) => {
-      const av = a[field], bv = b[field]
-      if (typeof av === 'string') return String(av).localeCompare(String(bv)) * dir
-      return (Number(av) - Number(bv)) * dir
+      let av: string | number, bv: string | number
+      switch (fs.sortField) {
+        case 'name':         av = a.foodName;              bv = b.foodName;              break
+        case 'category':     av = a.categoryName ?? '';    bv = b.categoryName ?? '';    break
+        case 'baseAmount':   av = s0(a)?.baseAmount ?? 0;  bv = s0(b)?.baseAmount ?? 0;  break
+        case 'weightInGrams':av = s0(a)?.weightInGrams ?? 0; bv = s0(b)?.weightInGrams ?? 0; break
+        case 'cal':          av = s0(a)?.kcal ?? 0;        bv = s0(b)?.kcal ?? 0;        break
+        case 'p':            av = s0(a)?.proteinGram ?? 0; bv = s0(b)?.proteinGram ?? 0; break
+        case 'c':            av = s0(a)?.carbGram ?? 0;    bv = s0(b)?.carbGram ?? 0;    break
+        case 'f':            av = s0(a)?.fatGram ?? 0;     bv = s0(b)?.fatGram ?? 0;     break
+        default:             return 0
+      }
+      if (typeof av === 'string') return av.localeCompare(bv as string) * dir
+      return (av - (bv as number)) * dir
     })
   }
   return list
@@ -366,7 +419,7 @@ const filteredFoods = computed<Food[]>(() => {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredFoods.value.length / FOOD_PAGE_SIZE)))
 
-const pageItems = computed<Food[]>(() => {
+const pageItems = computed<FoodDto[]>(() => {
   const p = Math.min(fs.page, totalPages.value)
   const start = (p - 1) * FOOD_PAGE_SIZE
   return filteredFoods.value.slice(start, start + FOOD_PAGE_SIZE)
@@ -389,101 +442,134 @@ function sortIconClass(field: string) {
 }
 
 // ── Favorites ──────────────────────────────────────────────────
-function isFav(id: string) { return favorites.value.includes(id) }
+function isFav(id: number) { return favoriteFoodIds.value.includes(id) }
 
-function toggleFav(id: string) {
-  const idx = favorites.value.indexOf(id)
-  if (idx >= 0) favorites.value.splice(idx, 1)
-  else favorites.value.push(id)
-  saveData()
+async function toggleFav(id: number) {
+  await toggleFavorite(memberId, id)
 }
 
 // ── Delete custom food ─────────────────────────────────────────
-function deleteFood(id: string) {
+async function confirmDeleteFood(id: number) {
   if (!confirm('確定刪除此食物？')) return
-  foods.value = foods.value.filter(f => f.id !== id)
-  saveData()
+  await deleteFood(memberId, id)
   showToast('已刪除')
 }
 
 // ── New food form ──────────────────────────────────────────────
-const newFood = ref<Omit<Food, 'id' | 'custom'>>({
-  name: '', category: '', baseAmount: 1, measure: '份',
-  weightInGrams: 100, cal: 0, p: 0, c: 0, f: 0,
-})
-
-function saveNewFood() {
-  if (!newFood.value.name) { showToast('請填寫食物名稱'); return }
-  if (!newFood.value.cal)  { showToast('請填寫熱量');     return }
-  const food: Food = {
-    id: 'u' + genUid(),
-    ...newFood.value,
-    category: newFood.value.category || '其他',
-    custom: true,
+function emptyNewFood() {
+  return {
+    foodName: '',
+    categoryId: 0,
+    serving: { measure: '份', baseAmount: 1, weightInGrams: 100, kcal: 0, proteinGram: 0, carbGram: 0, fatGram: 0 },
   }
-  foods.value.push(food)
-  saveData()
-  newFood.value = { name: '', category: '', baseAmount: 1, measure: '份', weightInGrams: 100, cal: 0, p: 0, c: 0, f: 0 }
-  showAddForm.value = false
-  showToast('食物已加入食物庫')
+}
+
+const newFood = ref(emptyNewFood())
+
+async function saveNewFood() {
+  if (!newFood.value.foodName) { showToast('請填寫食物名稱'); return }
+  if (!newFood.value.serving.kcal) { showToast('請填寫熱量'); return }
+  if (!newFood.value.categoryId)   { showToast('請選擇食物種類'); return }
+  isSaving.value = true
+  try {
+    await createFood(memberId, {
+      foodName: newFood.value.foodName,
+      categoryId: newFood.value.categoryId,
+      servingSizes: [{ ...newFood.value.serving }],
+    })
+    newFood.value = emptyNewFood()
+    showAddForm.value = false
+    showToast('食物已加入食物庫')
+  } catch {
+    showToast('新增失敗，請稍後重試')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 // ── Edit modal ─────────────────────────────────────────────────
 const editVisible = ref(false)
-const editForm = ref<Food & { id: string }>({
-  id: '', name: '', category: '', baseAmount: 1, measure: '份',
-  weightInGrams: 100, cal: 0, p: 0, c: 0, f: 0, custom: true,
+const editFoodId  = ref<number>(0)
+const editForm    = ref({
+  foodName: '',
+  categoryId: 0,
+  serving: { measure: '份', baseAmount: 1, weightInGrams: 100, kcal: 0, proteinGram: 0, carbGram: 0, fatGram: 0 },
 })
 
-function openEdit(id: string) {
-  const f = foods.value.find(x => x.id === id)
+function openEdit(id: number) {
+  const f = allFoods.value.find(x => x.id === id)
   if (!f) return
-  editForm.value = { ...f }
+  const s = f.servingSizes[0]
+  editFoodId.value = f.id
+  editForm.value = {
+    foodName: f.foodName,
+    categoryId: f.categoryId ?? 0,
+    serving: s
+      ? { measure: s.measure, baseAmount: s.baseAmount, weightInGrams: s.weightInGrams, kcal: s.kcal, proteinGram: s.proteinGram, carbGram: s.carbGram, fatGram: s.fatGram }
+      : { measure: '份', baseAmount: 1, weightInGrams: 100, kcal: 0, proteinGram: 0, carbGram: 0, fatGram: 0 },
+  }
   editVisible.value = true
 }
 
-function confirmEdit() {
-  const idx = foods.value.findIndex(f => f.id === editForm.value.id)
-  if (idx < 0) return
-  foods.value[idx] = { ...editForm.value }
-  saveData()
-  editVisible.value = false
-  showToast('食物已更新')
+async function confirmEdit() {
+  if (!editForm.value.foodName) { showToast('請填寫食物名稱'); return }
+  if (!editForm.value.categoryId) { showToast('請選擇食物種類'); return }
+  isSaving.value = true
+  try {
+    await updateFood(memberId, editFoodId.value, {
+      foodName: editForm.value.foodName,
+      categoryId: editForm.value.categoryId,
+      servingSizes: [{ ...editForm.value.serving }],
+    })
+    editVisible.value = false
+    showToast('食物已更新')
+  } catch {
+    showToast('更新失敗，請稍後重試')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 // ── Quick add modal ────────────────────────────────────────────
 const quickAddVisible = ref(false)
-const quickFoodId     = ref<string | null>(null)
+const quickFoodId     = ref<number | null>(null)
 const quickMeal       = ref('breakfast')
 const quickServings   = ref(1)
+const quickServingIdx = ref(0)
 const quickDate       = ref(todayStr())
 
-const quickFood = computed<Food | null>(() =>
-  foods.value.find(f => f.id === quickFoodId.value) ?? null
+const quickFood = computed<FoodDto | null>(() =>
+  allFoods.value.find(f => f.id === quickFoodId.value) ?? null
 )
 
-function openQuickAdd(id: string) {
-  quickFoodId.value  = id
-  quickServings.value = 1
-  quickDate.value    = todayStr()
-  quickMeal.value    = 'breakfast'
+const selectedServing = computed<ServingSizeDto | null>(() =>
+  quickFood.value?.servingSizes[quickServingIdx.value] ?? null
+)
+
+function openQuickAdd(id: number) {
+  quickFoodId.value    = id
+  quickServings.value  = 1
+  quickServingIdx.value = 0
+  quickDate.value      = todayStr()
+  quickMeal.value      = 'breakfast'
   quickAddVisible.value = true
 }
 
 function confirmQuickAdd() {
   const food = quickFood.value
-  if (!food) return
+  const srv  = selectedServing.value
+  if (!food || !srv) return
   const entry = {
-    uid: genUid(), foodId: food.id, name: food.name,
-    cal: food.cal, p: food.p, c: food.c, f: food.f,
-    serving: servingText(food), servings: quickServings.value,
+    uid: genUid(), foodId: String(food.id), name: food.foodName,
+    cal: srv.kcal, p: srv.proteinGram, c: srv.carbGram, f: srv.fatGram,
+    serving: servingTextDto(srv), servings: quickServings.value,
   }
   const log  = getDayLog(quickDate.value)
   const meal = log.meals[quickMeal.value as keyof typeof log.meals]
   meal.push(entry)
   saveData()
   quickAddVisible.value = false
-  showToast(`已將 ${food.name} 加入 ${quickDate.value} ${MEAL_META.find(m => m.id === quickMeal.value)?.label}`)
+  showToast(`已將 ${food.foodName} 加入 ${quickDate.value} ${MEAL_META.find(m => m.id === quickMeal.value)?.label}`)
 }
 
 // ── Toast ──────────────────────────────────────────────────────
@@ -500,6 +586,20 @@ function showToast(msg: string) {
 </script>
 
 <style scoped>
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ht-danger);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.loading-banner {
+  font-size: 13px;
+  color: var(--ht-text2);
+  text-align: center;
+  padding: 16px;
+}
 .form-input {
   font-family: var(--font-body);
   font-size: 13px;
@@ -525,6 +625,7 @@ function showToast(msg: string) {
 }
 .btn-primary { background: var(--ht-green); color: #fff; border-color: var(--ht-green); }
 .btn-primary:hover  { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-outline { background: none; border-color: var(--ht-border); color: var(--ht-text2); }
 .btn-outline:hover  { background: var(--ht-surface2); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }

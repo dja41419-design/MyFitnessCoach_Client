@@ -84,7 +84,7 @@
               <el-tag type="info" effect="plain" size="small">評價期已過</el-tag>
             </template>
             
-            <el-button size="small" type="primary" plain @click="window.open(`/reserve/${res.instructorId}`, '_blank')">再次預約</el-button>
+            <el-button size="small" type="primary" plain @click="openNewTab(`/reserve/${res.instructorId}`)">再次預約</el-button>
           </div>
         </div>
       </div>
@@ -196,6 +196,10 @@ const paginatedReservations = computed(() => {
 const handlePageChange = (page: number) => {
   currentPage.value = page
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function openNewTab(url: string) {
+  window.open(url, '_blank')
 }
 
 // 評價相關

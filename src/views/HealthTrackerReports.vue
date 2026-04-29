@@ -25,7 +25,7 @@
         </div>
       </div>
       <div class="summary-item">
-        <div :class="['summary-num', weightDiff > 0 ? 'n-warn' : weightDiff < 0 ? 'n-green' : '']">
+        <div :class="['summary-num', weightDiff != null && weightDiff > 0 ? 'n-warn' : weightDiff != null && weightDiff < 0 ? 'n-green' : '']">
           {{ weightDiff != null ? (weightDiff > 0 ? '+' : '') + weightDiff : '—' }}
         </div>
         <div class="summary-label">距目標差距</div>

@@ -50,7 +50,7 @@ export interface BodyLog {
 export interface GoalsData {
   height: number
   targetWeight: number
-  age: number
+  birthDate: string
   gender: 'M' | 'F'
   activityLevel: string
   healthGoal: string
@@ -71,12 +71,10 @@ export interface MacroSuggestion {
 // ── Constants ──────────────────────────────────────────────────
 export const FOOD_PAGE_SIZE = 20
 
-export const FOOD_CATEGORIES = [
-  '蛋豆魚肉類', '蔬菜類', '水果類', '澱粉類', '乳製品類',
-  '油脂類', '堅果類', '飲品類', '其他',
-]
-
 export const HEALTH_GOALS = ['健康飲食', '增肌', '減脂', '生酮飲食', '糖尿病控糖']
+
+/** @deprecated — category list now comes from GET /api/FoodLibrary/all */
+export const FOOD_CATEGORIES: string[] = []
 
 export const MEAL_META = [
   { id: 'breakfast', label: '早餐', icon: '🌅' },
@@ -85,46 +83,22 @@ export const MEAL_META = [
   { id: 'snack',     label: '點心', icon: '🍎' },
 ] as const
 
-const DEFAULT_FOODS: Food[] = [
-  { id:'f01', name:'白飯',     category:'澱粉類',    baseAmount:1,   measure:'碗',  weightInGrams:200, cal:260, p:4.8, c:57,  f:0.4, custom:false },
-  { id:'f02', name:'地瓜',     category:'澱粉類',    baseAmount:1,   measure:'條',  weightInGrams:100, cal:86,  p:1.6, c:20,  f:0.1, custom:false },
-  { id:'f03', name:'雞胸肉',   category:'蛋豆魚肉類', baseAmount:1,   measure:'份',  weightInGrams:100, cal:165, p:31,  c:0,   f:3.6, custom:false },
-  { id:'f04', name:'水煮蛋',   category:'蛋豆魚肉類', baseAmount:1,   measure:'顆',  weightInGrams:50,  cal:77,  p:6.4, c:0.6, f:5.3, custom:false },
-  { id:'f05', name:'嫩豆腐',   category:'蛋豆魚肉類', baseAmount:1,   measure:'塊',  weightInGrams:100, cal:76,  p:8,   c:1.9, f:4.2, custom:false },
-  { id:'f06', name:'花椰菜',   category:'蔬菜類',    baseAmount:100, measure:'g',   weightInGrams:100, cal:34,  p:2.8, c:6.6, f:0.4, custom:false },
-  { id:'f07', name:'香蕉',     category:'水果類',    baseAmount:1,   measure:'根',  weightInGrams:120, cal:107, p:1.3, c:27,  f:0.4, custom:false },
-  { id:'f08', name:'全脂牛奶', category:'乳製品類',   baseAmount:250, measure:'ml',  weightInGrams:257, cal:148, p:7.7, c:11.6,f:8,   custom:false },
-  { id:'f09', name:'大燕麥片', category:'澱粉類',    baseAmount:100, measure:'g',   weightInGrams:100, cal:379, p:13,  c:67,  f:6.5, custom:false },
-  { id:'f10', name:'鮭魚',     category:'蛋豆魚肉類', baseAmount:1,   measure:'份',  weightInGrams:100, cal:208, p:20,  c:0,   f:13,  custom:false },
-  { id:'f11', name:'豬里脊',   category:'蛋豆魚肉類', baseAmount:1,   measure:'份',  weightInGrams:100, cal:143, p:22,  c:0,   f:5.5, custom:false },
-  { id:'f12', name:'白吐司',   category:'澱粉類',    baseAmount:1,   measure:'片',  weightInGrams:30,  cal:80,  p:2.6, c:15,  f:1,   custom:false },
-  { id:'f13', name:'蘋果',     category:'水果類',    baseAmount:1,   measure:'顆',  weightInGrams:200, cal:104, p:0.5, c:28,  f:0.3, custom:false },
-  { id:'f14', name:'希臘優格', category:'乳製品類',   baseAmount:150, measure:'g',   weightInGrams:150, cal:88,  p:15,  c:4.7, f:0.8, custom:false },
-  { id:'f15', name:'花生醬',   category:'油脂類',    baseAmount:1,   measure:'大匙', weightInGrams:15,  cal:90,  p:3.6, c:3,   f:7.6, custom:false },
-  { id:'f16', name:'牛肉片',   category:'蛋豆魚肉類', baseAmount:100, measure:'g',   weightInGrams:100, cal:250, p:26,  c:0,   f:15,  custom:false },
-  { id:'f17', name:'雞蛋炒飯', category:'澱粉類',    baseAmount:1,   measure:'碗',  weightInGrams:300, cal:520, p:15,  c:78,  f:16,  custom:false },
-  { id:'f18', name:'拿鐵',     category:'飲品類',    baseAmount:360, measure:'ml',  weightInGrams:370, cal:190, p:10,  c:18,  f:8,   custom:false },
-  { id:'f19', name:'毛豆',     category:'蛋豆魚肉類', baseAmount:100, measure:'g',   weightInGrams:100, cal:122, p:11,  c:10,  f:5.2, custom:false },
-  { id:'f20', name:'義大利麵', category:'澱粉類',    baseAmount:100, measure:'g',   weightInGrams:100, cal:371, p:13,  c:74,  f:1.1, custom:false },
-  { id:'f21', name:'鮪魚罐頭', category:'蛋豆魚肉類', baseAmount:1,   measure:'罐',  weightInGrams:85,  cal:110, p:25,  c:0,   f:1,   custom:false },
-  { id:'f22', name:'雞蛋',     category:'蛋豆魚肉類', baseAmount:1,   measure:'顆',  weightInGrams:55,  cal:83,  p:7.3, c:0.6, f:5.7, custom:false },
-  { id:'f23', name:'糙米飯',   category:'澱粉類',    baseAmount:1,   measure:'碗',  weightInGrams:200, cal:220, p:5.2, c:46,  f:1.8, custom:false },
-  { id:'f24', name:'酪梨',     category:'油脂類',    baseAmount:0.5, measure:'顆',  weightInGrams:100, cal:160, p:2,   c:9,   f:15,  custom:false },
-  { id:'f25', name:'菠菜',     category:'蔬菜類',    baseAmount:100, measure:'g',   weightInGrams:100, cal:23,  p:2.9, c:3.6, f:0.4, custom:false },
-]
+function defaultBirthDate(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 30)
+  return d.toISOString().split('T')[0]
+}
 
 const DEFAULT_GOALS: GoalsData = {
-  height: 165, targetWeight: 60, age: 30, gender: 'F',
+  height: 165, targetWeight: 60, birthDate: defaultBirthDate(), gender: 'F',
   activityLevel: '1.55', healthGoal: '健康飲食',
   calories: 1800, protein: 130, carbs: 180, fat: 55, water: 2000,
 }
 
 // ── Module-level singleton state ───────────────────────────────
-const foods     = ref<Food[]>([])
 const dietLogs  = ref<Record<string, DietLog>>({})
 const bodyLogs  = ref<BodyLog[]>([])
 const goals     = ref<GoalsData>({ ...DEFAULT_GOALS })
-const favorites = ref<string[]>([])
 let initialized = false
 
 // ── Utilities ──────────────────────────────────────────────────
@@ -155,7 +129,7 @@ export function pct(v: number, g: number): number {
   return Math.min(100, Math.round((v / g) * 100))
 }
 
-export function servingText(f: Food): string {
+export function servingText(f: { baseAmount: number; measure: string; weightInGrams: number }): string {
   return `${f.baseAmount}${f.measure}（${f.weightInGrams}g）`
 }
 
@@ -251,71 +225,32 @@ function generateSampleBody(): BodyLog[] {
   return logs.sort((a, b) => b.date.localeCompare(a.date))
 }
 
-function generateSampleDiet(): Record<string, DietLog> {
-  const logs: Record<string, DietLog> = {}
-  const now = new Date()
-  const bSets = [['f09','f08','f04'],['f12','f04','f08'],['f14','f07','f08']]
-  const lSets = [['f01','f03','f06'],['f23','f11','f25'],['f17','f25']]
-  const dSets = [['f01','f10','f06'],['f23','f16','f19'],['f01','f11','f05']]
-  const sSets = [['f07','f14'],['f13','f04'],['f19','f07']]
-  for (let i = 13; i >= 1; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const date = d.toISOString().split('T')[0]
-    const pick = (s: string[][]) => s[i % s.length]
-    const makeItems = (ids: string[]): MealEntry[] => ids.map(id => {
-      const food = DEFAULT_FOODS.find(f => f.id === id) || DEFAULT_FOODS[0]
-      const srvOptions = [0.5, 1, 1, 1, 1.5, 2]
-      const srv = srvOptions[Math.floor(Math.random() * srvOptions.length)]
-      return {
-        uid: genUid(), foodId: food.id, name: food.name,
-        cal: food.cal, p: food.p, c: food.c, f: food.f,
-        serving: servingText(food), servings: srv,
-      }
-    })
-    logs[date] = {
-      meals: {
-        breakfast: makeItems(pick(bSets)),
-        lunch:     makeItems(pick(lSets)),
-        dinner:    makeItems(pick(dSets)),
-        snack:     makeItems(pick(sSets)),
-      },
-      water: r0(1200 + Math.random() * 1000),
-    }
-  }
-  return logs
-}
-
 // ── Storage ────────────────────────────────────────────────────
 function loadData() {
-  const sf = localStorage.getItem('hf_foods')
-  foods.value = sf
-    ? (JSON.parse(sf) as Food[]).map(f => ({
-        baseAmount: f.baseAmount ?? 1, measure: f.measure ?? '份',
-        weightInGrams: f.weightInGrams ?? 100, category: f.category ?? '其他',
-        ...f,
-      }))
-    : DEFAULT_FOODS.map(f => ({ ...f }))
-
   const sd = localStorage.getItem('hf_diet')
-  dietLogs.value = sd ? JSON.parse(sd) : generateSampleDiet()
+  dietLogs.value = sd ? JSON.parse(sd) : {}
 
   const sb = localStorage.getItem('hf_body')
   bodyLogs.value = sb ? JSON.parse(sb) : generateSampleBody()
 
   const sg = localStorage.getItem('hf_goals')
-  goals.value = sg ? { ...DEFAULT_GOALS, ...JSON.parse(sg) } : { ...DEFAULT_GOALS }
-
-  const sv = localStorage.getItem('hf_favs')
-  favorites.value = sv ? JSON.parse(sv) : ['f03', 'f07', 'f14']
+  if (sg) {
+    const parsed = JSON.parse(sg) as GoalsData & { age?: number }
+    if (parsed.age && !parsed.birthDate) {
+      const d = new Date()
+      d.setFullYear(d.getFullYear() - parsed.age)
+      parsed.birthDate = d.toISOString().split('T')[0]
+    }
+    goals.value = { ...DEFAULT_GOALS, ...parsed }
+  } else {
+    goals.value = { ...DEFAULT_GOALS }
+  }
 }
 
 function saveData() {
-  localStorage.setItem('hf_foods',  JSON.stringify(foods.value))
-  localStorage.setItem('hf_diet',   JSON.stringify(dietLogs.value))
-  localStorage.setItem('hf_body',   JSON.stringify(bodyLogs.value))
-  localStorage.setItem('hf_goals',  JSON.stringify(goals.value))
-  localStorage.setItem('hf_favs',   JSON.stringify(favorites.value))
+  localStorage.setItem('hf_diet',  JSON.stringify(dietLogs.value))
+  localStorage.setItem('hf_body',  JSON.stringify(bodyLogs.value))
+  localStorage.setItem('hf_goals', JSON.stringify(goals.value))
 }
 
 // ── Day log helpers ────────────────────────────────────────────
@@ -368,11 +303,9 @@ export function useHealthTracker() {
 
   return {
     // State
-    foods,
     dietLogs,
     bodyLogs,
     goals,
-    favorites,
     // Storage
     saveData,
     loadData,
@@ -382,7 +315,6 @@ export function useHealthTracker() {
     getMealTotals,
     currentWeight,
     // Constants
-    FOOD_CATEGORIES,
     HEALTH_GOALS,
     MEAL_META,
     FOOD_PAGE_SIZE,

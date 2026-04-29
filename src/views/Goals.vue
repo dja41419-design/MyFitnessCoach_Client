@@ -17,8 +17,8 @@
           <input type="number" v-model.number="localGoals.targetWeight" step="0.1" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">年齡</label>
-          <input type="number" v-model.number="localGoals.age" min="10" max="120" class="form-input" @blur="liveRefreshTDEE" />
+          <label class="form-label">生日</label>
+          <input type="date" v-model="localGoals.birthDate" class="form-input" @change="liveRefreshTDEE" />
         </div>
         <div class="form-group">
           <label class="form-label">性別</label>
@@ -131,7 +131,7 @@ interface LocalGoals {
   height: number
   currentWeight: number | null
   targetWeight: number
-  age: number
+  birthDate: string
   gender: 'M' | 'F'
   activityLevel: string
   healthGoal: string
@@ -146,7 +146,7 @@ const localGoals = reactive<LocalGoals>({
   height: goals.value.height,
   currentWeight: bodyLogs.value[0]?.weight ?? null,
   targetWeight: goals.value.targetWeight,
-  age: goals.value.age,
+  birthDate: goals.value.birthDate,
   gender: goals.value.gender,
   activityLevel: goals.value.activityLevel,
   healthGoal: goals.value.healthGoal,
@@ -161,9 +161,19 @@ const localGoals = reactive<LocalGoals>({
 const tdeeResult = reactive({ bmr: null as number | null, tdee: null as number | null })
 const macroSuggestion = ref<MacroSuggestion | null>(null)
 
+function ageFromBirthDate(bd: string): number {
+  if (!bd) return 0
+  const today = new Date()
+  const birth = new Date(bd)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
 function liveRefreshTDEE() {
   const w   = localGoals.currentWeight ?? goals.value.targetWeight
-  const bmr = calculateBMR(w, localGoals.height, localGoals.age, localGoals.gender)
+  const bmr = calculateBMR(w, localGoals.height, ageFromBirthDate(localGoals.birthDate), localGoals.gender)
   tdeeResult.bmr  = bmr
   tdeeResult.tdee = bmr ? calculateTDEE(bmr, localGoals.activityLevel) : null
   if (tdeeResult.tdee) {
@@ -196,7 +206,7 @@ function applySuggestion() {
 function saveBasicInfo() {
   goals.value.height        = localGoals.height
   goals.value.targetWeight  = localGoals.targetWeight
-  goals.value.age           = localGoals.age
+  goals.value.birthDate     = localGoals.birthDate
   goals.value.gender        = localGoals.gender
   goals.value.activityLevel = localGoals.activityLevel
   goals.value.healthGoal    = localGoals.healthGoal
