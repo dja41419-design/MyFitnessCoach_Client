@@ -91,7 +91,8 @@ import {
   Legend, Tooltip, Filler,
   type ChartConfiguration,
 } from 'chart.js'
-import { useHealthTracker, calcBMI, bmiLabel, r1, r0 } from '@/composables/useHealthTracker'
+import { useHealthTracker, r1, r0 } from '@/composables/useHealthTracker'
+import { calcBMI, bmiLabel } from '@/composables/useGoals'
 
 Chart.register(
   LineController, BarController, DoughnutController,

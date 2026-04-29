@@ -1,35 +1,40 @@
 <template>
   <div class="goals">
+    <!-- 基本資料未填提示 -->
+    <div v-if="!hasInfo" class="info-notice">
+      尚未設定基本資料，請填寫下方表單並儲存，才能啟用飲食紀錄功能。
+    </div>
+
     <!-- 基本資料 -->
     <div class="card">
       <div class="goals-section-title">基本資料</div>
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">身高 (cm)</label>
-          <input type="number" v-model.number="localGoals.height" min="100" max="250" step="0.1" class="form-input" @blur="liveRefreshTDEE" />
+          <label class="form-label">身高 (cm) <span class="required">*</span></label>
+          <input type="number" v-model.number="localInfo.height" min="100" max="250" step="0.1" class="form-input" @blur="liveRefreshTDEE" />
         </div>
         <div class="form-group">
           <label class="form-label">目前體重 (kg)</label>
-          <input type="number" v-model.number="localGoals.currentWeight" step="0.1" class="form-input" @blur="liveRefreshTDEE" />
+          <input type="number" v-model.number="localInfo.currentWeight" step="0.1" class="form-input" placeholder="自動抓取體重紀錄" @blur="liveRefreshTDEE" />
         </div>
         <div class="form-group">
           <label class="form-label">目標體重 (kg)</label>
-          <input type="number" v-model.number="localGoals.targetWeight" step="0.1" class="form-input" />
+          <input type="number" v-model.number="localInfo.targetWeight" step="0.1" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">生日</label>
-          <input type="date" v-model="localGoals.birthDate" class="form-input" @change="liveRefreshTDEE" />
+          <label class="form-label">生日 <span class="required">*</span></label>
+          <input type="date" v-model="localInfo.birthDate" class="form-input" @change="liveRefreshTDEE" />
         </div>
         <div class="form-group">
-          <label class="form-label">性別</label>
+          <label class="form-label">性別 <span class="required">*</span></label>
           <div class="radio-group">
-            <label class="radio-label"><input type="radio" v-model="localGoals.gender" value="F" @change="liveRefreshTDEE" /> 女</label>
-            <label class="radio-label"><input type="radio" v-model="localGoals.gender" value="M" @change="liveRefreshTDEE" /> 男</label>
+            <label class="radio-label"><input type="radio" v-model="localInfo.gender" value="F" @change="liveRefreshTDEE" /> 女</label>
+            <label class="radio-label"><input type="radio" v-model="localInfo.gender" value="M" @change="liveRefreshTDEE" /> 男</label>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">活動量</label>
-          <select v-model="localGoals.activityLevel" class="form-input" @change="liveRefreshTDEE">
+          <label class="form-label">活動量 <span class="required">*</span></label>
+          <select v-model="localInfo.activityLevel" class="form-input" @change="liveRefreshTDEE">
             <option value="1.2">久坐（幾乎不運動）</option>
             <option value="1.375">輕度活動（每週 1-3 天）</option>
             <option value="1.55">中度活動（每週 3-5 天）</option>
@@ -38,8 +43,8 @@
           </select>
         </div>
         <div class="form-group" style="grid-column: span 2">
-          <label class="form-label">健康目標</label>
-          <select v-model="localGoals.healthGoal" class="form-input" @change="onGoalChange">
+          <label class="form-label">健康目標 <span class="required">*</span></label>
+          <select v-model="localInfo.healthGoal" class="form-input" @change="liveRefreshTDEE">
             <option v-for="g in HEALTH_GOALS" :key="g">{{ g }}</option>
           </select>
         </div>
@@ -68,7 +73,7 @@
 
       <!-- 建議 Banner -->
       <div v-if="macroSuggestion" class="goal-suggest-bar">
-        建議目標 (<strong>{{ localGoals.healthGoal }}</strong>)：
+        建議目標 (<strong>{{ localInfo.healthGoal }}</strong>)：
         熱量 <strong>{{ macroSuggestion.calories }}</strong> kcal ·
         蛋白質 <strong>{{ macroSuggestion.protein }}</strong>g ·
         碳水 <strong>{{ macroSuggestion.carbs }}</strong>g ·
@@ -76,38 +81,45 @@
         <button class="btn btn-sm ml-8" style="background:var(--ht-warn);color:#fff;border:none" @click="applySuggestion">套用建議</button>
       </div>
 
-      <button class="btn btn-primary" @click="saveBasicInfo">儲存基本資料</button>
+      <button class="btn btn-primary" :disabled="saving" @click="onSaveBasicInfo">
+        {{ saving ? '儲存中…' : '儲存基本資料' }}
+      </button>
     </div>
 
-    <!-- 營養目標 -->
+    <!-- 每日營養目標 -->
     <div class="card">
       <div class="goals-section-title">每日營養目標</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">每日熱量目標 (kcal)</label>
-          <input type="number" v-model.number="localGoals.calories" min="0" class="form-input" />
+      <div v-if="!hasInfo" class="goals-locked">請先儲存基本資料以啟用營養目標設定。</div>
+      <template v-else>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">每日熱量目標 (kcal)</label>
+            <input type="number" v-model.number="localGoals.totalCalories" min="0" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">蛋白質目標 (g)</label>
+            <input type="number" v-model.number="localGoals.protein" min="0" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">碳水化合物目標 (g)</label>
+            <input type="number" v-model.number="localGoals.carbs" min="0" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">脂肪目標 (g)</label>
+            <input type="number" v-model.number="localGoals.fat" min="0" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">每日飲水目標 (ml)</label>
+            <input type="number" v-model.number="localGoals.water" min="0" step="50" class="form-input" />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">蛋白質目標 (g)</label>
-          <input type="number" v-model.number="localGoals.protein" min="0" class="form-input" />
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" :disabled="saving" @click="onSaveTargetCalories">
+            {{ saving ? '儲存中…' : '儲存營養目標' }}
+          </button>
+          <button v-if="macroSuggestion" class="btn btn-outline" @click="applySuggestion">套用 TDEE 建議</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">碳水化合物目標 (g)</label>
-          <input type="number" v-model.number="localGoals.carbs" min="0" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">脂肪目標 (g)</label>
-          <input type="number" v-model.number="localGoals.fat" min="0" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">每日飲水目標 (ml)</label>
-          <input type="number" v-model.number="localGoals.water" min="0" step="50" class="form-input" />
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" @click="saveNutritionGoals">儲存營養目標</button>
-        <button v-if="macroSuggestion" class="btn btn-outline" @click="applySuggestion">套用 TDEE 建議</button>
-      </div>
+      </template>
     </div>
 
     <!-- Toast -->
@@ -118,47 +130,74 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import {
-  useHealthTracker,
   calcBMI, bmiLabel,
   calculateBMR, calculateTDEE, calculateMacrosFromGoal,
   type MacroSuggestion,
-} from '@/composables/useHealthTracker'
+  HEALTH_GOALS,
+} from '@/composables/useGoals'
+import {
+  loadGoalPage, saveBasicInfo, saveTargetCalories,
+  type BasicInfoDto, type TargetCaloriesDto,
+} from '@/data/goals'
 
-const { goals, bodyLogs, saveData, HEALTH_GOALS, r0 } = useHealthTracker()
-
-// local copy of goals (with currentWeight injected)
-interface LocalGoals {
-  height: number
+// ── Local state ────────────────────────────────────────────────
+interface LocalInfo extends BasicInfoDto {
   currentWeight: number | null
-  targetWeight: number
-  birthDate: string
-  gender: 'M' | 'F'
-  activityLevel: string
-  healthGoal: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  water: number
 }
 
-const localGoals = reactive<LocalGoals>({
-  height: goals.value.height,
-  currentWeight: bodyLogs.value[0]?.weight ?? null,
-  targetWeight: goals.value.targetWeight,
-  birthDate: goals.value.birthDate,
-  gender: goals.value.gender,
-  activityLevel: goals.value.activityLevel,
-  healthGoal: goals.value.healthGoal,
-  calories: goals.value.calories,
-  protein: goals.value.protein,
-  carbs: goals.value.carbs,
-  fat: goals.value.fat,
-  water: goals.value.water,
+const localInfo = reactive<LocalInfo>({
+  height: 0,
+  currentWeight: null,
+  targetWeight: 0,
+  birthDate: '',
+  gender: 'F',
+  activityLevel: '1.55',
+  healthGoal: '健康飲食',
 })
 
-// ── TDEE calculation ───────────────────────────────────────────
-const tdeeResult = reactive({ bmr: null as number | null, tdee: null as number | null })
+const localGoals = reactive<TargetCaloriesDto>({
+  totalCalories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+  water: 2000,
+})
+
+const hasInfo = ref(false)
+const saving  = ref(false)
+
+// ── Load page ──────────────────────────────────────────────────
+onMounted(async () => {
+  try {
+    const data = await loadGoalPage()
+    applyPageResponse(data)
+  } catch {
+    // API 尚未就緒時靜默失敗，讓使用者填寫表單
+  }
+  liveRefreshTDEE()
+})
+
+function applyPageResponse(data: { info: BasicInfoDto | null; goals: TargetCaloriesDto | null }) {
+  if (data.info) {
+    localInfo.height        = data.info.height
+    localInfo.targetWeight  = data.info.targetWeight
+    localInfo.birthDate     = data.info.dateOfBirth
+    localInfo.gender        = data.info.gender
+    localInfo.activityLevel = data.info.activityLevel
+    localInfo.healthGoal    = data.info.healthGoal
+    hasInfo.value = true
+  }
+  if (data.goals) {
+    localGoals.totalCalories = data.goals.totalCalories
+    localGoals.protein       = data.goals.protein
+    localGoals.carbs         = data.goals.carbs
+    localGoals.fat           = data.goals.fat
+    localGoals.water         = data.goals.water
+  }
+}
+
+// ── TDEE preview ───────────────────────────────────────────────
+const tdeeResult     = reactive({ bmr: null as number | null, tdee: null as number | null })
 const macroSuggestion = ref<MacroSuggestion | null>(null)
 
 function ageFromBirthDate(bd: string): number {
@@ -172,60 +211,80 @@ function ageFromBirthDate(bd: string): number {
 }
 
 function liveRefreshTDEE() {
-  const w   = localGoals.currentWeight ?? goals.value.targetWeight
-  const bmr = calculateBMR(w, localGoals.height, ageFromBirthDate(localGoals.birthDate), localGoals.gender)
+  const w   = localInfo.currentWeight ?? localInfo.targetWeight
+  const bmr = calculateBMR(w, localInfo.height, ageFromBirthDate(localInfo.birthDate), localInfo.gender)
   tdeeResult.bmr  = bmr
-  tdeeResult.tdee = bmr ? calculateTDEE(bmr, localGoals.activityLevel) : null
-  if (tdeeResult.tdee) {
-    macroSuggestion.value = calculateMacrosFromGoal(tdeeResult.tdee, w, localGoals.healthGoal)
+  tdeeResult.tdee = bmr ? calculateTDEE(bmr, localInfo.activityLevel) : null
+  if (tdeeResult.tdee && w) {
+    macroSuggestion.value = calculateMacrosFromGoal(tdeeResult.tdee, w, localInfo.healthGoal)
+  } else {
+    macroSuggestion.value = null
   }
 }
 
-function onGoalChange() {
-  liveRefreshTDEE()
-}
-
 const bmiDisplay = computed(() => {
-  const w = localGoals.currentWeight ?? goals.value.targetWeight
-  const bmi = calcBMI(w, localGoals.height)
+  const w   = localInfo.currentWeight ?? localInfo.targetWeight
+  const bmi = calcBMI(w, localInfo.height)
   if (!bmi) return { value: null, text: '', cls: '' }
-  const info = bmiLabel(bmi)
-  return { value: bmi, ...info }
+  return { value: bmi, ...bmiLabel(bmi) }
 })
 
 function applySuggestion() {
   if (!macroSuggestion.value) return
-  localGoals.calories = macroSuggestion.value.calories
-  localGoals.protein  = macroSuggestion.value.protein
-  localGoals.carbs    = macroSuggestion.value.carbs
-  localGoals.fat      = macroSuggestion.value.fat
+  localGoals.totalCalories = macroSuggestion.value.calories
+  localGoals.protein       = macroSuggestion.value.protein
+  localGoals.carbs         = macroSuggestion.value.carbs
+  localGoals.fat           = macroSuggestion.value.fat
   showToast('已套用 TDEE 建議')
 }
 
+// ── Validation ─────────────────────────────────────────────────
+function validateBasicInfo(): string | null {
+  if (!localInfo.height)       return '請填寫身高'
+  if (!localInfo.birthDate)    return '請填寫生日'
+  if (!localInfo.gender)       return '請選擇性別'
+  if (!localInfo.activityLevel) return '請選擇活動量'
+  if (!localInfo.healthGoal)   return '請選擇健康目標'
+  return null
+}
+
 // ── Save ───────────────────────────────────────────────────────
-function saveBasicInfo() {
-  goals.value.height        = localGoals.height
-  goals.value.targetWeight  = localGoals.targetWeight
-  goals.value.birthDate     = localGoals.birthDate
-  goals.value.gender        = localGoals.gender
-  goals.value.activityLevel = localGoals.activityLevel
-  goals.value.healthGoal    = localGoals.healthGoal
-  saveData()
-  liveRefreshTDEE()
-  showToast('基本資料已儲存')
+async function onSaveBasicInfo() {
+  const err = validateBasicInfo()
+  if (err) { showToast(err); return }
+
+  saving.value = true
+  try {
+    const dto: BasicInfoDto = {
+      height:        localInfo.height,
+      targetWeight:  localInfo.targetWeight,
+      dateOfBirth:   localInfo.birthDate,
+      gender:        localInfo.gender,
+      activityLevel: localInfo.activityLevel,
+      healthGoal:    localInfo.healthGoal,
+    }
+    const data = await saveBasicInfo(dto)
+    applyPageResponse(data)
+    liveRefreshTDEE()
+    showToast('基本資料已儲存')
+  } catch (e: unknown) {
+    showToast(e instanceof Error ? e.message : '儲存失敗')
+  } finally {
+    saving.value = false
+  }
 }
 
-function saveNutritionGoals() {
-  goals.value.calories = localGoals.calories
-  goals.value.protein  = localGoals.protein
-  goals.value.carbs    = localGoals.carbs
-  goals.value.fat      = localGoals.fat
-  goals.value.water    = localGoals.water
-  saveData()
-  showToast('營養目標已儲存')
+async function onSaveTargetCalories() {
+  saving.value = true
+  try {
+    await saveTargetCalories({ ...localGoals })
+    showToast('營養目標已儲存')
+  } catch (e: unknown) {
+    showToast(e instanceof Error ? e.message : '儲存失敗')
+  } finally {
+    saving.value = false
+  }
 }
-
-onMounted(liveRefreshTDEE)
 
 // ── Toast ──────────────────────────────────────────────────────
 const toastMsg     = ref('')
@@ -241,6 +300,27 @@ function showToast(msg: string) {
 </script>
 
 <style scoped>
+.info-notice {
+  background: #fdf3e0;
+  border: 1px solid #f0d58c;
+  border-radius: var(--ht-radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #9e7a28;
+  margin-bottom: 12px;
+}
+
+.goals-locked {
+  font-size: 13px;
+  color: var(--ht-text3);
+  padding: 8px 0 16px;
+}
+
+.required {
+  color: var(--ht-danger);
+  margin-left: 2px;
+}
+
 .form-input {
   font-family: var(--font-body);
   font-size: 13px;
@@ -265,8 +345,9 @@ function showToast(msg: string) {
   border: 1px solid transparent;
   transition: opacity 0.15s, background 0.15s;
 }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--ht-green); color: #fff; border-color: var(--ht-green); }
-.btn-primary:hover { opacity: 0.88; }
+.btn-primary:not(:disabled):hover { opacity: 0.88; }
 .btn-outline { background: none; border-color: var(--ht-border); color: var(--ht-text2); }
 .btn-outline:hover { background: var(--ht-surface2); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }

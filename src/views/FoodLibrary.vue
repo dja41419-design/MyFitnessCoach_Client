@@ -312,7 +312,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useFoodLibrary, loadFoods, createFood, updateFood, deleteFood, toggleFavorite } from '@/composables/useFoodLibrary'
-import { useHealthTracker, genUid, compareOp } from '@/composables/useHealthTracker'
+import { useHealthTracker, genUid } from '@/composables/useHealthTracker'
+import { compareOp } from '@/composables/useGoals'
 import type { FoodDto, ServingSizeDto } from '@/data/foodLibrary'
 
 const {

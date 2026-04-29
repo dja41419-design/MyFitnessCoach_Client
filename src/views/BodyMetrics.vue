@@ -202,7 +202,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useHealthTracker, calcBMI, bmiLabel, type BodyLog } from '@/composables/useHealthTracker'
+import { useHealthTracker, type BodyLog } from '@/composables/useHealthTracker'
+import { calcBMI, bmiLabel } from '@/composables/useGoals'
 
 const { bodyLogs, goals, saveData, todayStr } = useHealthTracker()
 
