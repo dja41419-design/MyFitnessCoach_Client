@@ -270,7 +270,7 @@ const checkGoogleStatus = async () => {
 const connectGoogleCalendar = () => {
   const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
   const redirectUri = window.location.origin + "/google-callback";
-  const scope = "https://www.googleapis.com/auth/calendar.events";
+  const scope = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send";
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
     `client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=true`;
   window.location.href = authUrl;
@@ -532,10 +532,10 @@ async function submitFinalReservation() {
 
       if (isGoogleConnected.value) {
         ElMessageBox.confirm(
-          '預約成功！行程已自動同步至您的 Google 日曆。',
+          '預約成功！行程已同步至您的 Google 日曆並寄送確認郵件。',
           '預約成功',
           {
-            confirmButtonText: '開啟google日曆',
+            confirmButtonText: '開啟 Google 日曆',
             cancelButtonText: '查看預約紀錄',
             type: 'success',
             distinguishCancelAndClose: true
@@ -548,10 +548,10 @@ async function submitFinalReservation() {
         });
       } else {
         ElMessageBox.confirm(
-          '預約成功！連結 Google 日曆後可自動同步行程，是否現在同步？',
+          '預約成功！連結 Google 帳戶後可自動同步行事曆並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
           '預約成功',
           {
-            confirmButtonText: '同步google行事曆',
+            confirmButtonText: '同步 Google 服務',
             cancelButtonText: '暫不同步',
             type: 'success',
             distinguishCancelAndClose: true
@@ -596,7 +596,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* JVID 風格會員狀態條 */
+/* 會員狀態條 */
 .user-status-bar {
   background: #fdfaf5;
   border: 1px solid rgba(196, 168, 130, 0.2);

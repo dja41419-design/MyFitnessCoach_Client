@@ -38,11 +38,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 
 const countdown = ref(5)
+const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
 
 // 只接受純數字的 RtnCode，其他一律視為失敗
 const rawCode = (route.query.RtnCode as string) ?? ''
@@ -62,20 +64,69 @@ function goHome() {
   router.push('/')
 }
 
-onMounted(() => {
+const checkGoogleStatus = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const res = await fetch('https://localhost:7212/api/GoogleAuth/CheckStatus', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      isGoogleConnected.value = data.isConnected
+      
+      // 如果沒連動，且付款成功，就跳出詢問
+      if (!isGoogleConnected.value && isSuccess.value) {
+        if (timer) clearInterval(timer) // 暫停倒數
+        
+        ElMessageBox.confirm(
+          '付款成功！連結 Google 帳戶後可自動同步未來預約的行程並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
+          '交易成功',
+          {
+            confirmButtonText: '同步 Google 服務',
+            cancelButtonText: '暫不同步',
+            type: 'success',
+            distinguishCancelAndClose: true
+          }
+        ).then(() => {
+          connectGoogleCalendar();
+        }).catch(() => {
+          goHome();
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Check Google status failed:', err)
+  }
+}
+
+const connectGoogleCalendar = () => {
+  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
+  const redirectUri = window.location.origin + "/google-callback";
+  const scope = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send";
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=true`;
+  window.location.href = authUrl;
+}
+
+onMounted(async () => {
   if (isSuccess.value) {
     localStorage.removeItem('lessonCart')
     sessionStorage.removeItem('checkoutAmount')
     sessionStorage.removeItem('checkoutPlanIds')
+    
+    await checkGoogleStatus()
   }
 
-  timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      if (timer) clearInterval(timer)
-      goHome()
-    }
-  }, 1000)
+  if (isGoogleConnected.value || !isSuccess.value) {
+    timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        if (timer) clearInterval(timer)
+        goHome()
+      }
+    }, 1000)
+  }
 })
 
 onUnmounted(() => {

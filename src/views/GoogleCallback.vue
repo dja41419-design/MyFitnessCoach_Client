@@ -50,8 +50,8 @@ onMounted(async () => {
 
     const data = await response.json();
 
-    if (response.ok) {
-      alert('Google 日曆授權成功！以後您的預約將自動同步。');
+    if (data.message || response.ok) {
+      alert(data.message || 'Google 同步授權成功！以後您的預約將自動同步日曆並發送郵件通知。');
       // 開啟 Google 日曆新分頁
       window.open('https://calendar.google.com/', '_blank');
       // 原分頁跳轉回個人中心
