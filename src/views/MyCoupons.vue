@@ -44,9 +44,6 @@
             <div class="coupon-card-discount">{{ formatDiscount(c) }}</div>
             <h3 class="coupon-card-name">{{ c.name }}</h3>
             <p class="coupon-card-desc">{{ c.description }}</p>
-            <div class="coupon-card-meta">
-              <span>{{ formatDateRange(c.startAt, c.endAt) }}</span>
-            </div>
             <button
               class="coupon-card-btn"
               :disabled="claiming"
