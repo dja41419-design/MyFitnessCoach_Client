@@ -451,6 +451,7 @@ const goToReserve = (instructorId: number) => {
 
 const getStatusClass = (status: string) => {
   switch (status) {
+    case '待付款': return 'status-waiting'
     case '已預約': return 'status-pending'
     case '已完成': return 'status-completed'
     case '已取消': return 'status-cancelled'
@@ -483,8 +484,10 @@ const handleCancel = (res: Reservation) => {
     type: 'warning'
   }).then(async () => {
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/Reservation/${res.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
       
       if (response.ok) {
@@ -492,8 +495,12 @@ const handleCancel = (res: Reservation) => {
         fetchReservations() // 刷新預約列表
         fetchMemberInfo()   // 即時更新累計取消次數
       } else {
-        const error = await response.json()
-        ElMessage.error(error.message || '取消失敗')
+        try {
+          const error = await response.json()
+          ElMessage.error(error.message || '取消失敗')
+        } catch {
+          ElMessage.error(`取消失敗（${response.status}）`)
+        }
       }
     } catch (error) {
       console.error('Failed to cancel reservation:', error)
@@ -617,7 +624,8 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.status-pending { background: #fff8e1; color: #f57c00; }
+.status-waiting   { background: #fce4ec; color: #c2185b; }
+.status-pending   { background: #fff8e1; color: #f57c00; }
 .status-completed { background: #e8f5e9; color: #2e7d32; }
 .status-cancelled { background: #fdf0ee; color: #c62828; }
 
