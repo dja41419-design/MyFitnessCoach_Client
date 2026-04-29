@@ -98,6 +98,41 @@
             </button>
           </div>
 
+          <!-- 退換貨審核結果 -->
+          <div v-if="order.status === 3" class="return-status-banner banner--pending">
+            <i class="mdi mdi-clock-outline"></i>
+            <div>
+              <div class="banner-title">退換貨申請審核中</div>
+              <div class="banner-desc">客服人員將在 1–3 個工作天內與您聯繫，請耐心等候。</div>
+            </div>
+          </div>
+
+          <div v-if="order.status === 4" class="return-status-banner banner--approved">
+            <i class="mdi mdi-check-circle-outline"></i>
+            <div>
+              <div class="banner-title">退換貨申請已核准</div>
+              <div class="banner-desc">我們已受理您的申請，請依客服指示寄回商品，退款將於商品確認後處理。</div>
+            </div>
+          </div>
+
+          <div v-if="order.status === 5" class="return-status-banner banner--refunded">
+            <i class="mdi mdi-cash-refund"></i>
+            <div>
+              <div class="banner-title">退款已完成</div>
+              <div class="banner-desc">款項已退回至您的帳戶，感謝您的耐心等候。</div>
+            </div>
+          </div>
+
+          <div v-if="order.status === 6" class="return-status-banner banner--rejected">
+            <i class="mdi mdi-close-circle-outline"></i>
+            <div>
+              <div class="banner-title">退換貨申請已拒絕</div>
+              <div class="banner-desc">
+                {{ order.memo?.startsWith('[退換貨]') ? order.memo.replace('[退換貨] ', '拒絕原因：') : '本次申請不符合退換貨條件，如有疑問請聯繫客服。' }}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -191,10 +226,14 @@ function formatDate(iso: string): string {
 }
 
 function statusLabel(s: number): string {
-  return ['待付款', '已付款', '已取貨', '退換貨申請中'][s] ?? '未知'
+  return (
+    ['待付款', '已付款', '已取貨', '退換貨申請中', '退換貨核准', '已退款', '申請已拒絕'][s] ?? '未知'
+  )
 }
 function statusClass(s: number): string {
-  return ['tag--pending', 'tag--paid', 'tag--done', 'tag--return'][s] ?? ''
+  return (
+    ['tag--pending', 'tag--paid', 'tag--done', 'tag--return', 'tag--approved', 'tag--refunded', 'tag--rejected'][s] ?? ''
+  )
 }
 
 function openReturnModal(orderId: number): void {
@@ -378,7 +417,28 @@ onMounted(async () => {
 }
 
 /* 退換貨狀態標籤 */
-.tag--return { background: #fde8e8; color: #922b21; }
+.tag--return    { background: #fde8e8; color: #922b21; }
+.tag--approved  { background: #d1f0e0; color: #1a6b3c; }
+.tag--refunded  { background: #cfe2ff; color: #084298; }
+.tag--rejected  { background: #e8e8e8; color: #555; }
+
+/* 退換貨審核結果橫幅 */
+.return-status-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--radius, 8px);
+  font-size: 0.88rem;
+}
+.return-status-banner .mdi {
+  font-size: 1.4rem; flex-shrink: 0; margin-top: 1px;
+}
+.banner-title { font-weight: 700; margin-bottom: 4px; }
+.banner-desc  { color: inherit; opacity: 0.85; line-height: 1.5; }
+
+.banner--pending  { background: #fef9ec; color: #92660a; border: 1px solid #f5d97a; }
+.banner--approved { background: #edfaf3; color: #1a6b3c; border: 1px solid #6fcf97; }
+.banner--refunded { background: #eaf2ff; color: #084298; border: 1px solid #90bef5; }
+.banner--rejected { background: #f5f5f5; color: #555;    border: 1px solid #ccc; }
 
 /* 申請退換貨按鈕 */
 .return-action { display: flex; justify-content: flex-end; }
