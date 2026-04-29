@@ -460,18 +460,16 @@ function handleReserve() {
 
 async function submitFinalReservation() {
   if (!paymentMethod.value) return
-  
+
   submitting.value = true
   try {
     const token = localStorage.getItem('token')
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     const response = await fetch('/api/Reservation', {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify({
         instructorId: instructorId.value,
         date: form.value.date,
@@ -483,8 +481,55 @@ async function submitFinalReservation() {
       })
     })
 
-    if (response.ok) {
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json()
+        ElMessageBox.alert(errorData.message || '預約失敗，請稍後再試', '錯誤', { type: 'error' })
+      } else {
+        ElMessageBox.alert(`伺服器連線失敗 (HTTP ${response.status})`, '錯誤', { type: 'error' })
+      }
+      return
+    }
+
+    const data = await response.json()
+
+    if (paymentMethod.value === '信用卡') {
+      // 信用卡：轉跳綠界付款
+      const formData = new URLSearchParams()
+      formData.append('reservationId', String(data.reservationId))
+
+      const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
+      if (token) payHeaders['Authorization'] = `Bearer ${token}`
+
+      const payResponse = await fetch('/api/Payment/ReservationSendToEcPay', {
+        method: 'POST',
+        headers: payHeaders,
+        body: formData
+      })
+
+      if (!payResponse.ok) {
+        ElMessageBox.alert('建立付款失敗，請稍後再試', '錯誤', { type: 'error' })
+        return
+      }
+
+      const payData = await payResponse.json()
+      const ecpayForm = document.createElement('form')
+      ecpayForm.method = 'POST'
+      ecpayForm.action = payData.action
+      for (const key in payData.parameters) {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = payData.parameters[key]
+        ecpayForm.appendChild(input)
+      }
+      document.body.appendChild(ecpayForm)
+      ecpayForm.submit()
+    } else {
+      // 點數扣款：顯示成功訊息
       paymentModalVisible.value = false
+
       if (isGoogleConnected.value) {
         ElMessageBox.confirm(
           '預約成功！行程已自動同步至您的 Google 日曆。',

@@ -1,4 +1,6 @@
 <template>
+  <AppNavbar />
+
   <main class="store-page">
     <div class="store-container">
 
@@ -9,14 +11,6 @@
           <h1 class="reveal">健康食品商城</h1>
           <p class="reveal rd1">官方直營、品質保證。嚴選優質健康食品，讓你的飲食計畫更輕鬆執行。</p>
         </div>
-        <RouterLink to="/cart" class="cart-icon-link" aria-label="前往購物車">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-          </svg>
-          <span v-if="itemCount > 0" class="cart-icon-badge">{{ itemCount }}</span>
-        </RouterLink>
       </div>
 
       <!-- 搜尋 + 排序列 -->
@@ -35,6 +29,23 @@
           <option value="price-desc">價格：高 → 低</option>
           <option value="name-asc">名稱 A → Z</option>
         </select>
+
+        <!-- 價格區間篩選 -->
+        <div class="store-filter-price" role="group" aria-label="價格區間篩選">
+          <span class="store-filter-price-label">價格</span>
+          <el-slider
+            v-model="priceRange"
+            range
+            :min="0"
+            :max="PRICE_MAX"
+            :step="50"
+            :show-tooltip="false"
+            aria-label="價格區間"
+          />
+          <span class="store-filter-price-value">
+            NT${{ priceRange[0] }}–{{ priceRange[1] === PRICE_MAX ? `${PRICE_MAX}+` : priceRange[1] }}
+          </span>
+        </div>
       </div>
 
       <!-- 分類 Tab -->
@@ -93,6 +104,9 @@
       <!-- 空狀態 -->
       <div v-else class="store-empty">
         <p v-if="searchKeyword.trim()">找不到符合「{{ searchKeyword.trim() }}」的商品</p>
+        <p v-else-if="priceRange[0] > 0 || priceRange[1] < PRICE_MAX">
+          找不到 NT${{ priceRange[0] }} - NT${{ priceRange[1] === PRICE_MAX ? `${PRICE_MAX}+` : priceRange[1] }} 價格範圍內的商品
+        </p>
         <p v-else>目前此分類沒有商品</p>
       </div>
 
@@ -152,6 +166,7 @@ import { RouterLink } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useReveal } from '@/composables/useReveal'
 import { useCart } from '@/composables/useCart'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface CategoryDto {
   id: number
@@ -173,11 +188,14 @@ interface ProductDto {
   categoryName: string
 }
 
+const PRICE_MAX = 2000
+
 const categories = ref<CategoryDto[]>([])
 const products = ref<ProductDto[]>([])
 const activeCategory = ref<number | null>(null)
 const searchKeyword = ref<string>('')
 const sortBy = ref<string>('default')
+const priceRange = ref<[number, number]>([0, PRICE_MAX])
 const loading = ref<boolean>(true)
 const isModalOpen = ref(false)
 const selectedProduct = ref<ProductDto | null>(null)
@@ -212,6 +230,10 @@ async function fetchProducts(): Promise<void> {
   const params = new URLSearchParams()
   if (searchKeyword.value.trim()) params.set('name', searchKeyword.value.trim())
   if (activeCategory.value !== null) params.set('categoryId', String(activeCategory.value))
+  if (priceRange.value[0] > 0)
+    params.set('minPrice', String(priceRange.value[0]))
+  if (priceRange.value[1] < PRICE_MAX)
+    params.set('maxPrice', String(priceRange.value[1]))
   const res = await fetch(`/api/StoreApi/products?${params}`)
   products.value = await res.json()
   loading.value = false
@@ -231,7 +253,7 @@ function openProduct(product: ProductDto): void {
   isModalOpen.value = true
 }
 
-const { addItem, itemCount } = useCart()
+const { addItem } = useCart()
 
 function handleAddToCart(p: ProductDto): void {
   addItem({
@@ -253,6 +275,13 @@ function handleAddToCart(p: ProductDto): void {
 }
 
 watch(activeCategory, fetchProducts)
+
+// 價格區間:debounce 300ms 後重新抓
+let priceTimer: ReturnType<typeof setTimeout> | null = null
+watch(priceRange, () => {
+  if (priceTimer) clearTimeout(priceTimer)
+  priceTimer = setTimeout(fetchProducts, 300)
+}, { deep: true })
 
 onMounted(async () => {
   await fetchCategories()
@@ -295,60 +324,6 @@ useReveal()
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-}
-
-/* ── 購物車 icon(固定右上,隨捲動跟隨) ── */
-.cart-icon-link {
-  position: fixed;
-  top: 100px;
-  right: 24px;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  color: var(--text-primary);
-  background: var(--bg);
-  text-decoration: none;
-  transition: all 0.3s;
-  flex-shrink: 0;
-  box-shadow: 0 2px 12px rgba(26, 22, 19, 0.08);
-}
-
-.cart-icon-link:hover {
-  border-color: var(--text-primary);
-  background: var(--bg-card);
-  box-shadow: 0 4px 16px rgba(26, 22, 19, 0.12);
-}
-
-@media (max-width: 768px) {
-  .cart-icon-link {
-    top: 80px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-  }
-}
-
-.cart-icon-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--bg-dark);
-  color: var(--text-light);
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
 }
 
 .store-header h1 {
@@ -418,6 +393,83 @@ useReveal()
 
 .store-sort-select:focus {
   border-color: var(--accent);
+}
+
+/* ── 價格區間篩選(與搜尋/排序同列,使用金棕 accent) ── */
+.store-filter-price {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 260px;
+  max-width: 380px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  transition: border-color 0.3s;
+}
+
+.store-filter-price:hover {
+  border-color: var(--accent);
+}
+
+.store-filter-price-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.store-filter-price-value {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 104px;
+  text-align: right;
+}
+
+/* 覆寫 Element Plus slider 色票:改用溫暖金棕 accent-dark,淡化黑色 */
+.store-filter-price :deep(.el-slider) {
+  flex: 1;
+  min-width: 80px;
+}
+
+.store-filter-price :deep(.el-slider__runway) {
+  background-color: var(--border);
+  height: 3px;
+  margin: 10px 0;
+}
+
+.store-filter-price :deep(.el-slider__bar) {
+  background-color: var(--accent-dark);
+  height: 3px;
+}
+
+.store-filter-price :deep(.el-slider__button) {
+  border: 2px solid var(--accent-dark);
+  background-color: var(--bg);
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.store-filter-price :deep(.el-slider__button:hover),
+.store-filter-price :deep(.el-slider__button-wrapper:hover .el-slider__button),
+.store-filter-price :deep(.el-slider__button-wrapper.hover .el-slider__button),
+.store-filter-price :deep(.el-slider__button-wrapper.dragging .el-slider__button) {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 4px rgba(196, 168, 130, 0.18);
+}
+
+@media (max-width: 768px) {
+  .store-filter-price {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 /* ── 分類 Tab ── */
