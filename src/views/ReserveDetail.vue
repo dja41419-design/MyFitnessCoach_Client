@@ -103,13 +103,12 @@
                 v-for="item in filteredTimes" 
                 :key="item.id"
                 class="time-btn"
-                :class="{ active: form.shiftId === item.id, 'is-reserved': item.isReserved }"
-                :disabled="item.isReserved"
+                :class="{ active: form.shiftId === item.id, 'is-reserved': item.isReserved || item.isPast }"
+                :disabled="item.isReserved || item.isPast"
                 @click="form.shiftId = item.id; form.time = item.time"
               >
                 {{ item.time }}
-              </button>
-              <div v-if="filteredTimes.length === 0 && form.date" class="no-times">
+              </button>              <div v-if="filteredTimes.length === 0 && form.date" class="no-times">
                 此日期無排班
               </div>
               <div v-if="!form.date" class="no-times">
@@ -189,6 +188,7 @@
         
         <div class="payment-options">
           <div 
+            v-if="isLoggedIn"
             class="payment-option" 
             :class="{ active: paymentMethod === 'Points' }"
             @click="paymentMethod = 'Points'"
@@ -211,7 +211,7 @@
               <span class="option-title">信用卡支付</span>
               <span class="option-desc">支援 Visa, Master, JCB</span>
             </div>
-            <div class="option-check" v-if="paymentMethod === '信用卡'"><i class="mdi mdi-check-circle"></i></div>
+            <div class="option-check" v-if="paymentMethod === 'CreditCard'"><i class="mdi mdi-check-circle"></i></div>
           </div>
         </div>
       </div>
@@ -249,11 +249,14 @@ const paymentModalVisible = ref(false)
 const paymentMethod = ref('')
 const submitting = ref(false)
 const isGoogleConnected = ref(false)
+const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 const checkGoogleStatus = async () => {
   try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
     const res = await fetch('https://localhost:7212/api/GoogleAuth/CheckStatus', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 'Authorization': `Bearer ${token}` }
     })
     if (res.ok) {
       const data = await res.json()
@@ -265,7 +268,7 @@ const checkGoogleStatus = async () => {
 }
 
 const connectGoogleCalendar = () => {
-  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com"; // <-- 記得換掉
+  const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
   const redirectUri = window.location.origin + "/google-callback";
   const scope = "https://www.googleapis.com/auth/calendar.events";
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
@@ -304,7 +307,13 @@ function fillMemberInfo() {
 
 const fetchMemberInfo = async () => {
   try {
-    const res = await fetch('/api/Member/Info')
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const res = await fetch('/api/Member/Info', { headers })
     if (res.ok) {
       memberInfo.value = await res.json()
     }
@@ -338,6 +347,25 @@ function getDayClass(dateNum: number) {
   return { 'status-available': true }
 }
 
+const isTimePastSlot = (dateStr: string, timeSlot: string) => {
+  const now = new Date()
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const slotDate = new Date(year, month - 1, day)
+  
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (slotDate < todayDate) return true
+  if (slotDate > todayDate) return false
+  
+  const match = timeSlot.match(/(\d+)/)
+  if (match) {
+    const startHour = parseInt(match[1])
+    const endMatch = timeSlot.match(/-(\d+)/)
+    const endHour = endMatch ? parseInt(endMatch[1]) : startHour + 1
+    return now.getHours() >= endHour
+  }
+  return false
+}
+
 const filteredTimes = computed(() => {
   if (!form.value.date) return []
   return availability.value
@@ -345,7 +373,8 @@ const filteredTimes = computed(() => {
     .map(a => ({
       id: a.shiftId,
       time: a.timeSlot,
-      isReserved: a.isReserved
+      isReserved: a.isReserved,
+      isPast: isTimePastSlot(form.value.date, a.timeSlot)
     }))
 })
 
@@ -395,20 +424,54 @@ const isFormValid = computed(() => {
   return form.value.date && form.value.time && form.value.name && form.value.phone
 })
 
-// 第一步：點擊預約按鈕，顯示付款彈窗
 function handleReserve() {
+  const now = new Date()
+  const [year, month, day] = form.value.date.split('-').map(Number)
+  const slotDate = new Date(year, month - 1, day)
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  if (slotDate.getTime() === todayDate.getTime()) {
+    const match = form.value.time.match(/(\d+)/)
+    if (match) {
+      const startHour = parseInt(match[1])
+      const startDateTime = new Date(year, month - 1, day, startHour, 0, 0)
+      const diffMs = startDateTime.getTime() - now.getTime()
+      const diffMins = diffMs / (1000 * 60)
+
+      if (diffMins > 0 && diffMins < 60) {
+        ElMessageBox.confirm(
+          '此時段距離諮詢開始已不足一小時。預約後，若距離開始時間不到 40 分鐘將無法取消預約，是否確定預約？',
+          '預約時間提醒',
+          {
+            confirmButtonText: '確定預約',
+            cancelButtonText: '再考慮一下',
+            type: 'warning'
+          }
+        ).then(() => {
+          paymentModalVisible.value = true
+        }).catch(() => {})
+        return
+      }
+    }
+  }
+
   paymentModalVisible.value = true
 }
 
-// 第二步：彈窗內確認，發送最終請求
 async function submitFinalReservation() {
   if (!paymentMethod.value) return
   
   submitting.value = true
   try {
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     const response = await fetch('/api/Reservation', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({
         instructorId: instructorId.value,
         date: form.value.date,
@@ -416,15 +479,13 @@ async function submitFinalReservation() {
         name: form.value.name,
         phone: form.value.phone,
         note: form.value.note,
-        paymentMethod: paymentMethod.value // 傳送選擇的付款方式
+        paymentMethod: paymentMethod.value
       })
     })
 
     if (response.ok) {
       paymentModalVisible.value = false
-      
       if (isGoogleConnected.value) {
-        // A. 已授權狀態
         ElMessageBox.confirm(
           '預約成功！行程已自動同步至您的 Google 日曆。',
           '預約成功',
@@ -435,15 +496,12 @@ async function submitFinalReservation() {
             distinguishCancelAndClose: true
           }
         ).then(() => {
-          // 點擊「開啟google日曆」
           window.open('https://calendar.google.com/', '_blank');
           router.push('/reserveorders');
-        }).catch((action) => {
-          // 點擊「查看預約紀錄」或關閉彈窗
+        }).catch(() => {
           router.push('/reserveorders');
         });
       } else {
-        // B. 尚未授權狀態
         ElMessageBox.confirm(
           '預約成功！連結 Google 日曆後可自動同步行程，是否現在同步？',
           '預約成功',
@@ -454,21 +512,14 @@ async function submitFinalReservation() {
             distinguishCancelAndClose: true
           }
         ).then(() => {
-          // 點擊「同步google行事曆」
           connectGoogleCalendar();
-        }).catch((action) => {
-          // 點擊「暫不同步」或關閉彈窗
+        }).catch(() => {
           router.push('/reserveorders');
         });
       }
     } else {
-      const contentType = response.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await response.json()
-        ElMessageBox.alert(errorData.message || '預約失敗，請稍後再試', '錯誤', { type: 'error' })
-      } else {
-        ElMessageBox.alert(`伺服器連線失敗 (HTTP ${response.status})`, '錯誤', { type: 'error' })
-      }
+      const errorData = await response.json()
+      ElMessageBox.alert(errorData.message || '預約失敗，請稍後再試', '錯誤', { type: 'error' })
     }
   } catch (error) {
     console.error('Reservation failed:', error)
@@ -515,232 +566,43 @@ onMounted(async () => {
   align-items: center;
   box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 }
-
-.user-info-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-avatar-mini {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1.5px solid var(--accent);
-}
-
-.user-avatar-mini img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.user-points-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: #fff;
-  padding: 4px 12px;
-  border-radius: 100px;
-  border: 1px solid rgba(196, 168, 130, 0.3);
-  margin-left: 8px;
-}
-
-.user-points-badge i {
-  color: #d4b892;
-  font-size: 1rem;
-}
-
-.points-count {
-  font-weight: 700;
-  color: var(--accent-dark);
-  font-size: 0.9rem;
-}
-
-.status-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  background: #27ae60;
-  border-radius: 50%;
-  display: inline-block;
-  animation: pulse 2s infinite;
-}
-
+.user-info-group { display: flex; align-items: center; gap: 12px; }
+.user-avatar-mini { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--accent); }
+.user-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+.user-name { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
+.user-points-badge { display: flex; align-items: center; gap: 4px; background: #fff; padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(196, 168, 130, 0.3); margin-left: 8px; }
+.user-points-badge i { color: #d4b892; font-size: 1rem; }
+.points-count { font-weight: 700; color: var(--accent-dark); font-size: 0.9rem; }
+.status-label { font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; background: #27ae60; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
 @keyframes pulse {
   0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7); }
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(39, 174, 96, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
 }
-
-/* 快速填寫按鈕樣式 */
-.quick-fill-container {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.btn-quick-fill {
-  background: none;
-  border: 1px solid var(--accent);
-  color: var(--accent-dark);
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-quick-fill:hover {
-  background: var(--accent);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(196, 168, 130, 0.2);
-}
-
-.btn-quick-fill i {
-  font-size: 1.1rem;
-}
-
-/* 預約須知提醒 */
-.booking-policy-note {
-  margin-top: 20px;
-  background-color: #fff8f1;
-  border-radius: 8px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  border-left: 4px solid #ff9800;
-}
-
-.booking-policy-note i {
-  color: #ff9800;
-  font-size: 1.2rem;
-  margin-top: 2px;
-}
-
-.booking-policy-note span {
-  font-size: 0.85rem;
-  color: #856404;
-  line-height: 1.5;
-}
-
-/* 付款彈窗樣式 */
-.payment-info-text {
-  margin-bottom: 20px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  font-size: 0.9rem;
-}
-
-.payment-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.payment-option {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.payment-option:hover {
-  border-color: var(--accent);
-  background: #fdfaf5;
-}
-
-.payment-option.active {
-  border-color: var(--accent-dark);
-  background: #fdfaf5;
-}
-
-.option-icon {
-  font-size: 1.5rem;
-  margin-right: 15px;
-  color: var(--text-secondary);
-}
-
-.payment-option.active .option-icon {
-  color: var(--accent-dark);
-}
-
-.option-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.option-title {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.option-desc {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.option-check {
-  margin-left: auto;
-  color: var(--accent-dark);
-  font-size: 1.2rem;
-}
-
+.quick-fill-container { margin-bottom: 20px; display: flex; justify-content: flex-end; }
+.btn-quick-fill { background: none; border: 1px solid var(--accent); color: var(--accent-dark); padding: 8px 16px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.btn-quick-fill:hover { background: var(--accent); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(196, 168, 130, 0.2); }
+.booking-policy-note { margin-top: 20px; background-color: #fff8f1; border-radius: 8px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; border-left: 4px solid #ff9800; }
+.booking-policy-note i { color: #ff9800; font-size: 1.2rem; }
+.booking-policy-note span { font-size: 0.85rem; color: #856404; line-height: 1.5; }
+.payment-info-text { margin-bottom: 20px; color: var(--text-secondary); font-size: 0.9rem; }
+.payment-options { display: flex; flex-direction: column; gap: 12px; }
+.payment-option { display: flex; align-items: center; padding: 16px; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.payment-option:hover { border-color: var(--accent); background: #fdfaf5; }
+.payment-option.active { border-color: var(--accent-dark); background: #fdfaf5; }
+.option-icon { font-size: 1.5rem; margin-right: 15px; color: var(--text-secondary); }
+.payment-option.active .option-icon { color: var(--accent-dark); }
+.option-text { display: flex; flex-direction: column; }
+.option-title { font-weight: 600; color: var(--text-primary); }
+.option-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.option-check { margin-left: auto; color: var(--accent-dark); font-size: 1.2rem; }
 .no-selection { padding: 100px; text-align: center; color: var(--text-secondary); font-size: 1.2rem; }
-
-.instructor-info {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  padding: 30px 60px 40px;
-  border-bottom: 1px solid var(--border);
-}
-
+.instructor-info { background: var(--bg-card); color: var(--text-primary); padding: 30px 60px 40px; border-bottom: 1px solid var(--border); }
 .info-card-top { display: flex; align-items: center; gap: 30px; }
-
-.img-wrap-small {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid var(--accent);
-  flex-shrink: 0;
-}
-
+.img-wrap-small { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid var(--accent); flex-shrink: 0; }
 .img-wrap-small img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-
-.details-top h1 {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 500;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-
+.details-top h1 { font-family: var(--font-display); font-size: 2rem; font-weight: 500; margin-bottom: 8px; color: var(--text-primary); }
 .tags-small { display: flex; gap: 8px; flex-wrap: wrap; }
 .tags-small .tag { background: var(--tag-bg); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; }
 .booking-form { padding: 60px; }

@@ -31,6 +31,11 @@ export default defineConfig({
         target: 'https://localhost:7212',
         changeOrigin: true,
         secure: false
+      },
+      '/img': {
+        target: 'https://localhost:7212',
+        changeOrigin: true,
+        secure: false
       }
     }
   }
