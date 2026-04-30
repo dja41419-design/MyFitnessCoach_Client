@@ -25,7 +25,7 @@
             <h2 class="section-title">訂單商品</h2>
             <div v-for="item in items" :key="item.id" class="item-row">
               <img
-                :src="`/api/StoreApi/ProductImage/${item.id}`"
+                :src="`/api/StoreApi/ProductImage/${item.productId}`"
                 :alt="item.name"
                 class="item-img"
               />
