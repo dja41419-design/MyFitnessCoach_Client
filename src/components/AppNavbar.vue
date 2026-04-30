@@ -33,7 +33,7 @@
               <a href="#" class="dropdown-item">點數查詢</a>
               <router-link to="/reserveorders" class="dropdown-item">課程預約查詢</router-link>
               <router-link to="/coupons" class="dropdown-item">我的優惠券</router-link>
-              <a href="#" class="dropdown-item">訂單查詢</a>
+              <router-link to="/orders" class="dropdown-item">訂單查詢</router-link>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item dropdown-logout" @click="handleLogout">會員登出</button>
             </div>
@@ -78,7 +78,7 @@
       <a href="#" class="mobile-menu-item">點數查詢</a>
       <router-link to="/reserveorders" @click="closeMobileMenu" class="mobile-menu-item">課程預約查詢</router-link>
       <router-link to="/coupons" @click="closeMobileMenu" class="mobile-menu-item">我的優惠券</router-link>
-      <a href="#" class="mobile-menu-item">訂單查詢</a>
+      <router-link to="/orders" @click="closeMobileMenu" class="mobile-menu-item">訂單查詢</router-link>
       <button class="mobile-menu-item mobile-logout" @click="handleLogout">會員登出</button>
     </template>
   </div>
