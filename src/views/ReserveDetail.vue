@@ -154,6 +154,19 @@
             <label for="floatPhone" class="form-label">聯絡電話</label>
           </div>
 
+          <div class="form-group form-floating">
+            <input 
+              type="email" 
+              class="form-control" 
+              id="floatEmail" 
+              v-model="form.email" 
+              placeholder="" 
+              required 
+              :disabled="!form.date || !form.time"
+            />
+            <label for="floatEmail" class="form-label">電子郵件 (發送預約通知)</label>
+          </div>
+
           <div class="form-group">
             <label>備註事項 (選填)</label>
             <textarea 
@@ -282,6 +295,7 @@ const form = ref({
   shiftId: null as number | null,
   name: '',
   phone: '',
+  email: '',
   note: ''
 })
 
@@ -301,6 +315,7 @@ function fillMemberInfo() {
   if (memberInfo.value) {
     form.value.name = memberInfo.value.name
     form.value.phone = memberInfo.value.phone || ''
+    form.value.email = memberInfo.value.email || '' // 假設 API 有回傳 email
     ElMessage.success('已為您帶入基本資料')
   }
 }
@@ -421,10 +436,11 @@ function isToday(date: number) {
 }
 
 const isFormValid = computed(() => {
-  return form.value.date && form.value.time && form.value.name && form.value.phone
+  return form.value.date && form.value.time && form.value.name && form.value.phone && form.value.email
 })
 
 function handleReserve() {
+// ... (原有邏輯不變)
   const now = new Date()
   const [year, month, day] = form.value.date.split('-').map(Number)
   const slotDate = new Date(year, month - 1, day)
@@ -476,6 +492,7 @@ async function submitFinalReservation() {
         time: form.value.time,
         name: form.value.name,
         phone: form.value.phone,
+        email: form.value.email,
         note: form.value.note,
         paymentMethod: paymentMethod.value
       })
@@ -547,19 +564,26 @@ async function submitFinalReservation() {
           router.push('/reserveorders');
         });
       } else {
+        // 訪客或未連動者：提供手動加入日曆按鈕
+        const startTimeStr = form.value.time.split('-')[0].trim().replace(':', '')
+        const startDT = `${form.value.date.replace(/-/g, '')}T${startTimeStr.padStart(4, '0')}00`
+        const endDT = `${form.value.date.replace(/-/g, '')}T${(parseInt(startTimeStr) + 1).toString().padStart(2, '0')}0000`
+        const gCalUrl = `https://calendar.google.com/render?action=TEMPLATE&text=MyFitnessCoach+預約諮詢&dates=${startDT}/${endDT}&details=教練：${instructor.value?.name}+目標：${form.value.note || '一般健身諮詢'}`
+
         ElMessageBox.confirm(
-          '預約成功！連結 Google 帳戶後可自動同步行事曆並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
+          '預約成功！確認信已發送至您的電子信箱。您可以將此行程手動加入您的 Google 日曆。',
           '預約成功',
           {
-            confirmButtonText: '同步 Google 服務',
-            cancelButtonText: '暫不同步',
+            confirmButtonText: '加入 Google 日曆',
+            cancelButtonText: '我知道了',
             type: 'success',
             distinguishCancelAndClose: true
           }
         ).then(() => {
-          connectGoogleCalendar();
+          window.open(gCalUrl, '_blank');
+          router.push('/reserve'); // 訪客回到預約頁面
         }).catch(() => {
-          router.push('/reserveorders');
+          router.push('/reserve');
         });
       }
     } 

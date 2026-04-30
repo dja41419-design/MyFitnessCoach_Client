@@ -509,12 +509,12 @@ const handlePayment = async (res: Reservation) => {
     const formData = new URLSearchParams()
     formData.append('reservationId', res.id.toString())
 
+    const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
+    if (token) payHeaders['Authorization'] = `Bearer ${token}`
+
     const response = await fetch('/api/Payment/ReservationSendToEcPay', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: payHeaders,
       body: formData
     })
 
