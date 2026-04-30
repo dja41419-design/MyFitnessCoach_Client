@@ -326,10 +326,9 @@
           </div>
         </div>
       </div>
-
-      <div class="shop-more reveal">
+      <!-- <div class="shop-more reveal">
         <RouterLink to="/store" class="btn-outline">探索更多商品</RouterLink>
-      </div>
+      </div> -->
     </div>
   </section>
 
