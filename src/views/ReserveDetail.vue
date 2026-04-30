@@ -359,7 +359,7 @@ const fetchAvailabilityData = async (id: number) => {
 function getDayClass(dateNum: number) {
   const d = new Date(currentYear.value, currentMonth.value, dateNum)
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  const dayAvailability = availability.value.filter(a => a.date.split('T')[0] === dateStr)
+  const dayAvailability = availability.value.filter(a => a.date === dateStr)
   if (dayAvailability.length === 0) return {}
   const allReserved = dayAvailability.every(a => a.isReserved)
   if (allReserved) return { 'status-reserved': true }
@@ -388,7 +388,7 @@ const isTimePastSlot = (dateStr: string, timeSlot: string) => {
 const filteredTimes = computed(() => {
   if (!form.value.date) return []
   return availability.value
-    .filter(a => a.date.split('T')[0] === form.value.date)
+    .filter(a => a.date === form.value.date)
     .map(a => ({
       id: a.shiftId,
       time: a.timeSlot,
@@ -716,18 +716,34 @@ onMounted(async () => {
 .calendar-day { aspect-ratio: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; border: none; background: #fff; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; position: relative; }
 .date-num { z-index: 2; }
 .calendar-day:hover:not(.disabled):not(.empty) { background: rgba(196, 168, 130, 0.1); }
-.calendar-day.active { background: var(--bg-dark) !important; color: #fff; }
+.calendar-day.active { 
+  background: var(--bg-dark) !important; 
+  color: var(--accent) !important; 
+  transform: scale(1.08);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  border-radius: 10px;
+  font-weight: 700;
+}
 .calendar-day.today { color: var(--accent-dark); font-weight: 800; }
 .calendar-day.today::after { content: 'Today'; font-size: 0.6rem; position: absolute; bottom: 8px; }
 .calendar-day.disabled { color: #eee; background: #fafafa; cursor: not-allowed; }
 .calendar-day.empty { background: #fdfdfd; cursor: default; }
-.calendar-day.status-available { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; font-weight: 700; }
-.calendar-day.status-reserved { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; }
+.calendar-day.status-available { 
+  background-color: #f0fdf4 !important; 
+  color: #15803d; 
+  font-weight: 600; 
+}
+.calendar-day.status-reserved { 
+  background-color: #fff1f2 !important; 
+  color: #b91c1c; 
+  font-weight: 600;
+}
 .calendar-status-legend { display: flex; justify-content: flex-end; gap: 20px; margin-top: 15px; padding: 0 5px; }
 .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); }
 .status-indicator { width: 12px; height: 12px; border-radius: 3px; }
-.status-indicator.available { background-color: rgba(46, 204, 113, 0.2); border: 1px solid #27ae60; }
-.status-indicator.reserved { background-color: rgba(231, 76, 60, 0.2); border: 1px solid #c0392b; }
+.status-indicator.available { background-color: #f0fdf4; border: 1px solid #15803d; }
+.status-indicator.reserved { background-color: #fff1f2; border: 1px solid #b91c1c; }
 .form-group { margin-bottom: 30px; }
 .form-floating { position: relative; margin-bottom: 20px; }
 .form-floating > .form-control { height: calc(3.5rem + 2px); padding: 1.625rem 0.75rem 0.625rem; line-height: 1.25; }
