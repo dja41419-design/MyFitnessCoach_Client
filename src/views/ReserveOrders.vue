@@ -48,6 +48,10 @@
             <label>預約目標</label>
             <p>{{ res.target }}</p>
           </div>
+          <div class="info-item" v-if="res.status === '待付款'">
+            <label>付款剩餘時間</label>
+            <p class="text-danger font-bold">{{ getCountdownText(res) }}</p>
+          </div>
           <div class="info-item" v-if="res.memorandum">
             <label>營養師建議</label>
             <p class="suggestion">{{ res.memorandum }}</p>
@@ -62,9 +66,19 @@
         <div class="card-footer">
           <span class="create-at">預約於：{{ formatDate(res.createAt) }}</span>
           <div class="actions">
-            <!-- 待諮詢/已預約：可以取消 -->
+            <!-- 待付款：顯示立即付款按鈕 -->
+            <el-button 
+              v-if="res.status === '待付款'" 
+              size="small" 
+              type="primary" 
+              @click="handlePayment(res)"
+            >
+              立即付款
+            </el-button>
+
+            <!-- 待預約/待付款：可以取消 -->
             <el-tooltip
-              v-if="res.status === '已預約'"
+              v-if="res.status === '已預約' || res.status === '待付款'"
               :content="memberInfo?.cancelCount >= 3 ? '取消次數已達 3 次上限，請洽客服' : (!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : '')"
               placement="top"
               :disabled="isCancellable(res) && memberInfo?.cancelCount < 3"
@@ -160,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface Reservation {
@@ -190,6 +204,46 @@ const reservations = ref<Reservation[]>([])
 const memberInfo = ref<MemberInfo | null>(null)
 const keywords = ref<string[]>([])
 const loading = ref(true)
+const nowRef = ref(new Date())
+
+// 每秒更新一次現在時間，驅動倒數計時
+let timerInterval: any = null
+onMounted(() => {
+  timerInterval = setInterval(() => {
+    nowRef.value = new Date()
+    
+    // 檢查是否有「待付款」預約剛好過期
+    const hasNewExpired = reservations.value.some(res => {
+      if (res.status !== '待付款') return false
+      const expireAt = new Date(new Date(res.createAt).getTime() + 30 * 1000) // 配合目前的 30 秒設定
+      return nowRef.value.getTime() >= expireAt.getTime()
+    })
+
+    if (hasNewExpired) {
+      // 觸發重新獲取，讓後端清理並回傳更新後的列表
+      fetchReservations()
+    }
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
+})
+
+const getCountdownText = (res: Reservation) => {
+  const createAt = new Date(res.createAt)
+  const expireAt = new Date(createAt.getTime() + 30 * 1000) // 30 秒
+  const diff = expireAt.getTime() - nowRef.value.getTime()
+
+  if (diff <= 0) {
+    // 這裡只負責顯示，實際取消由後端 API 觸發（當使用者重新整理或點擊時）
+    return '已過期'
+  }
+
+  const mins = Math.floor(diff / 1000 / 60)
+  const secs = Math.floor((diff / 1000) % 60)
+  return `${mins} 分 ${secs} 秒`
+}
 
 // 分頁相關
 const currentPage = ref(1)
@@ -300,7 +354,7 @@ const isWithinReviewPeriod = (res: Reservation) => {
 }
 
 const isCancellable = (res: Reservation) => {
-  if (!res || res.status !== '已預約') return false
+  if (!res || (res.status !== '已預約' && res.status !== '待付款')) return false
   if (!res.scheduleDate || !res.timeSlot) return true
 
   try {
@@ -447,6 +501,48 @@ const submitReview = async () => {
 
 const goToReserve = (instructorId: number) => {
   window.open(`/reserve/${instructorId}`, '_blank')
+}
+
+const handlePayment = async (res: Reservation) => {
+  try {
+    const token = localStorage.getItem('token')
+    const formData = new URLSearchParams()
+    formData.append('reservationId', res.id.toString())
+
+    const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
+    if (token) payHeaders['Authorization'] = `Bearer ${token}`
+
+    const response = await fetch('/api/Payment/ReservationSendToEcPay', {
+      method: 'POST',
+      headers: payHeaders,
+      body: formData
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      // 建立隱藏表單並提交到綠界
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = data.action
+
+      for (const key in data.parameters) {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = data.parameters[key]
+        form.appendChild(input)
+      }
+
+      document.body.appendChild(form)
+      form.submit()
+    } else {
+      ElMessage.error('無法啟動支付流程，請稍後再試')
+    }
+  } catch (error) {
+    console.error('Payment error:', error)
+    ElMessage.error('支付請求失敗')
+  }
 }
 
 const getStatusClass = (status: string) => {

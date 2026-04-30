@@ -22,7 +22,10 @@
         <div class="user-avatar-mini">
           <img :src="memberInfo.avatar || '/assets/logo.png'" alt="User" />
         </div>
-        <span class="user-name">{{ memberInfo.name }}</span>
+        <div class="user-text-info">
+          <span class="user-name">{{ memberInfo.name }}</span>
+          <span class="user-email-small" v-if="memberInfo.email">{{ memberInfo.email }}</span>
+        </div>
         <div class="user-points-badge">
           <i class="mdi mdi-rhombus"></i>
           <span class="points-count">{{ memberInfo.points }}</span>
@@ -108,7 +111,8 @@
                 @click="form.shiftId = item.id; form.time = item.time"
               >
                 {{ item.time }}
-              </button>              <div v-if="filteredTimes.length === 0 && form.date" class="no-times">
+              </button>
+              <div v-if="filteredTimes.length === 0 && form.date" class="no-times">
                 此日期無排班
               </div>
               <div v-if="!form.date" class="no-times">
@@ -152,6 +156,19 @@
               :disabled="!form.date || !form.time"
             />
             <label for="floatPhone" class="form-label">聯絡電話</label>
+          </div>
+
+          <div class="form-group form-floating" v-if="!isLoggedIn">
+            <input 
+              type="email" 
+              class="form-control" 
+              id="floatEmail" 
+              v-model="form.email" 
+              placeholder="" 
+              required 
+              :disabled="!form.date || !form.time"
+            />
+            <label for="floatEmail" class="form-label">電子郵件 (發送預約通知)</label>
           </div>
 
           <div class="form-group">
@@ -241,7 +258,7 @@ const router = useRouter()
 
 const instructors = ref<Instructor[]>([])
 const availability = ref<Availability[]>([])
-const memberInfo = ref<{ id: number; name: string; avatar: string; points: number; phone?: string } | null>(null)
+const memberInfo = ref<{ id: number; name: string; avatar: string; points: number; phone?: string; email?: string } | null>(null)
 const instructorId = computed(() => Number(route.params.id))
 const instructor = computed(() => instructors.value.find(i => i.id === instructorId.value))
 
@@ -270,7 +287,7 @@ const checkGoogleStatus = async () => {
 const connectGoogleCalendar = () => {
   const clientId = "365712091677-0sflrsk62c2lbk20icvdomibfns7etbg.apps.googleusercontent.com";
   const redirectUri = window.location.origin + "/google-callback";
-  const scope = "https://www.googleapis.com/auth/calendar.events";
+  const scope = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send";
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
     `client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&include_granted_scopes=true`;
   window.location.href = authUrl;
@@ -282,6 +299,7 @@ const form = ref({
   shiftId: null as number | null,
   name: '',
   phone: '',
+  email: '',
   note: ''
 })
 
@@ -301,6 +319,7 @@ function fillMemberInfo() {
   if (memberInfo.value) {
     form.value.name = memberInfo.value.name
     form.value.phone = memberInfo.value.phone || ''
+    form.value.email = memberInfo.value.email || ''
     ElMessage.success('已為您帶入基本資料')
   }
 }
@@ -421,7 +440,9 @@ function isToday(date: number) {
 }
 
 const isFormValid = computed(() => {
-  return form.value.date && form.value.time && form.value.name && form.value.phone
+  const baseValid = !!(form.value.date && form.value.time && form.value.name && form.value.phone)
+  if (isLoggedIn.value) return baseValid
+  return baseValid && !!form.value.email
 })
 
 function handleReserve() {
@@ -430,32 +451,39 @@ function handleReserve() {
   const slotDate = new Date(year, month - 1, day)
   const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  if (slotDate.getTime() === todayDate.getTime()) {
-    const match = form.value.time.match(/(\d+)/)
-    if (match) {
-      const startHour = parseInt(match[1])
-      const startDateTime = new Date(year, month - 1, day, startHour, 0, 0)
-      const diffMs = startDateTime.getTime() - now.getTime()
-      const diffMins = diffMs / (1000 * 60)
-
-      if (diffMins > 0 && diffMins < 60) {
-        ElMessageBox.confirm(
-          '此時段距離諮詢開始已不足一小時。預約後，若距離開始時間不到 40 分鐘將無法取消預約，是否確定預約？',
-          '預約時間提醒',
-          {
-            confirmButtonText: '確定預約',
-            cancelButtonText: '再考慮一下',
-            type: 'warning'
-          }
-        ).then(() => {
-          paymentModalVisible.value = true
-        }).catch(() => {})
-        return
-      }
-    }
+  const showPaymentModal = () => {
+    paymentModalVisible.value = true
   }
 
-  paymentModalVisible.value = true
+  const checkTimeAndProceed = () => {
+    if (slotDate.getTime() === todayDate.getTime()) {
+      const match = form.value.time.match(/(\d+)/)
+      if (match) {
+        const startHour = parseInt(match[1])
+        const startDateTime = new Date(year, month - 1, day, startHour, 0, 0)
+        const diffMs = startDateTime.getTime() - now.getTime()
+        const diffMins = diffMs / (1000 * 60)
+
+        if (diffMins > 0 && diffMins < 60) {
+          ElMessageBox.confirm(
+            '此時段距離諮詢開始已不足一小時。預約後，若距離開始時間不到 40 分鐘將無法取消預約，是否確定預約？',
+            '預約時間提醒',
+            {
+              confirmButtonText: '確定預約',
+              cancelButtonText: '再考慮一下',
+              type: 'warning'
+            }
+          ).then(() => {
+            showPaymentModal()
+          }).catch(() => {})
+          return
+        }
+      }
+    }
+    showPaymentModal()
+  }
+
+  checkTimeAndProceed()
 }
 
 async function submitFinalReservation() {
@@ -476,6 +504,7 @@ async function submitFinalReservation() {
         time: form.value.time,
         name: form.value.name,
         phone: form.value.phone,
+        email: form.value.email,
         note: form.value.note,
         paymentMethod: paymentMethod.value
       })
@@ -532,10 +561,10 @@ async function submitFinalReservation() {
 
       if (isGoogleConnected.value) {
         ElMessageBox.confirm(
-          '預約成功！行程已自動同步至您的 Google 日曆。',
+          '預約成功！行程已同步至您的 Google 日曆並寄送確認郵件。',
           '預約成功',
           {
-            confirmButtonText: '開啟google日曆',
+            confirmButtonText: '開啟 Google 日曆',
             cancelButtonText: '查看預約紀錄',
             type: 'success',
             distinguishCancelAndClose: true
@@ -547,20 +576,45 @@ async function submitFinalReservation() {
           router.push('/reserveorders');
         });
       } else {
-        ElMessageBox.confirm(
-          '預約成功！連結 Google 日曆後可自動同步行程，是否現在同步？',
-          '預約成功',
-          {
-            confirmButtonText: '同步google行事曆',
-            cancelButtonText: '暫不同步',
-            type: 'success',
-            distinguishCancelAndClose: true
-          }
-        ).then(() => {
-          connectGoogleCalendar();
-        }).catch(() => {
-          router.push('/reserveorders');
-        });
+        // 如果是登入會員但沒連動，提示連動
+        if (isLoggedIn.value) {
+          ElMessageBox.confirm(
+            '預約成功！連結 Google 帳戶後可自動同步行事曆並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
+            '預約成功',
+            {
+              confirmButtonText: '同步 Google 服務',
+              cancelButtonText: '暫不同步',
+              type: 'success',
+              distinguishCancelAndClose: true
+            }
+          ).then(() => {
+            connectGoogleCalendar();
+          }).catch(() => {
+            router.push('/reserveorders');
+          });
+        } else {
+          // 訪客：提供手動加入日曆按鈕
+          const startTimeStr = form.value.time.split('-')[0].trim().replace(':', '')
+          const startDT = `${form.value.date.replace(/-/g, '')}T${startTimeStr.padStart(4, '0')}00`
+          const endDT = `${form.value.date.replace(/-/g, '')}T${(parseInt(startTimeStr) + 1).toString().padStart(2, '0')}0000`
+          const gCalUrl = `https://calendar.google.com/render?action=TEMPLATE&text=MyFitnessCoach+預約諮詢&dates=${startDT}/${endDT}&details=教練：${instructor.value?.name}+目標：${form.value.note || '一般健身諮詢'}`
+
+          ElMessageBox.confirm(
+            '預約成功！確認信已發送至您的電子信箱。您可以將此行程手動加入您的 Google 日曆。',
+            '預約成功',
+            {
+              confirmButtonText: '加入 Google 日曆',
+              cancelButtonText: '我知道了',
+              type: 'success',
+              distinguishCancelAndClose: true
+            }
+          ).then(() => {
+            window.open(gCalUrl, '_blank');
+            router.push('/reserve'); // 訪客回到預約頁面
+          }).catch(() => {
+            router.push('/reserve');
+          });
+        }
       }
     } 
   } catch (error) {
@@ -596,7 +650,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* JVID 風格會員狀態條 */
+/* 會員狀態條 */
 .user-status-bar {
   background: #fdfaf5;
   border: 1px solid rgba(196, 168, 130, 0.2);
@@ -609,6 +663,8 @@ onMounted(async () => {
   box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 }
 .user-info-group { display: flex; align-items: center; gap: 12px; }
+.user-text-info { display: flex; flex-direction: column; line-height: 1.2; }
+.user-email-small { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8; }
 .user-avatar-mini { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--accent); }
 .user-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
 .user-name { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
