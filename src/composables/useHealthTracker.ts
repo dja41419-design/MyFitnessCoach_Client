@@ -81,13 +81,14 @@ let initialized = false
 
 // ── Utilities ──────────────────────────────────────────────────
 export function todayStr(): string {
-  return new Date().toISOString().split('T')[0]
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export function prevDay(ds: string): string {
-  const d = new Date(ds)
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().split('T')[0]
+  const [y, m, day] = ds.split('-').map(Number)
+  const d = new Date(y, m - 1, day - 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export function genUid(): string {

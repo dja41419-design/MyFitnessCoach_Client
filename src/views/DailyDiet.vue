@@ -2,10 +2,19 @@
   <div class="daily-diet">
     <!-- 日期列 -->
     <div class="date-row">
-      <input type="date" v-model="currentDate" class="form-input date-input" />
+      <input type="date" v-model="selectedDate" class="form-input date-input" />
       <button class="btn btn-outline btn-sm" @click="setToday">今天</button>
-      <button class="btn btn-outline btn-sm" @click="copyYesterday">複製昨天飲食</button>
+      <button class="btn btn-outline btn-sm" :disabled="isSaving" @click="copyYesterday">複製昨天飲食</button>
     </div>
+
+    <!-- Error -->
+    <div v-if="errorMessage" class="card error-banner">
+      {{ errorMessage }}
+      <button class="btn btn-outline btn-sm" @click="retryLoad">重試</button>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="isLoading && !records.length" class="card loading-banner">載入中…</div>
 
     <!-- 摘要 Grid -->
     <div class="summary-grid">
@@ -62,8 +71,8 @@
         </div>
         <div class="macro-row">
           <span class="macro-lbl">飲水</span>
-          <div class="bar-track"><div class="bar-fill bar-w" :class="{ 'bar-over': pct(dayLog.water, goals.water) >= 100 }" :style="{ width: pct(dayLog.water, goals.water) + '%' }"></div></div>
-          <span class="macro-val">{{ dayLog.water }} / {{ goals.water }} ml</span>
+          <div class="bar-track"><div class="bar-fill bar-w" :class="{ 'bar-over': pct(waterAmount, goals.water) >= 100 }" :style="{ width: pct(waterAmount, goals.water) + '%' }"></div></div>
+          <span class="macro-val">{{ waterAmount }} / {{ goals.water }} ml</span>
         </div>
       </div>
     </div>
@@ -75,15 +84,15 @@
         <div class="water-slider-wrap">
           <input
             type="range" min="0" :max="goals.water * 1.5" step="50"
-            :value="dayLog.water"
-            :style="{ '--pct': pct(dayLog.water, goals.water * 1.5) + '%' }"
+            :value="waterAmount"
+            :style="{ '--pct': pct(waterAmount, goals.water * 1.5) + '%' }"
             @input="setWater(+($event.target as HTMLInputElement).value)"
           />
-          <div :class="['water-diff', dayLog.water >= goals.water ? 'over' : 'under']">
-            {{ dayLog.water >= goals.water ? '已達目標 🎉' : `距目標還差 ${goals.water - dayLog.water} ml` }}
+          <div :class="['water-diff', waterAmount >= goals.water ? 'over' : 'under']">
+            {{ waterAmount >= goals.water ? '已達目標 🎉' : `距目標還差 ${goals.water - waterAmount} ml` }}
           </div>
         </div>
-        <div class="water-val">{{ dayLog.water }} ml</div>
+        <div class="water-val">{{ waterAmount }} ml</div>
         <div class="water-btns">
           <button class="water-btn" @click="addWater(-250)">−250</button>
           <button class="water-btn" @click="addWater(250)">+250</button>
@@ -100,16 +109,17 @@
           <span class="meal-icon">{{ meal.icon }}</span>
           <span class="meal-name">{{ meal.label }}</span>
         </div>
-        <span class="meal-cal">{{ r0(getMealTotals(currentDate, meal.id).cal) }} kcal</span>
+        <span class="meal-cal">{{ r0(getMealCalories(meal.id)) }} kcal</span>
       </div>
       <div :class="['meal-body', { collapsed: collapsedMeals.has(meal.id) }]">
-        <div v-for="(item, idx) in dayLog.meals[meal.id as keyof typeof dayLog.meals]" :key="item.uid" class="food-row">
-          <span class="food-name">{{ item.name }}</span>
-          <span class="food-amount">{{ item.servings }} × {{ item.serving || '—' }}</span>
-          <span class="food-macros">P{{ r1(item.p * item.servings) }} C{{ r1(item.c * item.servings) }} F{{ r1(item.f * item.servings) }}</span>
-          <span class="food-kcal">{{ r0(item.cal * item.servings) }} kcal</span>
-          <button class="food-del" @click="deleteFood(meal.id, idx)" title="刪除">×</button>
+        <div v-for="record in getMealRecords(meal.id)" :key="record.id" class="food-row">
+          <span class="food-name">{{ record.foodName }}</span>
+          <span class="food-amount">{{ record.amount }} × {{ record.measure }}</span>
+          <span class="food-macros">P{{ r1(record.protein) }} C{{ r1(record.carbs) }} F{{ r1(record.fat) }}</span>
+          <span class="food-kcal">{{ r0(record.calories) }} kcal</span>
+          <button class="food-del" :disabled="isSaving" @click="handleDeleteFood(record.id)" title="刪除">×</button>
         </div>
+        <div v-if="!getMealRecords(meal.id).length && !isLoading" class="empty-state">尚無紀錄</div>
         <button class="add-food-btn" @click="openModal(meal.id)">＋ 新增食物</button>
       </div>
     </div>
@@ -128,38 +138,70 @@
 
         <!-- 食物結果 -->
         <div class="food-results-box">
-          <div
-            v-for="f in modalFoodList" :key="f.id"
-            :class="['result-item', { selected: selectedFoodId === f.id }]"
-            @click="selectedFoodId = f.id"
-          >
-            <span class="result-name">{{ f.foodName }}<span v-if="f.isCustom" class="tag tag-custom ml-4">自訂</span></span>
-            <span class="result-info">
-              <template v-if="f.servingSizes[0]">
-                {{ servingText(f.servingSizes[0]) }} · {{ f.servingSizes[0].kcal }} kcal
-                · P{{ f.servingSizes[0].proteinGram }} C{{ f.servingSizes[0].carbGram }} F{{ f.servingSizes[0].fatGram }}
-              </template>
-            </span>
-          </div>
-          <div v-if="!modalFoodList.length" class="empty-state">無符合結果</div>
+          <div v-if="foodLibLoading && !allFoods.length" class="empty-state">載入食物庫中…</div>
+          <template v-else>
+            <div
+              v-for="f in modalFoodList" :key="f.id"
+              :class="['result-item', { selected: selectedFoodId === f.id }]"
+              @click="selectedFoodId = f.id"
+            >
+              <span class="result-name">{{ f.foodName }}<span v-if="f.isCustom" class="tag tag-custom ml-4">自訂</span></span>
+              <span class="result-info">
+                <template v-if="f.servingSizes[0]">
+                  {{ servingText(f.servingSizes[0]) }} · {{ f.servingSizes[0].kcal }} kcal
+                </template>
+              </span>
+            </div>
+            <div v-if="!modalFoodList.length" class="empty-state">無符合結果</div>
+          </template>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div v-if="modalTotalPages > 1" class="modal-pagination">
+          <button class="btn btn-outline btn-sm" :disabled="modalPage <= 1" @click="modalPage--">‹</button>
+          <span class="page-info">{{ modalPage }} / {{ modalTotalPages }}</span>
+          <button class="btn btn-outline btn-sm" :disabled="modalPage >= modalTotalPages" @click="modalPage++">›</button>
         </div>
 
         <!-- 選取的食物 -->
         <div v-if="selectedFood" class="selected-food-panel mb-12">
           <div class="selected-food-name">{{ selectedFood.foodName }}</div>
-          <div v-if="selectedFood.servingSizes[0]" class="selected-food-info">
-            {{ servingText(selectedFood.servingSizes[0]) }} · {{ selectedFood.servingSizes[0].kcal }} kcal
-            · P{{ selectedFood.servingSizes[0].proteinGram }} C{{ selectedFood.servingSizes[0].carbGram }} F{{ selectedFood.servingSizes[0].fatGram }}
+
+          <!-- 份量單位選擇 -->
+          <div v-if="selectedFood.servingSizes.length > 1" class="form-group mb-8">
+            <label class="form-label">單位</label>
+            <select v-model.number="selectedServingIdx" class="form-input">
+              <option
+                v-for="(sz, idx) in selectedFood.servingSizes"
+                :key="sz.id"
+                :value="idx"
+              >
+                {{ servingText(sz) }} — {{ sz.kcal }} kcal
+              </option>
+            </select>
           </div>
+
+          <div v-if="selectedServingSize" class="selected-food-info">
+            {{ servingText(selectedServingSize) }} = {{ selectedServingSize.kcal }} kcal
+            · P{{ selectedServingSize.proteinGram }}g C{{ selectedServingSize.carbGram }}g F{{ selectedServingSize.fatGram }}g
+          </div>
+
           <div class="form-group">
-            <label class="form-label">份數</label>
+            <label class="form-label">數量（{{ selectedServingSize?.measure ?? '' }}）</label>
             <input type="number" v-model.number="modalServings" min="0.5" step="0.5" class="form-input" style="width:100px" />
+          </div>
+
+          <div v-if="selectedServingSize" class="serving-preview">
+            合計：{{ r0(selectedServingSize.kcal * modalServings) }} kcal
+            · P{{ r1(selectedServingSize.proteinGram * modalServings) }}g
+            C{{ r1(selectedServingSize.carbGram * modalServings) }}g
+            F{{ r1(selectedServingSize.fatGram * modalServings) }}g
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-outline" @click="closeModal">取消</button>
-          <button class="btn btn-primary" :disabled="!selectedFoodId" @click="confirmAdd">加入</button>
+          <button class="btn btn-primary" :disabled="!selectedFoodId || !selectedServingSize || isSaving" @click="confirmAdd">加入</button>
         </div>
       </div>
     </div>
@@ -170,31 +212,99 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useHealthTracker, genUid, servingText } from '@/composables/useHealthTracker'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useHealthTracker, servingText, MEAL_META, todayStr, prevDay, r0, r1, pct } from '@/composables/useHealthTracker'
 import { useFoodLibrary } from '@/composables/useFoodLibrary'
 import type { FoodDto } from '@/data/foodLibrary'
+import {
+  getDailyDiet, createFoodRecord, deleteFoodRecord, copyDailyDiet,
+  type FoodRecordDto, type DailyNutritionSummaryDto,
+} from '@/data/dailyDiet'
 
-const {
-  dietLogs, goals,
-  getDayLog, getDayTotals, getMealTotals,
-  saveData, todayStr, prevDay,
-  MEAL_META, pct, r0, r1,
-} = useHealthTracker()
+// ── Water (still localStorage-based) ──────────────────────────
+const { getDayLog, saveData, goals: htGoals } = useHealthTracker()
 
-const { allFoods, categories } = useFoodLibrary()
+const memberId = Number(localStorage.getItem('memberId') ?? '0')
+const { allFoods, loadFoods } = useFoodLibrary()
 
-const currentDate = ref(todayStr())
+// ── Core state ─────────────────────────────────────────────────
+const selectedDate   = ref<string>(todayStr())
+const records        = ref<FoodRecordDto[]>([])
+const summary        = ref<DailyNutritionSummaryDto | null>(null)
+const isLoading      = ref(false)
+const isSaving       = ref(false)
+const errorMessage   = ref<string | null>(null)
 
-const dayLog = computed(() => getDayLog(currentDate.value))
-const totals  = computed(() => getDayTotals(currentDate.value))
+// ── Derived from summary ───────────────────────────────────────
+const totals = computed(() => ({
+  cal: summary.value?.consumedCalories ?? 0,
+  p:   summary.value?.consumedProtein  ?? 0,
+  c:   summary.value?.consumedCarbs    ?? 0,
+  f:   summary.value?.consumedFat      ?? 0,
+}))
 
-const remaining = computed(() => goals.value.calories - totals.value.cal)
+const goals = computed(() => ({
+  calories: summary.value?.targetCalories ?? 0,
+  protein:  summary.value?.targetProtein  ?? 0,
+  carbs:    summary.value?.targetCarbs    ?? 0,
+  fat:      summary.value?.targetFat      ?? 0,
+  water:    htGoals.value.water,
+}))
+
+const remaining = computed(() => summary.value?.remainingCalories ?? 0)
 const remainingCalClass = computed(() => {
-  if (remaining.value < 0) return 'summary-num n-danger'
+  if (remaining.value < 0)   return 'summary-num n-danger'
   if (remaining.value < 150) return 'summary-num n-warn'
   return 'summary-num n-accent'
 })
+
+// ── Meal helpers ───────────────────────────────────────────────
+function getMealRecords(mealId: string): FoodRecordDto[] {
+  return records.value.filter(r => r.mealType.toLowerCase() === mealId.toLowerCase())
+}
+
+function getMealCalories(mealId: string): number {
+  return getMealRecords(mealId).reduce((sum, r) => sum + r.calories, 0)
+}
+
+// ── Water (localStorage) ───────────────────────────────────────
+const waterAmount = computed(() => getDayLog(selectedDate.value).water)
+
+function addWater(delta: number) {
+  const log = getDayLog(selectedDate.value)
+  log.water = Math.max(0, log.water + delta)
+  saveData()
+}
+
+function setWater(val: number) {
+  getDayLog(selectedDate.value).water = val
+  saveData()
+}
+
+// ── API load ───────────────────────────────────────────────────
+async function loadDailyDiet(date: string) {
+  isLoading.value    = true
+  errorMessage.value = null
+  try {
+    const page     = await getDailyDiet(date)
+    records.value  = page.records
+    summary.value  = page.summary
+  } catch (e: any) {
+    errorMessage.value = e.message || '載入失敗'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function retryLoad() {
+  loadDailyDiet(selectedDate.value)
+}
+
+onMounted(() => {
+  loadFoods(memberId)
+  loadDailyDiet(selectedDate.value)
+})
+watch(selectedDate, (date) => loadDailyDiet(date))
 
 // ── Meal collapse ──────────────────────────────────────────────
 const collapsedMeals = ref<Set<string>>(new Set())
@@ -203,52 +313,83 @@ function toggleMeal(id: string) {
   else collapsedMeals.value.add(id)
 }
 
-// ── Water ──────────────────────────────────────────────────────
-function addWater(delta: number) {
-  const log = getDayLog(currentDate.value)
-  log.water = Math.max(0, log.water + delta)
-  saveData()
-}
-
-function setWater(val: number) {
-  getDayLog(currentDate.value).water = val
-  saveData()
-}
-
-// ── Delete food from meal ──────────────────────────────────────
-function deleteFood(mealId: string, idx: number) {
-  const meal = getDayLog(currentDate.value).meals[mealId as keyof typeof dayLog.value.meals]
-  meal.splice(idx, 1)
-  saveData()
+// ── Delete food ────────────────────────────────────────────────
+async function handleDeleteFood(id: number) {
+  isSaving.value = true
+  try {
+    await deleteFoodRecord(id)
+    await loadDailyDiet(selectedDate.value)
+  } catch (e: any) {
+    showToast(e.message || '刪除失敗')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 // ── Copy yesterday ─────────────────────────────────────────────
-function copyYesterday() {
-  const yesterday = prevDay(currentDate.value)
-  const yLog = dietLogs.value[yesterday]
-  if (!yLog) { showToast('昨天沒有飲食紀錄'); return }
-  const today = getDayLog(currentDate.value)
-  const keys = ['breakfast', 'lunch', 'dinner', 'snack'] as const
-  for (const k of keys) {
-    today.meals[k] = (yLog.meals[k] || []).map(it => ({ ...it, uid: genUid() }))
+async function copyYesterday() {
+  const sourceDate = prevDay(selectedDate.value)
+  isSaving.value = true
+  try {
+    const result = await copyDailyDiet({
+      sourceDate,
+      targetDate: selectedDate.value,
+      overwriteTargetDate: false,
+    })
+    records.value = result.records
+    summary.value = result.summary
+    showToast('已複製昨天的飲食紀錄')
+  } catch (e: any) {
+    if (e.status === 409) {
+      const confirmed = window.confirm('今天已有飲食紀錄，確定要覆蓋嗎？')
+      if (!confirmed) { isSaving.value = false; return }
+      try {
+        const result = await copyDailyDiet({
+          sourceDate,
+          targetDate: selectedDate.value,
+          overwriteTargetDate: true,
+        })
+        records.value = result.records
+        summary.value = result.summary
+        showToast('已複製昨天的飲食紀錄（已覆蓋）')
+      } catch {
+        showToast('複製失敗')
+      }
+    } else {
+      showToast(e.message || '複製失敗')
+    }
+  } finally {
+    isSaving.value = false
   }
-  saveData()
-  showToast('已複製昨天的飲食紀錄')
 }
 
 function setToday() {
-  currentDate.value = todayStr()
+  selectedDate.value = todayStr()
 }
 
 // ── Add food modal ─────────────────────────────────────────────
-const modalVisible   = ref(false)
-const activeMeal     = ref('breakfast')
-const modalSearch    = ref('')
-const modalPage      = ref(1)
-const selectedFoodId = ref<number | null>(null)
-const modalServings  = ref(1)
+const { isLoading: foodLibLoading } = useFoodLibrary()
+
+const modalVisible        = ref(false)
+const activeMeal          = ref('breakfast')
+const modalSearch         = ref('')
+const modalPage           = ref(1)
+const selectedFoodId      = ref<number | null>(null)
+const modalServings       = ref(1)
+const selectedServingIdx  = ref(0)
 
 const MODAL_PAGE_SIZE = 12
+
+const modalFilteredCount = computed<number>(() => {
+  let list = [...allFoods.value]
+  if (modalSearch.value) {
+    const q = modalSearch.value.toLowerCase()
+    list = list.filter(f => f.foodName.toLowerCase().includes(q))
+  }
+  return list.length
+})
+
+const modalTotalPages = computed(() => Math.max(1, Math.ceil(modalFilteredCount.value / MODAL_PAGE_SIZE)))
 
 const modalFoodList = computed<FoodDto[]>(() => {
   let list = [...allFoods.value]
@@ -264,36 +405,52 @@ const selectedFood = computed<FoodDto | null>(() =>
   allFoods.value.find(f => f.id === selectedFoodId.value) ?? null
 )
 
+const selectedServingSize = computed(() =>
+  selectedFood.value?.servingSizes[selectedServingIdx.value] ?? selectedFood.value?.servingSizes[0] ?? null
+)
+
 watch(selectedFood, (f) => {
-  if (f) modalServings.value = 1
+  if (f) {
+    modalServings.value = 1
+    selectedServingIdx.value = 0
+  }
 })
 
 function openModal(mealId: string) {
-  activeMeal.value     = mealId
-  modalSearch.value    = ''
-  selectedFoodId.value = null
-  modalServings.value  = 1
-  modalVisible.value   = true
+  activeMeal.value        = mealId
+  modalSearch.value       = ''
+  modalPage.value         = 1
+  selectedFoodId.value    = null
+  modalServings.value     = 1
+  selectedServingIdx.value = 0
+  modalVisible.value      = true
 }
 
 function closeModal() {
   modalVisible.value = false
 }
 
-function confirmAdd() {
+async function confirmAdd() {
   const food = selectedFood.value
-  if (!food) return
-  const s = food.servingSizes[0]
-  const entry = {
-    uid: genUid(), foodId: String(food.id), name: food.foodName,
-    cal: s?.kcal ?? 0, p: s?.proteinGram ?? 0, c: s?.carbGram ?? 0, f: s?.fatGram ?? 0,
-    serving: s ? servingText(s) : '—', servings: modalServings.value,
+  const s = selectedServingSize.value
+  if (!food || !s) return
+  isSaving.value = true
+  try {
+    await createFoodRecord({
+      foodId:   food.id,
+      amount:   modalServings.value,
+      measure:  s.measure,
+      mealType: activeMeal.value,
+      eatDT:    selectedDate.value,
+    })
+    await loadDailyDiet(selectedDate.value)
+    closeModal()
+    showToast('已新增 ' + food.foodName)
+  } catch (e: any) {
+    showToast(e.message || '新增失敗')
+  } finally {
+    isSaving.value = false
   }
-  const meal = getDayLog(currentDate.value).meals[activeMeal.value as keyof typeof dayLog.value.meals]
-  meal.push(entry)
-  saveData()
-  closeModal()
-  showToast('已新增 ' + food.foodName)
 }
 
 // ── Toast ──────────────────────────────────────────────────────
@@ -339,7 +496,26 @@ function showToast(msg: string) {
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-outline  { background: none; border-color: var(--ht-border); color: var(--ht-text2); }
 .btn-outline:hover  { background: var(--ht-surface2); }
+.btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-sm  { padding: 4px 10px; font-size: 12px; }
+
+/* ── Error / Loading banners ── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff0f0;
+  border-color: #f0b0b0;
+  color: var(--ht-danger);
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.loading-banner {
+  text-align: center;
+  color: var(--ht-text2);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
 
 /* ── Layout ── */
 .date-row {
@@ -517,6 +693,7 @@ input[type="range"]::-webkit-slider-thumb {
   transition: background 0.15s, color 0.15s;
 }
 .food-del:hover { background: #f5e5e2; color: var(--ht-danger); }
+.food-del:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .add-food-btn {
   display: flex;
@@ -593,12 +770,30 @@ input[type="range"]::-webkit-slider-thumb {
 .form-grid  { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-label { font-size: 11px; color: var(--ht-text2); font-weight: 500; }
+.mb-8 { margin-bottom: 8px; }
+
+.modal-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.page-info { font-size: 12px; color: var(--ht-text2); }
+
+.serving-preview {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ht-green);
+  font-weight: 500;
+}
 
 .tag         { display: inline-block; padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-left: 3px; }
 .tag-custom  { background: var(--ht-green-light); color: var(--ht-green); }
 .empty-state { text-align: center; padding: 24px; color: var(--ht-text3); font-size: 13px; }
 .divider     { height: 1px; background: var(--ht-border); margin: 14px 0; }
 .mb-12       { margin-bottom: 12px; }
+.ml-4        { margin-left: 4px; }
 
 /* ── Toast ── */
 .toast {
