@@ -158,6 +158,22 @@
       </div>
     </div>
   </v-dialog>
+
+  <!-- 全站滿額活動廣告 Modal -->
+  <div
+    v-if="showPromo"
+    class="promo-modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="promo-modal-title"
+    @click.self="closePromo"
+  >
+    <div class="promo-modal">
+      <h2 id="promo-modal-title" class="promo-modal-title">🎁 全館滿額優惠活動</h2>
+      <p class="promo-modal-body">全館滿 NT$1,000 即享 9 折優惠，最高折抵 NT$100</p>
+      <button class="promo-modal-btn" @click="closePromo">我知道了</button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -199,6 +215,12 @@ const priceRange = ref<[number, number]>([0, PRICE_MAX])
 const loading = ref<boolean>(true)
 const isModalOpen = ref(false)
 const selectedProduct = ref<ProductDto | null>(null)
+const showPromo = ref<boolean>(false)
+
+function closePromo(): void {
+  showPromo.value = false
+  sessionStorage.setItem('promoModalShown', '1')
+}
 
 const sortedProducts = computed<ProductDto[]>(() => {
   const list = [...products.value]
@@ -286,6 +308,9 @@ watch(priceRange, () => {
 onMounted(async () => {
   await fetchCategories()
   await fetchProducts()
+  if (!sessionStorage.getItem('promoModalShown')) {
+    showPromo.value = true
+  }
 })
 
 useReveal()
@@ -755,6 +780,82 @@ useReveal()
   .modal-footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* ── 全站滿額活動 Modal ── */
+.promo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--bg-dark) 55%, transparent);
+  animation: promo-fade-in 0.3s ease-out;
+}
+
+.promo-modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 32px 32px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: 0 20px 48px color-mix(in srgb, var(--bg-dark) 25%, transparent);
+  animation: promo-slide-up 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.promo-modal-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.promo-modal-body {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+.promo-modal-btn {
+  width: 100%;
+  padding: 14px 28px;
+  border-radius: 100px;
+  border: none;
+  background: var(--bg-dark);
+  color: var(--text-light);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.promo-modal-btn:hover {
+  opacity: 0.85;
+}
+
+@keyframes promo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes promo-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-modal-overlay,
+  .promo-modal {
+    animation: none;
   }
 }
 </style>

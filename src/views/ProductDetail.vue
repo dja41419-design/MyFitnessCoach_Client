@@ -326,4 +326,5 @@ onMounted(fetchProduct)
     gap: 24px;
   }
 }
+
 </style>
