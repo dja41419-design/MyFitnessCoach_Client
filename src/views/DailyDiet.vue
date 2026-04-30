@@ -114,7 +114,7 @@
       <div :class="['meal-body', { collapsed: collapsedMeals.has(meal.id) }]">
         <div v-for="record in getMealRecords(meal.id)" :key="record.id" class="food-row">
           <span class="food-name">{{ record.foodName }}</span>
-          <span class="food-amount">{{ record.amount }} × {{ record.measure }}</span>
+          <span class="food-amount">{{ formatAmount(record.amount) }} {{ record.measure }}</span>
           <span class="food-macros">P{{ r1(record.protein) }} C{{ r1(record.carbs) }} F{{ r1(record.fat) }}</span>
           <span class="food-kcal">{{ r0(record.calories) }} kcal</span>
           <button class="food-del" :disabled="isSaving" @click="handleDeleteFood(record.id)" title="刪除">×</button>
@@ -145,7 +145,11 @@
               :class="['result-item', { selected: selectedFoodId === f.id }]"
               @click="selectedFoodId = f.id"
             >
-              <span class="result-name">{{ f.foodName }}<span v-if="f.isCustom" class="tag tag-custom ml-4">自訂</span></span>
+              <span class="result-name">
+                {{ f.foodName }}
+                <span v-if="isFavoriteFood(f.id)" class="tag tag-fav ml-4">常用</span>
+                <span v-if="f.isCustom" class="tag tag-custom ml-4">自訂</span>
+              </span>
               <span class="result-info">
                 <template v-if="f.servingSizes[0]">
                   {{ servingText(f.servingSizes[0]) }} · {{ f.servingSizes[0].kcal }} kcal
@@ -188,14 +192,21 @@
 
           <div class="form-group">
             <label class="form-label">數量（{{ selectedServingSize?.measure ?? '' }}）</label>
-            <input type="number" v-model.number="modalServings" min="0.5" step="0.5" class="form-input" style="width:100px" />
+            <input
+              type="number"
+              v-model.number="modalServings"
+              :min="modalAmountStep"
+              :step="modalAmountStep"
+              class="form-input"
+              style="width:100px"
+            />
           </div>
 
           <div v-if="selectedServingSize" class="serving-preview">
-            合計：{{ r0(selectedServingSize.kcal * modalServings) }} kcal
-            · P{{ r1(selectedServingSize.proteinGram * modalServings) }}g
-            C{{ r1(selectedServingSize.carbGram * modalServings) }}g
-            F{{ r1(selectedServingSize.fatGram * modalServings) }}g
+            合計：{{ r0(selectedServingSize.kcal * modalAmountRatio) }} kcal
+            · P{{ r1(selectedServingSize.proteinGram * modalAmountRatio) }}g
+            C{{ r1(selectedServingSize.carbGram * modalAmountRatio) }}g
+            F{{ r1(selectedServingSize.fatGram * modalAmountRatio) }}g
           </div>
         </div>
 
@@ -217,15 +228,15 @@ import { useHealthTracker, servingText, MEAL_META, todayStr, prevDay, r0, r1, pc
 import { useFoodLibrary } from '@/composables/useFoodLibrary'
 import type { FoodDto } from '@/data/foodLibrary'
 import {
-  getDailyDiet, createFoodRecord, deleteFoodRecord, copyDailyDiet,
+  getDailyDiet, createFoodRecord, deleteFoodRecord, copyDailyDiet, updateWaterLog,
   type FoodRecordDto, type DailyNutritionSummaryDto,
 } from '@/data/dailyDiet'
 
-// ── Water (still localStorage-based) ──────────────────────────
-const { getDayLog, saveData, goals: htGoals } = useHealthTracker()
+// ── Water ─────────────────────────────────────────────────────
+const { goals: htGoals } = useHealthTracker()
 
 const memberId = Number(localStorage.getItem('memberId') ?? '0')
-const { allFoods, loadFoods } = useFoodLibrary()
+const { allFoods, favoriteFoodIds, loadFoods, isLoading: foodLibLoading } = useFoodLibrary()
 
 // ── Core state ─────────────────────────────────────────────────
 const selectedDate   = ref<string>(todayStr())
@@ -248,7 +259,7 @@ const goals = computed(() => ({
   protein:  summary.value?.targetProtein  ?? 0,
   carbs:    summary.value?.targetCarbs    ?? 0,
   fat:      summary.value?.targetFat      ?? 0,
-  water:    htGoals.value.water,
+  water:    summary.value?.targetWater    ?? htGoals.value.water,
 }))
 
 const remaining = computed(() => summary.value?.remainingCalories ?? 0)
@@ -259,26 +270,49 @@ const remainingCalClass = computed(() => {
 })
 
 // ── Meal helpers ───────────────────────────────────────────────
+function normalizeMealType(mealType: string): string {
+  const normalized = mealType.toLowerCase()
+  if (normalized === '早餐') return 'breakfast'
+  if (normalized === '午餐') return 'lunch'
+  if (normalized === '晚餐') return 'dinner'
+  if (normalized === '點心' || normalized === '點心/宵夜') return 'snack'
+  return normalized
+}
+
 function getMealRecords(mealId: string): FoodRecordDto[] {
-  return records.value.filter(r => r.mealType.toLowerCase() === mealId.toLowerCase())
+  return records.value.filter(r => normalizeMealType(r.mealType) === mealId.toLowerCase())
 }
 
 function getMealCalories(mealId: string): number {
   return getMealRecords(mealId).reduce((sum, r) => sum + r.calories, 0)
 }
 
-// ── Water (localStorage) ───────────────────────────────────────
-const waterAmount = computed(() => getDayLog(selectedDate.value).water)
-
-function addWater(delta: number) {
-  const log = getDayLog(selectedDate.value)
-  log.water = Math.max(0, log.water + delta)
-  saveData()
+function formatAmount(value: number): string {
+  return Number.isInteger(value) ? String(value) : String(r1(value))
 }
 
-function setWater(val: number) {
-  getDayLog(selectedDate.value).water = val
-  saveData()
+// ── Water ─────────────────────────────────────────────────────
+const waterAmount = ref(0)
+let waterRequestSeq = 0
+
+function addWater(delta: number) {
+  setWater(waterAmount.value + delta)
+}
+
+async function setWater(val: number) {
+  const nextAmount = Math.max(0, Math.round(val))
+  const logDate = selectedDate.value
+  const requestSeq = ++waterRequestSeq
+  waterAmount.value = nextAmount
+
+  try {
+    const savedAmount = await updateWaterLog({ logDate, amount: nextAmount })
+    if (requestSeq === waterRequestSeq && logDate === selectedDate.value) {
+      waterAmount.value = savedAmount
+    }
+  } catch (e: any) {
+    showToast(e.message || '更新飲水紀錄失敗')
+  }
 }
 
 // ── API load ───────────────────────────────────────────────────
@@ -289,6 +323,7 @@ async function loadDailyDiet(date: string) {
     const page     = await getDailyDiet(date)
     records.value  = page.records
     summary.value  = page.summary
+    waterAmount.value = page.waterAmount ?? 0
   } catch (e: any) {
     errorMessage.value = e.message || '載入失敗'
   } finally {
@@ -338,6 +373,7 @@ async function copyYesterday() {
     })
     records.value = result.records
     summary.value = result.summary
+    waterAmount.value = result.waterAmount ?? 0
     showToast('已複製昨天的飲食紀錄')
   } catch (e: any) {
     if (e.status === 409) {
@@ -351,6 +387,7 @@ async function copyYesterday() {
         })
         records.value = result.records
         summary.value = result.summary
+        waterAmount.value = result.waterAmount ?? 0
         showToast('已複製昨天的飲食紀錄（已覆蓋）')
       } catch {
         showToast('複製失敗')
@@ -368,8 +405,6 @@ function setToday() {
 }
 
 // ── Add food modal ─────────────────────────────────────────────
-const { isLoading: foodLibLoading } = useFoodLibrary()
-
 const modalVisible        = ref(false)
 const activeMeal          = ref('breakfast')
 const modalSearch         = ref('')
@@ -380,25 +415,33 @@ const selectedServingIdx  = ref(0)
 
 const MODAL_PAGE_SIZE = 12
 
-const modalFilteredCount = computed<number>(() => {
+function isFavoriteFood(foodId: number): boolean {
+  return favoriteFoodIds.value.includes(foodId)
+}
+
+function compareFoodForModal(a: FoodDto, b: FoodDto): number {
+  const aRank = isFavoriteFood(a.id) ? 0 : a.isCustom ? 1 : 2
+  const bRank = isFavoriteFood(b.id) ? 0 : b.isCustom ? 1 : 2
+  if (aRank !== bRank) return aRank - bRank
+  return (a.categoryName ?? '').localeCompare(b.categoryName ?? '') || a.foodName.localeCompare(b.foodName)
+}
+
+const modalFilteredFoods = computed<FoodDto[]>(() => {
   let list = [...allFoods.value]
   if (modalSearch.value) {
     const q = modalSearch.value.toLowerCase()
     list = list.filter(f => f.foodName.toLowerCase().includes(q))
   }
-  return list.length
+  return list.sort(compareFoodForModal)
 })
+
+const modalFilteredCount = computed<number>(() => modalFilteredFoods.value.length)
 
 const modalTotalPages = computed(() => Math.max(1, Math.ceil(modalFilteredCount.value / MODAL_PAGE_SIZE)))
 
 const modalFoodList = computed<FoodDto[]>(() => {
-  let list = [...allFoods.value]
-  if (modalSearch.value) {
-    const q = modalSearch.value.toLowerCase()
-    list = list.filter(f => f.foodName.toLowerCase().includes(q))
-  }
   const start = (modalPage.value - 1) * MODAL_PAGE_SIZE
-  return list.slice(start, start + MODAL_PAGE_SIZE)
+  return modalFilteredFoods.value.slice(start, start + MODAL_PAGE_SIZE)
 })
 
 const selectedFood = computed<FoodDto | null>(() =>
@@ -409,11 +452,23 @@ const selectedServingSize = computed(() =>
   selectedFood.value?.servingSizes[selectedServingIdx.value] ?? selectedFood.value?.servingSizes[0] ?? null
 )
 
-watch(selectedFood, (f) => {
-  if (f) {
-    modalServings.value = 1
-    selectedServingIdx.value = 0
-  }
+const modalAmountStep = computed(() => {
+  const measure = selectedServingSize.value?.measure.toLowerCase()
+  return measure === '克' || measure === 'g' || measure === 'ml' ? 1 : 0.5
+})
+
+const modalAmountRatio = computed(() => {
+  const baseAmount = selectedServingSize.value?.baseAmount ?? 1
+  if (baseAmount <= 0) return 0
+  return (Number(modalServings.value) || 0) / baseAmount
+})
+
+watch(selectedFood, () => {
+  selectedServingIdx.value = 0
+})
+
+watch(selectedServingSize, (serving) => {
+  if (serving) modalServings.value = serving.baseAmount
 })
 
 function openModal(mealId: string) {
@@ -789,6 +844,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .tag         { display: inline-block; padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-left: 3px; }
+.tag-fav     { background: #fdf3e0; color: #9e7a28; }
 .tag-custom  { background: var(--ht-green-light); color: var(--ht-green); }
 .empty-state { text-align: center; padding: 24px; color: var(--ht-text3); font-size: 13px; }
 .divider     { height: 1px; background: var(--ht-border); margin: 14px 0; }

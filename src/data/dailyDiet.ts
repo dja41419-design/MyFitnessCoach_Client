@@ -28,10 +28,12 @@ export interface DailyNutritionSummaryDto {
   targetFat: number
   consumedFat: number
   remainingFat: number
+  targetWater: number
 }
 
 export interface DailyDietPageDto {
   eatDate: string
+  waterAmount: number
   records: FoodRecordDto[]
   summary: DailyNutritionSummaryDto
 }
@@ -57,6 +59,11 @@ export interface CopyDailyDietRequest {
   sourceDate: string
   targetDate: string
   overwriteTargetDate: boolean
+}
+
+export interface UpdateWaterLogRequest {
+  logDate: string
+  amount: number
 }
 
 export async function getDailyDiet(eatDate: string): Promise<DailyDietPageDto> {
@@ -101,4 +108,15 @@ export async function copyDailyDiet(request: CopyDailyDietRequest): Promise<Dail
   if (res.status === 409) throw Object.assign(new Error('目標日期已有飲食紀錄'), { status: 409 })
   if (!res.ok) throw new Error('複製飲食紀錄失敗')
   return res.json()
+}
+
+export async function updateWaterLog(request: UpdateWaterLogRequest): Promise<number> {
+  const res = await fetchWithAuth('/api/DailyDiet/water-log', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (!res.ok) throw new Error('更新飲水紀錄失敗')
+  const data = await res.json()
+  return data.amount
 }
