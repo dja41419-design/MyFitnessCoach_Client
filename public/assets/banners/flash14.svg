@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 375">
+  <rect width="1200" height="375" fill="#1a1613"/>
+
+  <!-- 上下細金線 -->
+  <line x1="0" y1="60" x2="1200" y2="60" stroke="#c4a882" stroke-width="0.5" opacity="0.4"/>
+  <line x1="0" y1="315" x2="1200" y2="315" stroke="#c4a882" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- 雙線(內側更細) -->
+  <line x1="40" y1="68" x2="1160" y2="68" stroke="#c4a882" stroke-width="0.3" opacity="0.3"/>
+  <line x1="40" y1="307" x2="1160" y2="307" stroke="#c4a882" stroke-width="0.3" opacity="0.3"/>
+
+  <!-- ★ 四角 Art Deco 角飾 ★ -->
+  <!-- 左上 -->
+  <g stroke="#c4a882" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M 30 30 L 30 60 M 30 30 L 60 30"/>
+    <path d="M 35 35 Q 50 35 50 50 Q 50 35 65 35" stroke-width="0.7"/>
+    <circle cx="30" cy="30" r="2.5" fill="#c4a882" stroke="none" opacity="0.9"/>
+  </g>
+  <!-- 右上 -->
+  <g stroke="#c4a882" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M 1170 30 L 1170 60 M 1170 30 L 1140 30"/>
+    <path d="M 1165 35 Q 1150 35 1150 50 Q 1150 35 1135 35" stroke-width="0.7"/>
+    <circle cx="1170" cy="30" r="2.5" fill="#c4a882" stroke="none" opacity="0.9"/>
+  </g>
+  <!-- 左下 -->
+  <g stroke="#c4a882" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M 30 345 L 30 315 M 30 345 L 60 345"/>
+    <path d="M 35 340 Q 50 340 50 325 Q 50 340 65 340" stroke-width="0.7"/>
+    <circle cx="30" cy="345" r="2.5" fill="#c4a882" stroke="none" opacity="0.9"/>
+  </g>
+  <!-- 右下 -->
+  <g stroke="#c4a882" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M 1170 345 L 1170 315 M 1170 345 L 1140 345"/>
+    <path d="M 1165 340 Q 1150 340 1150 325 Q 1150 340 1135 340" stroke-width="0.7"/>
+    <circle cx="1170" cy="345" r="2.5" fill="#c4a882" stroke="none" opacity="0.9"/>
+  </g>
+
+  <!-- ★ 頂部中央 ornament star ★ -->
+  <g transform="translate(600,52)" fill="#c4a882" opacity="0.7">
+    <circle r="2"/>
+    <circle cx="-15" r="1.2"/>
+    <circle cx="15"  r="1.2"/>
+    <circle cx="-30" r="0.8" opacity="0.5"/>
+    <circle cx="30"  r="0.8" opacity="0.5"/>
+  </g>
+
+  <!-- accent label(間距字)+ 兩側裝飾線 -->
+  <line x1="40" y1="100" x2="72" y2="100" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+  <text x="80" y="105" font-family="'Noto Sans TC', sans-serif"
+        font-size="14" fill="#c4a882" letter-spacing="6" font-weight="600">
+    L · I · M · I · T · E · D
+  </text>
+  <line x1="265" y1="100" x2="320" y2="100" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+  <text x="328" y="108" font-family="serif" font-size="10" fill="#c4a882" opacity="0.7">✦</text>
+  <line x1="345" y1="100" x2="380" y2="100" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+
+  <!-- 巨大 14 主視覺 -->
+  <text x="80" y="250" font-family="'Cormorant Garamond', Georgia, serif"
+        font-size="200" fill="#c4a882" font-weight="500" font-style="italic">
+    14
+  </text>
+
+  <!-- ★ 14 上方 flourish swash 連到 Days Only ★ -->
+  <path d="M 260 130 Q 320 105 400 135 Q 460 165 440 215"
+        stroke="#c4a882" stroke-width="1.2" fill="none" opacity="0.75"/>
+
+  <!-- Days Only italic -->
+  <text x="290" y="215" font-family="'Cormorant Garamond', Georgia, serif"
+        font-size="64" fill="#c4a882" font-weight="500" font-style="italic">
+    Days Only
+  </text>
+
+  <!-- ★ Days Only 下方多重 ornament(三鑽 + 細線) ★ -->
+  <line x1="290" y1="240" x2="380" y2="240" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+  <text x="388" y="246" font-family="serif" font-size="11" fill="#c4a882" opacity="0.8">◆</text>
+  <text x="404" y="246" font-family="serif" font-size="14" fill="#c4a882" opacity="0.9">◆</text>
+  <text x="423" y="246" font-family="serif" font-size="11" fill="#c4a882" opacity="0.8">◆</text>
+  <line x1="445" y1="240" x2="660" y2="240" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+
+  <!-- 中文大標 -->
+  <text x="290" y="278" font-family="'Noto Sans TC', sans-serif"
+        font-size="28" fill="#f5f0eb" font-weight="600" letter-spacing="3">
+    全館 88 折
+  </text>
+
+  <!-- 副標 -->
+  <text x="290" y="302" font-family="'Noto Sans TC', sans-serif"
+        font-size="13" fill="#a68b6b">
+    折扣上限 NT$200 · 5/2 - 5/15
+  </text>
+
+  <!-- ★ CTA 加上下 ornament 點綴 ★ -->
+  <g transform="translate(960,255)">
+    <!-- 上方小裝飾 -->
+    <line x1="60" y1="-10" x2="80" y2="-10" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+    <text x="78" y="-6" font-family="serif" font-size="9" fill="#c4a882" opacity="0.8">✦</text>
+    <line x1="92" y1="-10" x2="112" y2="-10" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+
+    <rect width="160" height="44" fill="none" stroke="#c4a882" stroke-width="1"/>
+    <!-- 內框 -->
+    <rect x="3" y="3" width="154" height="38" fill="none" stroke="#c4a882" stroke-width="0.4" opacity="0.5"/>
+
+    <text x="80" y="28" text-anchor="middle"
+          font-family="'Noto Sans TC', sans-serif"
+          font-size="14" fill="#c4a882" font-weight="500" letter-spacing="2">
+      立即領取 →
+    </text>
+
+    <!-- 下方小裝飾 -->
+    <line x1="60" y1="56" x2="80" y2="56" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+    <text x="78" y="60" font-family="serif" font-size="9" fill="#c4a882" opacity="0.8">✦</text>
+    <line x1="92" y1="56" x2="112" y2="56" stroke="#c4a882" stroke-width="0.5" opacity="0.6"/>
+  </g>
+
+  <!-- ★ 散落 sparkle 小點(右下、上方留白處) ★ -->
+  <g fill="#c4a882" opacity="0.4">
+    <circle cx="850" cy="120" r="1.5"/>
+    <circle cx="900" cy="105" r="1"/>
+    <circle cx="820" cy="160" r="1.2"/>
+    <circle cx="880" cy="175" r="0.8"/>
+    <circle cx="780" cy="135" r="1"/>
+    <circle cx="700" cy="115" r="1.2"/>
+    <circle cx="730" cy="155" r="0.8"/>
+  </g>
+
+  <!-- ★ 底部中央 ornament star(對應頂部) ★ -->
+  <g transform="translate(600,328)" fill="#c4a882" opacity="0.7">
+    <circle r="2"/>
+    <circle cx="-15" r="1.2"/>
+    <circle cx="15"  r="1.2"/>
+    <circle cx="-30" r="0.8" opacity="0.5"/>
+    <circle cx="30"  r="0.8" opacity="0.5"/>
+  </g>
+</svg>

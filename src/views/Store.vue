@@ -13,6 +13,19 @@
         </div>
       </div>
 
+      <!-- 優惠券 Banner 區(策劃式:僅顯示 BannerImageUrl 有設的券) -->
+      <section v-if="banners.length > 0" class="coupon-banners reveal rd1" aria-label="優惠券活動">
+        <RouterLink
+          v-for="b in banners"
+          :key="b.id"
+          to="/coupons"
+          class="coupon-banner-card"
+          :aria-label="`查看 ${b.name} 活動`"
+        >
+          <img :src="b.bannerImageUrl!" :alt="b.name" class="coupon-banner-img" />
+        </RouterLink>
+      </section>
+
       <!-- 搜尋 + 排序列 -->
       <div class="store-toolbar reveal rd1">
         <input
@@ -158,22 +171,6 @@
       </div>
     </div>
   </v-dialog>
-
-  <!-- 全站滿額活動廣告 Modal -->
-  <div
-    v-if="showPromo"
-    class="promo-modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="promo-modal-title"
-    @click.self="closePromo"
-  >
-    <div class="promo-modal">
-      <h2 id="promo-modal-title" class="promo-modal-title">🎁 全館滿額優惠活動</h2>
-      <p class="promo-modal-body">全館滿 NT$1,000 即享 9 折優惠，最高折抵 NT$100</p>
-      <button class="promo-modal-btn" @click="closePromo">我知道了</button>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -183,6 +180,8 @@ import { ElNotification } from 'element-plus'
 import { useReveal } from '@/composables/useReveal'
 import { useCart } from '@/composables/useCart'
 import AppNavbar from '@/components/AppNavbar.vue'
+import { fetchCouponBanners } from '@/data/couponBanner'
+import type { CouponDto } from '@/data/coupon'
 
 interface CategoryDto {
   id: number
@@ -215,12 +214,7 @@ const priceRange = ref<[number, number]>([0, PRICE_MAX])
 const loading = ref<boolean>(true)
 const isModalOpen = ref(false)
 const selectedProduct = ref<ProductDto | null>(null)
-const showPromo = ref<boolean>(false)
-
-function closePromo(): void {
-  showPromo.value = false
-  sessionStorage.setItem('promoModalShown', '1')
-}
+const banners = ref<CouponDto[]>([])
 
 const sortedProducts = computed<ProductDto[]>(() => {
   const list = [...products.value]
@@ -308,9 +302,7 @@ watch(priceRange, () => {
 onMounted(async () => {
   await fetchCategories()
   await fetchProducts()
-  if (!sessionStorage.getItem('promoModalShown')) {
-    showPromo.value = true
-  }
+  banners.value = await fetchCouponBanners()
 })
 
 useReveal()
@@ -365,6 +357,38 @@ useReveal()
   max-width: 480px;
   margin-top: 10px;
   line-height: 1.6;
+}
+
+/* ── 優惠券 Banner 區 ── */
+.coupon-banners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0 32px;
+}
+
+.coupon-banner-card {
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.coupon-banner-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.coupon-banner-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 5;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .coupon-banner-img { aspect-ratio: 16 / 7; }
 }
 
 /* ── 搜尋 + 排序列 ── */
@@ -783,79 +807,4 @@ useReveal()
   }
 }
 
-/* ── 全站滿額活動 Modal ── */
-.promo-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--bg-dark) 55%, transparent);
-  animation: promo-fade-in 0.3s ease-out;
-}
-
-.promo-modal {
-  width: 100%;
-  max-width: 440px;
-  padding: 40px 32px 32px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  box-shadow: 0 20px 48px color-mix(in srgb, var(--bg-dark) 25%, transparent);
-  animation: promo-slide-up 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.promo-modal-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 16px;
-  line-height: 1.3;
-}
-
-.promo-modal-body {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin-bottom: 32px;
-}
-
-.promo-modal-btn {
-  width: 100%;
-  padding: 14px 28px;
-  border-radius: 100px;
-  border: none;
-  background: var(--bg-dark);
-  color: var(--text-light);
-  font-size: 0.9rem;
-  font-family: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.3s;
-}
-
-.promo-modal-btn:hover {
-  opacity: 0.85;
-}
-
-@keyframes promo-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes promo-slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .promo-modal-overlay,
-  .promo-modal {
-    animation: none;
-  }
-}
 </style>
