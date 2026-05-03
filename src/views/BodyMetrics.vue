@@ -11,15 +11,15 @@
           <input type="date" v-model="form.date" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">體重 (kg)</label>
-          <input type="number" v-model.number="form.weight" min="0" step="0.1" class="form-input" @input="updateBmiPreview" />
+          <label class="form-label">體重 (kg) *</label>
+          <input type="number" v-model.number="form.weight" min="0" step="0.1" class="form-input" />
         </div>
         <div class="form-group">
           <label class="form-label">體脂率 (%)</label>
           <input type="number" v-model.number="form.bodyFat" min="0" max="100" step="0.1" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">肌肉量 (kg)</label>
+          <label class="form-label">骨骼肌量 (kg)</label>
           <input type="number" v-model.number="form.muscleMass" min="0" step="0.1" class="form-input" />
         </div>
         <div class="form-group">
@@ -45,20 +45,23 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" @click="addLog">儲存紀錄</button>
+      <button class="btn btn-primary" :disabled="isSaving" @click="addLog">
+        {{ isSaving ? '儲存中…' : '儲存紀錄' }}
+      </button>
     </div>
 
     <!-- 歷史紀錄 -->
     <div class="card">
       <div class="card-title">歷史紀錄</div>
-      <div class="table-wrap">
+      <div v-if="isLoading" class="empty-state">載入中…</div>
+      <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
               <th>日期</th>
               <th>體重(kg)</th>
               <th>體脂(%)</th>
-              <th>肌肉量(kg)</th>
+              <th>骨骼肌(kg)</th>
               <th>腰圍(cm)</th>
               <th>臀圍(cm)</th>
               <th>BMI</th>
@@ -71,17 +74,17 @@
               <td colspan="9" class="empty-state">尚無紀錄</td>
             </tr>
             <tr
-              v-for="log in bodyLogs.slice(0, 40)"
-              :key="log.date"
+              v-for="log in bodyLogs"
+              :key="log.id"
               class="clickable-row"
-              @click="openDetail(log.date)"
+              @click="openDetail(log.id)"
             >
-              <td class="td-text">{{ log.date }}</td>
+              <td class="td-text">{{ log.measureDate }}</td>
               <td>{{ log.weight ?? '—' }}</td>
               <td>{{ log.bodyFat != null ? log.bodyFat + '%' : '—' }}</td>
-              <td>{{ log.muscleMass ?? '—' }}</td>
-              <td>{{ log.waist ?? '—' }}</td>
-              <td>{{ log.hip ?? '—' }}</td>
+              <td>{{ log.skeletalMuscle ?? '—' }}</td>
+              <td>{{ log.waistCircumference ?? '—' }}</td>
+              <td>{{ log.hipCircumference ?? '—' }}</td>
               <td>
                 <template v-if="getBmi(log)">
                   {{ getBmi(log) }}
@@ -90,13 +93,13 @@
                 <span v-else>—</span>
               </td>
               <td @click.stop>
-                <img v-if="log.photo" :src="log.photo" class="body-thumb" />
+                <img v-if="log.imageUrl" :src="log.imageUrl" class="body-thumb" />
                 <div v-else class="body-thumb-placeholder">📷</div>
               </td>
               <td @click.stop>
                 <div class="action-icons">
-                  <button class="icon-btn icon-accent" @click="openEdit(log.date)" title="編輯">✏️</button>
-                  <button class="icon-btn icon-danger" @click="deleteLog(log.date)" title="刪除">🗑️</button>
+                  <button class="icon-btn icon-accent" @click="openEdit(log.id)" title="編輯">✏️</button>
+                  <button class="icon-btn icon-danger" @click="deleteLog(log.id)" title="刪除">🗑️</button>
                 </div>
               </td>
             </tr>
@@ -105,10 +108,26 @@
       </div>
     </div>
 
+    <!-- ── 409 覆蓋確認 Dialog ── -->
+    <div v-if="conflictDialogVisible" class="modal-overlay">
+      <div class="modal" style="max-width:380px">
+        <div class="modal-title">此日期已有量測紀錄</div>
+        <p style="font-size:13px;color:var(--ht-text2);margin:0 0 16px">
+          是否覆蓋原有的紀錄？
+        </p>
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="cancelOverwrite">取消</button>
+          <button class="btn btn-primary" :disabled="isSaving" @click="confirmOverwrite">
+            {{ isSaving ? '更新中…' : '確認覆蓋' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── 編輯 Modal ── -->
     <div v-if="editVisible" class="modal-overlay" @click.self="editVisible = false">
       <div class="modal">
-        <div class="modal-title">編輯體態紀錄 — {{ editForm.date }}</div>
+        <div class="modal-title">編輯體態紀錄 — {{ editForm.measureDate }}</div>
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label">體重 (kg)</label>
@@ -119,7 +138,7 @@
             <input type="number" v-model.number="editForm.bodyFat" step="0.1" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label">肌肉量 (kg)</label>
+            <label class="form-label">骨骼肌量 (kg)</label>
             <input type="number" v-model.number="editForm.muscleMass" step="0.1" class="form-input" />
           </div>
           <div class="form-group">
@@ -137,7 +156,9 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" @click="editVisible = false">取消</button>
-          <button class="btn btn-primary" @click="confirmEdit">儲存</button>
+          <button class="btn btn-primary" :disabled="isSaving" @click="confirmEdit">
+            {{ isSaving ? '更新中…' : '儲存' }}
+          </button>
         </div>
       </div>
     </div>
@@ -146,12 +167,12 @@
     <div v-if="detailVisible && detailLog" class="modal-overlay" @click.self="detailVisible = false">
       <div class="modal detail-modal" @click.stop>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div class="modal-title" style="margin:0">體態紀錄 — {{ detailLog.date }}</div>
+          <div class="modal-title" style="margin:0">體態紀錄 — {{ detailLog.measureDate }}</div>
           <button class="icon-btn" @click="detailVisible = false" style="font-size:18px;color:var(--ht-text2)">✕</button>
         </div>
 
-        <div class="photo-wrap" v-if="detailLog.photo">
-          <img :src="detailLog.photo" class="detail-photo" />
+        <div class="photo-wrap" v-if="detailLog.imageUrl">
+          <img :src="detailLog.imageUrl" class="detail-photo" />
         </div>
         <div class="no-photo" v-else>尚未上傳照片</div>
 
@@ -165,8 +186,8 @@
             <div class="detail-card-val" style="color:var(--ht-warn)">{{ detailLog.bodyFat != null ? detailLog.bodyFat + '%' : '—' }}</div>
           </div>
           <div class="detail-card">
-            <div class="detail-card-label">肌肉量</div>
-            <div class="detail-card-val" style="color:var(--ht-green)">{{ detailLog.muscleMass != null ? detailLog.muscleMass + ' kg' : '—' }}</div>
+            <div class="detail-card-label">骨骼肌量</div>
+            <div class="detail-card-val" style="color:var(--ht-green)">{{ detailLog.skeletalMuscle != null ? detailLog.skeletalMuscle + ' kg' : '—' }}</div>
           </div>
           <div class="detail-card">
             <div class="detail-card-label">BMI</div>
@@ -180,17 +201,17 @@
           </div>
           <div class="detail-card">
             <div class="detail-card-label">腰圍</div>
-            <div class="detail-card-val">{{ detailLog.waist != null ? detailLog.waist + ' cm' : '—' }}</div>
+            <div class="detail-card-val">{{ detailLog.waistCircumference != null ? detailLog.waistCircumference + ' cm' : '—' }}</div>
           </div>
           <div class="detail-card">
             <div class="detail-card-label">臀圍</div>
-            <div class="detail-card-val">{{ detailLog.hip != null ? detailLog.hip + ' cm' : '—' }}</div>
+            <div class="detail-card-val">{{ detailLog.hipCircumference != null ? detailLog.hipCircumference + ' cm' : '—' }}</div>
           </div>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--ht-border)">
           <button class="btn btn-outline" @click="detailVisible = false">關閉</button>
-          <button class="btn btn-primary" @click="detailVisible = false; openEdit(detailLog!.date)">編輯此筆</button>
+          <button class="btn btn-primary" @click="detailVisible = false; openEdit(detailLog!.id)">編輯此筆</button>
         </div>
       </div>
     </div>
@@ -201,11 +222,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useHealthTracker, type BodyLog } from '@/composables/useHealthTracker'
+import { ref, computed, onMounted } from 'vue'
+import { useBodyRecords, type BodyRecordConflictError, type CreateBodyRecordPayload } from '@/composables/useBodyRecords'
+import { useHealthTracker, todayStr } from '@/composables/useHealthTracker'
 import { calcBMI, bmiLabel } from '@/composables/useGoals'
+import type { BodyRecordDto } from '@/data/bodyRecords'
 
-const { bodyLogs, goals, saveData, todayStr } = useHealthTracker()
+const { bodyLogs, isLoading, isSaving, loadBodyRecords, createBodyLog, updateBodyLog, deleteBodyLog } = useBodyRecords()
+const { goals } = useHealthTracker()
+
+onMounted(() => loadBodyRecords({ take: 40 }))
+
+// ── BMI helpers ────────────────────────────────────────────────
+function getBmi(log: BodyRecordDto) {
+  return calcBMI(log.weight, goals.value.height)
+}
+function getBmiInfo(log: BodyRecordDto) {
+  const b = getBmi(log)
+  return b ? bmiLabel(b) : null
+}
 
 // ── Add form ───────────────────────────────────────────────────
 const photoInput = ref<HTMLInputElement | null>(null)
@@ -221,39 +256,60 @@ const form = ref({
 const bmiPreview = computed(() => calcBMI(form.value.weight, goals.value.height))
 const bmiInfo    = computed(() => bmiPreview.value ? bmiLabel(bmiPreview.value) : null)
 
-function updateBmiPreview() {} // reactivity handles it
-
-function getBmi(log: BodyLog) {
-  return calcBMI(log.weight, goals.value.height)
-}
-function getBmiInfo(log: BodyLog) {
-  const b = getBmi(log)
-  return b ? bmiLabel(b) : null
-}
+// ── 409 覆蓋 Dialog ────────────────────────────────────────────
+const conflictDialogVisible = ref(false)
+const conflictExistingId    = ref<number | null>(null)
+let   pendingPayload: CreateBodyRecordPayload | null = null
 
 async function addLog() {
-  if (!form.value.date) { showToast('請選擇日期'); return }
-  if (!form.value.weight && !form.value.bodyFat) { showToast('請至少填入體重或體脂率'); return }
+  if (!form.value.date)   { showToast('請選擇日期'); return }
+  if (!form.value.weight) { showToast('請填入體重'); return }
 
-  const existing = bodyLogs.value.find(l => l.date === form.value.date)
-  if (existing && !confirm(`${form.value.date} 已有紀錄，是否覆蓋？`)) return
-
-  const photoData = await readPhoto(photoInput.value)
-  const entry: BodyLog = {
-    date: form.value.date,
-    weight: form.value.weight,
-    bodyFat: form.value.bodyFat,
-    muscleMass: form.value.muscleMass,
-    waist: form.value.waist,
-    hip: form.value.hip,
-    photo: photoData ?? existing?.photo ?? null,
+  const payload: CreateBodyRecordPayload = {
+    measureDate:        form.value.date,
+    weight:             form.value.weight,
+    bodyFat:            form.value.bodyFat,
+    skeletalMuscle:     form.value.muscleMass,
+    waistCircumference: form.value.waist,
+    hipCircumference:   form.value.hip,
+    photo:              photoInput.value?.files?.[0] ?? null,
   }
-  bodyLogs.value = bodyLogs.value.filter(l => l.date !== form.value.date)
-  bodyLogs.value.push(entry)
-  bodyLogs.value.sort((a, b) => b.date.localeCompare(a.date))
-  saveData()
-  resetForm()
-  showToast('體態紀錄已儲存')
+
+  try {
+    await createBodyLog(payload)
+    resetForm()
+    showToast('體態紀錄已儲存')
+  } catch (err) {
+    const conflictErr = err as BodyRecordConflictError
+    if (conflictErr.existingId) {
+      conflictExistingId.value    = conflictErr.existingId
+      pendingPayload              = payload
+      conflictDialogVisible.value = true
+    } else {
+      showToast((err as Error).message || '儲存失敗')
+    }
+  }
+}
+
+async function confirmOverwrite() {
+  if (conflictExistingId.value === null || !pendingPayload) return
+  conflictDialogVisible.value = false
+  try {
+    await updateBodyLog(conflictExistingId.value, pendingPayload)
+    resetForm()
+    showToast('體態紀錄已覆蓋更新')
+  } catch (err) {
+    showToast((err as Error).message || '更新失敗')
+  } finally {
+    conflictExistingId.value = null
+    pendingPayload           = null
+  }
+}
+
+function cancelOverwrite() {
+  conflictDialogVisible.value = false
+  conflictExistingId.value    = null
+  pendingPayload              = null
 }
 
 function resetForm() {
@@ -261,68 +317,67 @@ function resetForm() {
   if (photoInput.value) photoInput.value.value = ''
 }
 
-function deleteLog(date: string) {
-  if (!confirm(`確定刪除 ${date} 的紀錄？`)) return
-  bodyLogs.value = bodyLogs.value.filter(l => l.date !== date)
-  saveData()
-  showToast('已刪除')
+async function deleteLog(id: number) {
+  if (!confirm('確定刪除此筆紀錄？')) return
+  try {
+    await deleteBodyLog(id)
+    showToast('已刪除')
+  } catch (err) {
+    showToast((err as Error).message || '刪除失敗')
+  }
 }
 
 // ── Edit modal ─────────────────────────────────────────────────
-const editVisible   = ref(false)
+const editVisible    = ref(false)
 const editPhotoInput = ref<HTMLInputElement | null>(null)
 const editForm = ref({
-  date: '', weight: null as number | null,
+  id: 0, measureDate: '',
+  weight: null as number | null,
   bodyFat: null as number | null, muscleMass: null as number | null,
-  waist: null as number | null, hip: null as number | null,
+  waist: null as number | null,   hip: null as number | null,
 })
 
-function openEdit(date: string) {
-  const log = bodyLogs.value.find(l => l.date === date)
+function openEdit(id: number) {
+  const log = bodyLogs.value.find(l => l.id === id)
   if (!log) return
   editForm.value = {
-    date: log.date,
-    weight: log.weight,
-    bodyFat: log.bodyFat,
-    muscleMass: log.muscleMass,
-    waist: log.waist,
-    hip: log.hip,
+    id:          log.id,
+    measureDate: log.measureDate,
+    weight:      log.weight,
+    bodyFat:     log.bodyFat !== null     ? Number(log.bodyFat)            : null,
+    muscleMass:  log.skeletalMuscle !== null ? Number(log.skeletalMuscle) : null,
+    waist:       log.waistCircumference !== null ? Number(log.waistCircumference) : null,
+    hip:         log.hipCircumference !== null  ? Number(log.hipCircumference)   : null,
   }
   editVisible.value = true
 }
 
 async function confirmEdit() {
-  const log = bodyLogs.value.find(l => l.date === editForm.value.date)
-  if (!log) return
-  const photoData = await readPhoto(editPhotoInput.value)
-  log.weight     = editForm.value.weight
-  log.bodyFat    = editForm.value.bodyFat
-  log.muscleMass = editForm.value.muscleMass
-  log.waist      = editForm.value.waist
-  log.hip        = editForm.value.hip
-  if (photoData) log.photo = photoData
-  saveData()
-  editVisible.value = false
-  showToast('已更新 ' + editForm.value.date + ' 的紀錄')
+  if (!editForm.value.id || !editForm.value.weight) return
+  try {
+    await updateBodyLog(editForm.value.id, {
+      measureDate:        editForm.value.measureDate,
+      weight:             editForm.value.weight,
+      bodyFat:            editForm.value.bodyFat,
+      skeletalMuscle:     editForm.value.muscleMass,
+      waistCircumference: editForm.value.waist,
+      hipCircumference:   editForm.value.hip,
+      photo:              editPhotoInput.value?.files?.[0] ?? null,
+    })
+    editVisible.value = false
+    showToast('已更新 ' + editForm.value.measureDate + ' 的紀錄')
+  } catch (err) {
+    showToast((err as Error).message || '更新失敗')
+  }
 }
 
 // ── Detail modal ───────────────────────────────────────────────
 const detailVisible = ref(false)
-const detailLog     = ref<BodyLog | null>(null)
+const detailLog     = ref<BodyRecordDto | null>(null)
 
-function openDetail(date: string) {
-  detailLog.value     = bodyLogs.value.find(l => l.date === date) ?? null
+function openDetail(id: number) {
+  detailLog.value     = bodyLogs.value.find(l => l.id === id) ?? null
   detailVisible.value = true
-}
-
-// ── Helpers ────────────────────────────────────────────────────
-function readPhoto(input: HTMLInputElement | null): Promise<string | null> {
-  return new Promise(resolve => {
-    if (!input?.files?.[0]) { resolve(null); return }
-    const reader = new FileReader()
-    reader.onload = e => resolve(e.target?.result as string ?? null)
-    reader.readAsDataURL(input.files[0])
-  })
 }
 
 // ── Toast ──────────────────────────────────────────────────────
@@ -363,8 +418,9 @@ function showToast(msg: string) {
   border: 1px solid transparent;
   transition: opacity 0.15s, background 0.15s;
 }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-primary { background: var(--ht-green); color: #fff; border-color: var(--ht-green); }
-.btn-primary:hover { opacity: 0.88; }
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
 .btn-outline { background: none; border-color: var(--ht-border); color: var(--ht-text2); }
 .btn-outline:hover { background: var(--ht-surface2); }
 

@@ -31,6 +31,11 @@ export default defineConfig({
     //   'worshiper-episode-purse.ngrok-free.dev'
     // ],
     proxy: {
+      '/img': {
+        target: 'https://localhost:7212',
+        changeOrigin: true,
+        secure: false
+      },
       '/api': {
         target: 'https://localhost:7212',
         changeOrigin: true,

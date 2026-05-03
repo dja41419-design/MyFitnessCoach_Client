@@ -38,16 +38,6 @@ export interface DietLog {
   water: number
 }
 
-export interface BodyLog {
-  date: string
-  weight: number | null
-  bodyFat: number | null
-  muscleMass: number | null
-  waist: number | null
-  hip: number | null
-  photo: string | null
-}
-
 // ── Constants ──────────────────────────────────────────────────
 export const FOOD_PAGE_SIZE = 20
 
@@ -75,7 +65,6 @@ const DEFAULT_GOALS: GoalsData = {
 
 // ── Module-level singleton state ───────────────────────────────
 const dietLogs  = ref<Record<string, DietLog>>({})
-const bodyLogs  = ref<BodyLog[]>([])
 const goals     = ref<GoalsData>({ ...DEFAULT_GOALS })
 let initialized = false
 
@@ -112,34 +101,10 @@ export function servingText(f: { baseAmount: number; measure: string; weightInGr
   return `${f.baseAmount}${f.measure}（${f.weightInGrams}g）`
 }
 
-// ── Sample data generators ─────────────────────────────────────
-function generateSampleBody(): BodyLog[] {
-  const logs: BodyLog[] = []
-  const now = new Date()
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const date = d.toISOString().split('T')[0]
-    const w  = r1(68.5 - i * 0.04 + (Math.random() * 0.4 - 0.2))
-    const bf = r1(22.5 - i * 0.015 + (Math.random() * 0.3 - 0.15))
-    logs.push({
-      date, weight: w, bodyFat: bf,
-      muscleMass: r1(w * (1 - bf / 100) * 0.55),
-      waist: r1(76 + Math.random() * 0.8 - 0.4),
-      hip:   r1(97 + Math.random() * 0.8 - 0.4),
-      photo: null,
-    })
-  }
-  return logs.sort((a, b) => b.date.localeCompare(a.date))
-}
-
 // ── Storage ────────────────────────────────────────────────────
 function loadData() {
   const sd = localStorage.getItem('hf_diet')
   dietLogs.value = sd ? JSON.parse(sd) : {}
-
-  const sb = localStorage.getItem('hf_body')
-  bodyLogs.value = sb ? JSON.parse(sb) : generateSampleBody()
 
   const sg = localStorage.getItem('hf_goals')
   if (sg) {
@@ -157,7 +122,6 @@ function loadData() {
 
 function saveData() {
   localStorage.setItem('hf_diet',  JSON.stringify(dietLogs.value))
-  localStorage.setItem('hf_body',  JSON.stringify(bodyLogs.value))
   localStorage.setItem('hf_goals', JSON.stringify(goals.value))
 }
 
@@ -198,10 +162,6 @@ function getMealTotals(date: string, mealId: string) {
   return { cal, p, c, f }
 }
 
-function currentWeight(): number | null {
-  return bodyLogs.value[0]?.weight ?? null
-}
-
 // ── Public composable ──────────────────────────────────────────
 export function useHealthTracker() {
   if (!initialized) {
@@ -212,7 +172,6 @@ export function useHealthTracker() {
   return {
     // State
     dietLogs,
-    bodyLogs,
     goals,
     // Storage
     saveData,
@@ -221,7 +180,6 @@ export function useHealthTracker() {
     getDayLog,
     getDayTotals,
     getMealTotals,
-    currentWeight,
     // Constants
     HEALTH_GOALS,
     MEAL_META,
