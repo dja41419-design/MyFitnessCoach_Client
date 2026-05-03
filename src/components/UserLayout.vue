@@ -26,6 +26,9 @@
           <router-link to="/reserveorders" class="menu-item" active-class="active">
             <i class="mdi mdi-calendar-check"></i> 課程預約查詢
           </router-link>
+          <router-link to="/coupons" class="menu-item" active-class="active">
+            <i class="mdi mdi-ticket-percent"></i> 我的優惠券
+          </router-link>
           <router-link to="/orders" class="menu-item" active-class="active">
             <i class="mdi mdi-clipboard-text"></i> 訂單查詢
           </router-link>

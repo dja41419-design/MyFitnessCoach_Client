@@ -53,15 +53,9 @@ const router = createRouter({
     { name: 'ReserveResult', path: '/reserve-result', component: ReserveResult },
     { name: 'Checkout', path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
     { name: 'CheckoutResult', path: '/checkout-result', component: CheckoutResult },
-    {
-      name: 'MyCoupons',
-      path: '/coupons',
-      component: () => import('@/views/MyCoupons.vue'),
-      meta: { requiresAuth: true },
-    },
 
     { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
-    
+
     // 使用者帳戶相關頁面，共用 UserLayout
     {
       path: '/user',
@@ -73,6 +67,7 @@ const router = createRouter({
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
         { name: 'points', path: '/points', component: PointCheck },
         { name: 'ProductOrders', path: '/orders', component: ProductOrders },
+        { name: 'MyCoupons', path: '/coupons', component: () => import('@/views/MyCoupons.vue') },
       ]
     },
 

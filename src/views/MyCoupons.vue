@@ -1,119 +1,118 @@
 <template>
   <AppNavbar />
 
-  <main class="coupons-page">
-    <div class="coupons-container">
+  <div class="coupons-container-inner">
 
-      <RouterLink to="/store" class="coupons-back" aria-label="返回商城">← 返回商城</RouterLink>
-
-      <h1 class="coupons-title reveal">我的優惠券</h1>
-
-      <!-- 輸入代碼領取 -->
-      <section class="coupons-claim reveal rd1">
-        <label class="coupons-claim-label">輸入優惠碼領取</label>
-        <div class="coupons-claim-row">
-          <input
-            v-model="claimCode"
-            type="text"
-            class="coupons-claim-input"
-            placeholder="例如:MyFitness222"
-            @keydown.enter="handleClaim"
-          />
-          <button
-            class="coupons-claim-btn"
-            :disabled="!claimCode.trim() || claiming"
-            @click="handleClaim"
-          >
-            {{ claiming ? '領取中…' : '領取' }}
-          </button>
-        </div>
-      </section>
-
-      <!-- 可領取清單 -->
-      <section class="coupons-section">
-        <div class="coupons-section-head reveal">
-          <h2 class="coupons-section-title">可領取</h2>
-          <button
-            v-if="availableCoupons.length > 0"
-            class="coupons-claim-all-btn"
-            :disabled="claiming"
-            @click="handleClaimAll"
-            aria-label="一鍵領取所有可領取的優惠券"
-          >{{ claiming ? '領取中…' : `一鍵領取全部 (${availableCoupons.length})` }}</button>
-        </div>
-        <div v-if="availableCoupons.length === 0" class="coupons-empty">
-          目前沒有可領取的優惠券
-        </div>
-        <div v-else class="coupons-grid">
-          <article
-            v-for="c in availableCoupons"
-            :key="c.id"
-            class="coupon-card coupon-card--available"
-          >
-            <div class="coupon-card-discount">{{ formatDiscount(c) }}</div>
-            <h3 class="coupon-card-name">{{ c.name }}</h3>
-            <p class="coupon-card-desc">{{ c.description }}</p>
-            <button
-              class="coupon-card-btn"
-              :disabled="claiming"
-              @click="handleClaimByCode(c.code)"
-            >領取</button>
-          </article>
-        </div>
-      </section>
-
-      <!-- 我的優惠券 -->
-      <section class="coupons-section">
-        <h2 class="coupons-section-title reveal">我的優惠券</h2>
-
-        <h3 class="coupons-subtitle">未使用</h3>
-        <div v-if="unusedCoupons.length === 0" class="coupons-empty">
-          尚未領取任何優惠券
-        </div>
-        <div v-else class="coupons-grid">
-          <article
-            v-for="mc in unusedCoupons"
-            :key="mc.id"
-            class="coupon-card coupon-card--mine"
-          >
-            <div class="coupon-card-discount">{{ formatDiscount(mc.coupon) }}</div>
-            <h3 class="coupon-card-name">{{ mc.coupon.name }}</h3>
-            <p class="coupon-card-desc">{{ mc.coupon.description }}</p>
-            <div class="coupon-card-meta">
-              <span v-if="mc.expiresAt" class="coupon-card-expiry">
-                {{ formatDate(mc.expiresAt) }} 到期({{ daysLeft(mc.expiresAt) }})
-              </span>
-              <span v-else-if="mc.coupon.visibleOnlyOnDayOfMonth" class="coupon-card-expiry">
-                今日 23:59 截止
-              </span>
-              <span v-else>{{ formatDateRange(mc.coupon.startAt, mc.coupon.endAt) }}</span>
-            </div>
-            <RouterLink to="/cart" class="coupon-card-btn coupon-card-btn--link">前往使用</RouterLink>
-          </article>
-        </div>
-
-        <h3 class="coupons-subtitle">已使用</h3>
-        <div v-if="usedCoupons.length === 0" class="coupons-empty">
-          沒有已使用的優惠券
-        </div>
-        <div v-else class="coupons-grid">
-          <article
-            v-for="mc in usedCoupons"
-            :key="mc.id"
-            class="coupon-card coupon-card--used"
-          >
-            <div class="coupon-card-discount">{{ formatDiscount(mc.coupon) }}</div>
-            <h3 class="coupon-card-name">{{ mc.coupon.name }}</h3>
-            <p class="coupon-card-desc">{{ mc.coupon.description }}</p>
-            <div class="coupon-card-meta">
-              <span>已使用於 {{ formatDate(mc.usedAt) }}</span>
-            </div>
-          </article>
-        </div>
-      </section>
-
+    <div class="section-header">
+      <h2 class="section-title">我的優惠券</h2>
+      <p class="section-desc">領取、查看與管理您的折扣券</p>
     </div>
-  </main>
+
+    <!-- 輸入代碼領取 -->
+    <section class="coupons-claim">
+      <label class="coupons-claim-label">輸入優惠碼領取</label>
+      <div class="coupons-claim-row">
+        <input
+          v-model="claimCode"
+          type="text"
+          class="coupons-claim-input"
+          placeholder="例如:MyFitness222"
+          @keydown.enter="handleClaim"
+        />
+        <button
+          class="coupons-claim-btn"
+          :disabled="!claimCode.trim() || claiming"
+          @click="handleClaim"
+        >
+          {{ claiming ? '領取中…' : '領取' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- 可領取清單 -->
+    <section class="coupons-section">
+      <div class="coupons-section-head">
+        <h3 class="coupons-section-title">可領取</h3>
+        <button
+          v-if="availableCoupons.length > 0"
+          class="coupons-claim-all-btn"
+          :disabled="claiming"
+          @click="handleClaimAll"
+          aria-label="一鍵領取所有可領取的優惠券"
+        >{{ claiming ? '領取中…' : `一鍵領取全部 (${availableCoupons.length})` }}</button>
+      </div>
+      <div v-if="availableCoupons.length === 0" class="coupons-empty">
+        目前沒有可領取的優惠券
+      </div>
+      <div v-else class="coupons-grid">
+        <article
+          v-for="c in availableCoupons"
+          :key="c.id"
+          class="coupon-card coupon-card--available"
+        >
+          <div class="coupon-card-discount">{{ formatDiscount(c) }}</div>
+          <h4 class="coupon-card-name">{{ c.name }}</h4>
+          <p class="coupon-card-desc">{{ c.description }}</p>
+          <button
+            class="coupon-card-btn"
+            :disabled="claiming"
+            @click="handleClaimByCode(c.code)"
+          >領取</button>
+        </article>
+      </div>
+    </section>
+
+    <!-- 我已領取的券 -->
+    <section class="coupons-section">
+      <h3 class="coupons-section-title">我擁有的優惠券</h3>
+
+      <h4 class="coupons-subtitle">未使用</h4>
+      <div v-if="unusedCoupons.length === 0" class="coupons-empty">
+        尚未領取任何優惠券
+      </div>
+      <div v-else class="coupons-grid">
+        <article
+          v-for="mc in unusedCoupons"
+          :key="mc.id"
+          class="coupon-card coupon-card--mine"
+        >
+          <div class="coupon-card-discount">{{ formatDiscount(mc.coupon) }}</div>
+          <h4 class="coupon-card-name">{{ mc.coupon.name }}</h4>
+          <p class="coupon-card-desc">{{ mc.coupon.description }}</p>
+          <div class="coupon-card-meta">
+            <span v-if="mc.expiresAt" class="coupon-card-expiry">
+              {{ formatDate(mc.expiresAt) }} 到期({{ daysLeft(mc.expiresAt) }})
+            </span>
+            <span v-else-if="mc.coupon.visibleOnlyOnDayOfMonth" class="coupon-card-expiry">
+              今日 23:59 截止
+            </span>
+            <span v-else>{{ formatDateRange(mc.coupon.startAt, mc.coupon.endAt) }}</span>
+          </div>
+          <RouterLink to="/cart" class="coupon-card-btn coupon-card-btn--link">前往使用</RouterLink>
+        </article>
+      </div>
+
+      <h4 class="coupons-subtitle">已使用</h4>
+      <div v-if="usedCoupons.length === 0" class="coupons-empty">
+        沒有已使用的優惠券
+      </div>
+      <div v-else class="coupons-grid">
+        <article
+          v-for="mc in usedCoupons"
+          :key="mc.id"
+          class="coupon-card coupon-card--used"
+        >
+          <div class="coupon-card-discount">{{ formatDiscount(mc.coupon) }}</div>
+          <h4 class="coupon-card-name">{{ mc.coupon.name }}</h4>
+          <p class="coupon-card-desc">{{ mc.coupon.description }}</p>
+          <div class="coupon-card-meta">
+            <span>已使用於 {{ formatDate(mc.usedAt) }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -122,10 +121,7 @@ import { RouterLink } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppNavbar from '@/components/AppNavbar.vue'
 import { useCoupon } from '@/composables/useCoupon'
-import { useReveal } from '@/composables/useReveal'
 import type { CouponDto } from '@/data/coupon'
-
-useReveal()
 
 const {
   availableCoupons,
@@ -220,43 +216,37 @@ function daysLeft(iso: string | null): string {
 </script>
 
 <style scoped>
-.coupons-page {
-  padding: 120px 0 80px;
-  min-height: 100vh;
-  background: var(--bg);
+.coupons-container-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.coupons-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
+.section-header {
+  margin-bottom: 8px;
 }
 
-.coupons-back {
-  display: inline-block;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  text-decoration: none;
-  transition: color 0.3s;
-}
-.coupons-back:hover { color: var(--text-primary); }
-
-.coupons-title {
+.section-title {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  font-weight: 400;
+  font-size: 1.8rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 32px;
+  margin: 0 0 8px;
+}
+
+.section-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* 領取輸入區 */
 .coupons-claim {
-  background: var(--bg-card);
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 24px 28px;
-  margin-bottom: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 .coupons-claim-label {
   display: block;
@@ -303,27 +293,33 @@ function daysLeft(iso: string | null): string {
 }
 
 /* Section */
-.coupons-section { margin-bottom: 48px; }
+.coupons-section {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
 .coupons-section-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 .coupons-section-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 .coupons-section-head .coupons-section-title {
-  margin-bottom: 0;
+  margin: 0;
   padding-bottom: 0;
   border-bottom: none;
 }
@@ -448,8 +444,10 @@ function daysLeft(iso: string | null): string {
 .coupon-card-btn--link { display: inline-block; }
 
 @media (max-width: 768px) {
-  .coupons-page { padding: 100px 0 60px; }
+  .coupons-claim,
+  .coupons-section { padding: 20px; }
   .coupons-claim-row { flex-direction: column; }
   .coupons-claim-btn { width: 100%; }
+  .section-title { font-size: 1.5rem; }
 }
 </style>
