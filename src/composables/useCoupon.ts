@@ -58,6 +58,34 @@ export function useCoupon() {
     return result
   }
 
+  /** 一鍵領取目前清單裡所有可領取的優惠券 — 全部結束後才重整一次清單 */
+  async function claimAll(): Promise<{
+    ok: number
+    failed: { code: string; message: string }[]
+  }> {
+    const codes = availableCoupons.value.map((c) => c.code)
+    if (codes.length === 0) return { ok: 0, failed: [] }
+
+    const results = await Promise.allSettled(
+      codes.map((code) => apiClaimCoupon(code)),
+    )
+
+    let ok = 0
+    const failed: { code: string; message: string }[] = []
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
+        ok++
+      } else {
+        const message =
+          r.reason instanceof Error ? r.reason.message : '領取失敗'
+        failed.push({ code: codes[i], message })
+      }
+    })
+
+    await Promise.all([loadAvailable(), loadMyCoupons()])
+    return { ok, failed }
+  }
+
   /** 套用優惠券試算 */
   async function applyCoupon(memberCouponId: number, subtotal: number): Promise<void> {
     if (subtotal <= 0) {
@@ -107,6 +135,7 @@ export function useCoupon() {
     loadAvailable,
     loadMyCoupons,
     claim,
+    claimAll,
     applyCoupon,
     clearCoupon,
   }

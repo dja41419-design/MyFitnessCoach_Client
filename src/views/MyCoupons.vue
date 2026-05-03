@@ -31,7 +31,16 @@
 
       <!-- 可領取清單 -->
       <section class="coupons-section">
-        <h2 class="coupons-section-title reveal">可領取</h2>
+        <div class="coupons-section-head reveal">
+          <h2 class="coupons-section-title">可領取</h2>
+          <button
+            v-if="availableCoupons.length > 0"
+            class="coupons-claim-all-btn"
+            :disabled="claiming"
+            @click="handleClaimAll"
+            aria-label="一鍵領取所有可領取的優惠券"
+          >{{ claiming ? '領取中…' : `一鍵領取全部 (${availableCoupons.length})` }}</button>
+        </div>
         <div v-if="availableCoupons.length === 0" class="coupons-empty">
           目前沒有可領取的優惠券
         </div>
@@ -124,6 +133,7 @@ const {
   loadAvailable,
   loadMyCoupons,
   claim,
+  claimAll,
 } = useCoupon()
 
 const claimCode = ref('')
@@ -152,6 +162,25 @@ async function handleClaimByCode(code: string): Promise<void> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : '領取失敗'
     ElMessage.error(msg)
+  } finally {
+    claiming.value = false
+  }
+}
+
+async function handleClaimAll(): Promise<void> {
+  if (claiming.value || availableCoupons.value.length === 0) return
+  claiming.value = true
+  try {
+    const { ok, failed } = await claimAll()
+    if (failed.length === 0) {
+      ElMessage.success(`成功領取 ${ok} 張優惠券`)
+    } else if (ok === 0) {
+      ElMessage.error(`領取失敗：${failed[0].message}`)
+    } else {
+      ElMessage.warning(
+        `領取 ${ok} 張，失敗 ${failed.length} 張（${failed.map((f) => f.code).join('、')}）`,
+      )
+    }
   } finally {
     claiming.value = false
   }
@@ -283,6 +312,41 @@ function daysLeft(iso: string | null): string {
   margin-bottom: 16px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+}
+.coupons-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.coupons-section-head .coupons-section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.coupons-claim-all-btn {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-light);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.coupons-claim-all-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.coupons-claim-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .coupons-subtitle {
   font-size: 0.95rem;
