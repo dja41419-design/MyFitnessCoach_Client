@@ -454,8 +454,20 @@ async function handleLogout() {
   isDropdownOpen.value = false
 }
 
-onMounted(() => document.addEventListener('click', closeDropdown))
-onUnmounted(() => document.removeEventListener('click', closeDropdown))
+function handleProfileUpdated(e: Event) {
+  const detail = (e as CustomEvent<{ userName?: string; imageUrl?: string }>).detail
+  if (detail.userName) username.value = detail.userName
+  if (detail.imageUrl) imageUrl.value = toAvatarSrc(detail.imageUrl)
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeDropdown)
+  window.addEventListener('profile-updated', handleProfileUpdated)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdown)
+  window.removeEventListener('profile-updated', handleProfileUpdated)
+})
 
 const { allInstructors, loadInstructors } = useInstructors()
 const { reviewList, loadReviews } = useReviews()

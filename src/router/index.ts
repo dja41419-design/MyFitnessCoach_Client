@@ -3,7 +3,7 @@ import MyFitnessCoach from '@/views/MyFitnessCoach.vue'
 import Store from '@/views/Store.vue'
 import ProductDetail from '@/views/ProductDetail.vue'
 import Cart from '@/views/Cart.vue'
-import Personalnfo from '@/views/Personalnfo.vue'
+import PersonalInfo from '@/views/PersonalInfo.vue'
 import AllInstructor from '@/views/AllInstructor.vue'
 import AllReviews from '@/views/AllReviews.vue'
 import Reserve from '@/views/Reserve.vue'
@@ -66,7 +66,7 @@ const router = createRouter({
       component: UserLayout,
       meta: { requiresAuth: true },
       children: [
-        { name: 'info', path: '/personalInfo', component: Personalnfo },
+        { name: 'info', path: '/personalInfo', component: PersonalInfo },
         { name: 'changepwd', path: '/changepassword', component: ChangePwd },
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
       ]

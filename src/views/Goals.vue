@@ -1,7 +1,14 @@
 <template>
   <div class="goals">
+    <!-- PersonalInfo 未填提示 -->
+    <div v-if="missingPersonalInfo" class="info-notice info-notice-warn">
+      尚未完成個人資料設定（性別 / 生日），
+      <router-link to="/personalInfo" class="info-link">前往設定</router-link>
+      後才能計算 BMR / TDEE。
+    </div>
+
     <!-- 基本資料未填提示 -->
-    <div v-if="!hasInfo" class="info-notice">
+    <div v-if="!hasInfo && !missingPersonalInfo" class="info-notice">
       尚未設定基本資料，請填寫下方表單並儲存，才能啟用飲食紀錄功能。
     </div>
 
@@ -20,17 +27,6 @@
         <div class="form-group">
           <label class="form-label">目標體重 (kg)</label>
           <input type="number" v-model.number="localInfo.targetWeight" step="0.1" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">生日 <span class="required">*</span></label>
-          <input type="date" v-model="localInfo.birthDate" class="form-input" @change="liveRefreshTDEE" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">性別 <span class="required">*</span></label>
-          <div class="radio-group">
-            <label class="radio-label"><input type="radio" v-model="localInfo.gender" value="F" @change="liveRefreshTDEE" /> 女</label>
-            <label class="radio-label"><input type="radio" v-model="localInfo.gender" value="M" @change="liveRefreshTDEE" /> 男</label>
-          </div>
         </div>
         <div class="form-group">
           <label class="form-label">活動量 <span class="required">*</span></label>
@@ -139,6 +135,7 @@ import {
   loadGoalPage, saveBasicInfo, saveTargetCalories,
   type BasicInfoDto, type TargetCaloriesDto,
 } from '@/data/goals'
+import { getPersonalInfo } from '@/data/personalInfo'
 
 // ── Local state ────────────────────────────────────────────────
 interface LocalInfo extends BasicInfoDto {
@@ -149,11 +146,13 @@ const localInfo = reactive<LocalInfo>({
   height: 0,
   currentWeight: null,
   targetWeight: 0,
-  birthDate: '',
-  gender: 'F',
   activityLevel: '1.55',
   healthGoal: '健康飲食',
 })
+
+const personalGender   = ref<'M' | 'F' | null>(null)
+const personalBirthDate = ref<string | null>(null)
+const missingPersonalInfo = computed(() => !personalGender.value || !personalBirthDate.value)
 
 const localGoals = reactive<TargetCaloriesDto>({
   totalCalories: 0,
@@ -169,8 +168,10 @@ const saving  = ref(false)
 // ── Load page ──────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const data = await loadGoalPage()
-    applyPageResponse(data)
+    const [pageData, pInfo] = await Promise.all([loadGoalPage(), getPersonalInfo()])
+    applyPageResponse(pageData)
+    personalGender.value    = pInfo.gender
+    personalBirthDate.value = pInfo.dateOfBirth
   } catch {
     // API 尚未就緒時靜默失敗，讓使用者填寫表單
   }
@@ -181,8 +182,6 @@ function applyPageResponse(data: { info: BasicInfoDto | null; goals: TargetCalor
   if (data.info) {
     localInfo.height        = data.info.height
     localInfo.targetWeight  = data.info.targetWeight
-    localInfo.birthDate     = data.info.dateOfBirth
-    localInfo.gender        = data.info.gender
     localInfo.activityLevel = data.info.activityLevel
     localInfo.healthGoal    = data.info.healthGoal
     hasInfo.value = true
@@ -211,8 +210,16 @@ function ageFromBirthDate(bd: string): number {
 }
 
 function liveRefreshTDEE() {
-  const w   = localInfo.currentWeight ?? localInfo.targetWeight
-  const bmr = calculateBMR(w, localInfo.height, ageFromBirthDate(localInfo.birthDate), localInfo.gender)
+  const w      = localInfo.currentWeight ?? localInfo.targetWeight
+  const gender = personalGender.value
+  const dob    = personalBirthDate.value
+  if (!gender || !dob) {
+    tdeeResult.bmr  = null
+    tdeeResult.tdee = null
+    macroSuggestion.value = null
+    return
+  }
+  const bmr = calculateBMR(w, localInfo.height, ageFromBirthDate(dob), gender)
   tdeeResult.bmr  = bmr
   tdeeResult.tdee = bmr ? calculateTDEE(bmr, localInfo.activityLevel) : null
   if (tdeeResult.tdee && w) {
@@ -240,11 +247,10 @@ function applySuggestion() {
 
 // ── Validation ─────────────────────────────────────────────────
 function validateBasicInfo(): string | null {
-  if (!localInfo.height)       return '請填寫身高'
-  if (!localInfo.birthDate)    return '請填寫生日'
-  if (!localInfo.gender)       return '請選擇性別'
-  if (!localInfo.activityLevel) return '請選擇活動量'
-  if (!localInfo.healthGoal)   return '請選擇健康目標'
+  if (missingPersonalInfo.value) return '請先至個人資料頁完成性別與生日設定'
+  if (!localInfo.height)         return '請填寫身高'
+  if (!localInfo.activityLevel)  return '請選擇活動量'
+  if (!localInfo.healthGoal)     return '請選擇健康目標'
   return null
 }
 
@@ -258,8 +264,6 @@ async function onSaveBasicInfo() {
     const dto: BasicInfoDto = {
       height:        localInfo.height,
       targetWeight:  localInfo.targetWeight,
-      dateOfBirth:   localInfo.birthDate,
-      gender:        localInfo.gender,
       activityLevel: localInfo.activityLevel,
       healthGoal:    localInfo.healthGoal,
     }
@@ -308,6 +312,16 @@ function showToast(msg: string) {
   font-size: 13px;
   color: #9e7a28;
   margin-bottom: 12px;
+}
+.info-notice-warn {
+  background: #fef0ef;
+  border-color: #f5b8b4;
+  color: var(--ht-danger);
+}
+.info-link {
+  color: var(--ht-danger);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .goals-locked {

@@ -1,5 +1,33 @@
 import { fetchWithAuth } from './fetchWithAuth'
 
+export interface DietPrerequisiteStatusDto {
+  canUseDailyDiet: boolean
+  hasPersonalInfo: boolean
+  hasGoalBasicInfo: boolean
+  hasNutritionGoals: boolean
+  missingCodes: string[]
+  messages: string[]
+}
+
+export class DietPrerequisiteError extends Error {
+  readonly status: DietPrerequisiteStatusDto
+  constructor(status: DietPrerequisiteStatusDto) {
+    super('飲食紀錄前置條件未達成')
+    this.name   = 'DietPrerequisiteError'
+    this.status = status
+  }
+}
+
+export async function getDailyDietPrerequisites(): Promise<DietPrerequisiteStatusDto> {
+  const res = await fetchWithAuth('/api/DailyDiet/prerequisites')
+  if (!res.ok) throw new Error('載入前置條件失敗')
+  return res.json()
+}
+
+function throwIfPrerequisite(res: Response, body: unknown): void {
+  if (res.status === 412) throw new DietPrerequisiteError(body as DietPrerequisiteStatusDto)
+}
+
 export interface FoodRecordDto {
   id: number
   foodId: number
@@ -67,56 +95,65 @@ export interface UpdateWaterLogRequest {
 }
 
 export async function getDailyDiet(eatDate: string): Promise<DailyDietPageDto> {
-  const res = await fetchWithAuth(`/api/DailyDiet?eatDate=${eatDate}`)
+  const res  = await fetchWithAuth(`/api/DailyDiet?eatDate=${eatDate}`)
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (!res.ok) throw new Error('載入飲食紀錄失敗')
-  return res.json()
+  return body as DailyDietPageDto
 }
 
 export async function createFoodRecord(request: CreateFoodRecordRequest): Promise<FoodRecordDto> {
-  const res = await fetchWithAuth('/api/DailyDiet/food-records', {
+  const res  = await fetchWithAuth('/api/DailyDiet/food-records', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   })
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (!res.ok) throw new Error('新增食物紀錄失敗')
-  return res.json()
+  return body as FoodRecordDto
 }
 
 export async function updateFoodRecord(id: number, request: UpdateFoodRecordRequest): Promise<FoodRecordDto> {
-  const res = await fetchWithAuth(`/api/DailyDiet/food-records/${id}`, {
+  const res  = await fetchWithAuth(`/api/DailyDiet/food-records/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   })
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (!res.ok) throw new Error('修改食物紀錄失敗')
-  return res.json()
+  return body as FoodRecordDto
 }
 
 export async function deleteFoodRecord(id: number): Promise<void> {
-  const res = await fetchWithAuth(`/api/DailyDiet/food-records/${id}`, {
-    method: 'DELETE',
-  })
+  const res  = await fetchWithAuth(`/api/DailyDiet/food-records/${id}`, { method: 'DELETE' })
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (!res.ok) throw new Error('刪除食物紀錄失敗')
 }
 
 export async function copyDailyDiet(request: CopyDailyDietRequest): Promise<DailyDietPageDto> {
-  const res = await fetchWithAuth('/api/DailyDiet/copy-from-date', {
+  const res  = await fetchWithAuth('/api/DailyDiet/copy-from-date', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   })
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (res.status === 409) throw Object.assign(new Error('目標日期已有飲食紀錄'), { status: 409 })
   if (!res.ok) throw new Error('複製飲食紀錄失敗')
-  return res.json()
+  return body as DailyDietPageDto
 }
 
 export async function updateWaterLog(request: UpdateWaterLogRequest): Promise<number> {
-  const res = await fetchWithAuth('/api/DailyDiet/water-log', {
+  const res  = await fetchWithAuth('/api/DailyDiet/water-log', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   })
+  const body = await res.json().catch(() => ({}))
+  throwIfPrerequisite(res, body)
   if (!res.ok) throw new Error('更新飲水紀錄失敗')
-  const data = await res.json()
-  return data.amount
+  return (body as { amount: number }).amount
 }

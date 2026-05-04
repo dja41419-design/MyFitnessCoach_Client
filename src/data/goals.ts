@@ -3,8 +3,6 @@ import { fetchWithAuth } from './fetchWithAuth'
 export interface BasicInfoDto {
   height: number
   targetWeight: number
-  dateOfBirth: string   // 'YYYY-MM-DD'
-  gender: 'M' | 'F'
   activityLevel: string // '1.2' | '1.375' | '1.55' | '1.725' | '1.9'
   healthGoal: string
 }

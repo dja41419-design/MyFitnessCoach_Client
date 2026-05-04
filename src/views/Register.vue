@@ -190,6 +190,51 @@
             <span v-if="errors.phone" class="form-error">{{ errors.phone }}</span>
           </div>
 
+          <!-- 性別 -->
+          <div class="form-group">
+            <label class="form-label">性別</label>
+            <div class="gender-row">
+              <label class="gender-option" :class="{ selected: form.gender === 'M', 'is-error': errors.gender }">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="M"
+                  v-model="form.gender"
+                  @change="touched.gender = true; errors.gender = validateOne('gender')"
+                />
+                男性
+              </label>
+              <label class="gender-option" :class="{ selected: form.gender === 'F', 'is-error': errors.gender }">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="F"
+                  v-model="form.gender"
+                  @change="touched.gender = true; errors.gender = validateOne('gender')"
+                />
+                女性
+              </label>
+            </div>
+            <span v-if="errors.gender" class="form-error">{{ errors.gender }}</span>
+          </div>
+
+          <!-- 出生日期 -->
+          <div class="form-group">
+            <label for="dateOfBirth" class="form-label">出生日期</label>
+            <input
+              id="dateOfBirth"
+              v-model="form.dateOfBirth"
+              type="date"
+              class="form-input"
+              :class="{ 'is-error': errors.dateOfBirth }"
+              :max="new Date(new Date().getFullYear() - 10, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]"
+              :min="new Date(new Date().getFullYear() - 120, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]"
+              @blur="onBlur('dateOfBirth')"
+              @input="onInput('dateOfBirth')"
+            />
+            <span v-if="errors.dateOfBirth" class="form-error">{{ errors.dateOfBirth }}</span>
+          </div>
+
           <!-- 全域錯誤訊息 -->
           <div v-if="apiError" class="form-api-error">{{ apiError }}</div>
 
@@ -233,7 +278,9 @@ const form = reactive({
   password: '',
   confirmPassword: '',
   email: '',
-  phone: ''
+  phone: '',
+  gender: '' as 'M' | 'F' | '',
+  dateOfBirth: ''
 })
 
 const errors = reactive({
@@ -242,7 +289,9 @@ const errors = reactive({
   password: '',
   confirmPassword: '',
   email: '',
-  phone: ''
+  phone: '',
+  gender: '',
+  dateOfBirth: ''
 })
 
 // 記錄哪些欄位已離焦過，才會在 input 時即時重新驗證
@@ -252,7 +301,9 @@ const touched = reactive({
   password: false,
   confirmPassword: false,
   email: false,
-  phone: false
+  phone: false,
+  gender: false,
+  dateOfBirth: false
 })
 
 const { rules, strength, strengthText, strengthClass, isValid: isPasswordValid, firstFailureMessage: passwordFailureMessage } = usePasswordQuality(toRef(form, 'password'))
@@ -293,6 +344,18 @@ function validateOne(field: keyof typeof errors): string {
       return form.phone.trim()
         ? MOBILE_REGEX.test(form.phone.trim()) ? '' : '請輸入有效的手機號碼（09xxxxxxxx）'
         : '請輸入手機號碼'
+    case 'gender':
+      return form.gender ? '' : '請選擇性別'
+    case 'dateOfBirth': {
+      if (!form.dateOfBirth) return '請輸入出生日期'
+      const dob = new Date(form.dateOfBirth)
+      const today = new Date()
+      const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
+      const maxDate = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate())
+      if (dob > maxDate) return '年齡須為 10 歲以上'
+      if (dob < minDate) return '請輸入有效的出生日期'
+      return ''
+    }
   }
 }
 
@@ -323,9 +386,9 @@ function validate(): boolean {
 }
 
 function handleClear() {
-  Object.assign(form, { name: '', account: '', password: '', confirmPassword: '', email: '', phone: '' })
-  Object.assign(errors, { name: '', account: '', password: '', confirmPassword: '', email: '', phone: '' })
-  Object.assign(touched, { name: false, account: false, password: false, confirmPassword: false, email: false, phone: false })
+  Object.assign(form, { name: '', account: '', password: '', confirmPassword: '', email: '', phone: '', gender: '', dateOfBirth: '' })
+  Object.assign(errors, { name: '', account: '', password: '', confirmPassword: '', email: '', phone: '', gender: '', dateOfBirth: '' })
+  Object.assign(touched, { name: false, account: false, password: false, confirmPassword: false, email: false, phone: false, gender: false, dateOfBirth: false })
   apiError.value = ''
 }
 
@@ -340,7 +403,9 @@ async function handleSubmit() {
       account: form.account.trim(),
       password: form.password,
       email: form.email.trim(),
-      mobile: form.phone.trim()
+      mobile: form.phone.trim(),
+      gender: form.gender as 'M' | 'F',
+      dateOfBirth: form.dateOfBirth
     })
     successEmail.value = form.email.trim()
     setTimeout(() => router.push({ name: 'login' }), 5000)
@@ -653,6 +718,41 @@ async function handleSubmit() {
   transition: color 0.2s;
 }
 .login-link:hover { color: var(--text-primary); }
+
+/* 性別選擇 */
+.gender-row {
+  display: flex;
+  gap: 12px;
+}
+.gender-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.gender-option input[type="radio"] {
+  accent-color: var(--accent-dark);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.gender-option.selected {
+  border-color: var(--accent-dark);
+  background: #fdf8f3;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.gender-option.is-error {
+  border-color: #c0392b;
+}
 
 /* RWD */
 @media (min-width: 768px) {

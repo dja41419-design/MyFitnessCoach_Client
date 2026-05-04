@@ -4,6 +4,8 @@ export interface RegisterRequest {
   password: string
   email: string
   mobile: string
+  gender: 'M' | 'F'
+  dateOfBirth: string
 }
 
 export interface RegisterResponse {

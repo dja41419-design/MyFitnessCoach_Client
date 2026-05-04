@@ -1,5 +1,18 @@
 <template>
   <div class="daily-diet">
+    <!-- 前置條件未達成 -->
+    <div v-if="prerequisiteChecked && prerequisiteStatus && !prerequisiteStatus.canUseDailyDiet" class="prerequisite-gate">
+      <div class="prereq-title">尚未完成前置設定</div>
+      <ul class="prereq-list">
+        <li v-for="msg in prerequisiteStatus.messages" :key="msg">{{ msg }}</li>
+      </ul>
+      <div class="prereq-links">
+        <router-link v-if="!prerequisiteStatus.hasPersonalInfo" to="/personalInfo" class="btn btn-outline btn-sm">前往個人資料</router-link>
+        <router-link v-if="!prerequisiteStatus.hasGoalBasicInfo || !prerequisiteStatus.hasNutritionGoals" to="/goals" class="btn btn-outline btn-sm">前往目標設定</router-link>
+      </div>
+    </div>
+
+    <template v-else-if="prerequisiteChecked">
     <!-- 日期列 -->
     <div class="date-row">
       <input type="date" v-model="selectedDate" class="form-input date-input" />
@@ -219,6 +232,8 @@
 
     <!-- Toast -->
     <div :class="['toast', { show: toastVisible }]">{{ toastMsg }}</div>
+
+    </template><!-- end v-else-if prerequisiteChecked -->
   </div>
 </template>
 
@@ -229,7 +244,9 @@ import { useFoodLibrary } from '@/composables/useFoodLibrary'
 import type { FoodDto } from '@/data/foodLibrary'
 import {
   getDailyDiet, createFoodRecord, deleteFoodRecord, copyDailyDiet, updateWaterLog,
-  type FoodRecordDto, type DailyNutritionSummaryDto,
+  getDailyDietPrerequisites,
+  DietPrerequisiteError,
+  type FoodRecordDto, type DailyNutritionSummaryDto, type DietPrerequisiteStatusDto,
 } from '@/data/dailyDiet'
 
 // ── Water ─────────────────────────────────────────────────────
@@ -237,6 +254,10 @@ const { goals: htGoals } = useHealthTracker()
 
 const memberId = Number(localStorage.getItem('memberId') ?? '0')
 const { allFoods, favoriteFoodIds, loadFoods, isLoading: foodLibLoading } = useFoodLibrary()
+
+// ── Prerequisite state ────────────────────────────────────────
+const prerequisiteStatus = ref<DietPrerequisiteStatusDto | null>(null)
+const prerequisiteChecked = ref(false)
 
 // ── Core state ─────────────────────────────────────────────────
 const selectedDate   = ref<string>(todayStr())
@@ -316,6 +337,18 @@ async function setWater(val: number) {
 }
 
 // ── API load ───────────────────────────────────────────────────
+async function checkPrerequisites(): Promise<boolean> {
+  try {
+    const status = await getDailyDietPrerequisites()
+    prerequisiteStatus.value  = status
+    prerequisiteChecked.value = true
+    return status.canUseDailyDiet
+  } catch {
+    prerequisiteChecked.value = true
+    return false
+  }
+}
+
 async function loadDailyDiet(date: string) {
   isLoading.value    = true
   errorMessage.value = null
@@ -324,20 +357,26 @@ async function loadDailyDiet(date: string) {
     records.value  = page.records
     summary.value  = page.summary
     waterAmount.value = page.waterAmount ?? 0
-  } catch (e: any) {
-    errorMessage.value = e.message || '載入失敗'
+  } catch (e: unknown) {
+    if (e instanceof DietPrerequisiteError) {
+      prerequisiteStatus.value  = e.status
+      prerequisiteChecked.value = true
+    } else {
+      errorMessage.value = (e as Error).message || '載入失敗'
+    }
   } finally {
     isLoading.value = false
   }
 }
 
 function retryLoad() {
-  loadDailyDiet(selectedDate.value)
+  checkPrerequisites().then(ok => { if (ok) loadDailyDiet(selectedDate.value) })
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadFoods(memberId)
-  loadDailyDiet(selectedDate.value)
+  const ok = await checkPrerequisites()
+  if (ok) loadDailyDiet(selectedDate.value)
 })
 watch(selectedDate, (date) => loadDailyDiet(date))
 
@@ -522,6 +561,39 @@ function showToast(msg: string) {
 </script>
 
 <style scoped>
+/* ── Prerequisite gate ── */
+.prerequisite-gate {
+  background: var(--ht-surface);
+  border: 1px solid var(--ht-border);
+  border-radius: var(--ht-radius);
+  padding: 24px;
+  text-align: center;
+}
+.prereq-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ht-text);
+  margin-bottom: 12px;
+}
+.prereq-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.prereq-list li {
+  font-size: 13px;
+  color: var(--ht-danger);
+}
+.prereq-links {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 /* ── 共用表單 / 按鈕 ── */
 .form-input {
   font-family: var(--font-body);

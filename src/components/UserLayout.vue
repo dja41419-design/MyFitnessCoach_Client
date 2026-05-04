@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '@/data/login'
 
@@ -63,6 +63,15 @@ function toAvatarSrc(url: string | null): string {
 }
 
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl')))
+
+function handleProfileUpdated(e: Event) {
+  const detail = (e as CustomEvent<{ userName?: string; imageUrl?: string }>).detail
+  if (detail.userName) username.value = detail.userName
+  if (detail.imageUrl) imageUrl.value = toAvatarSrc(detail.imageUrl)
+}
+
+onMounted(() => window.addEventListener('profile-updated', handleProfileUpdated))
+onUnmounted(() => window.removeEventListener('profile-updated', handleProfileUpdated))
 
 async function handleLogout() {
   await logout()
