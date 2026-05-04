@@ -26,6 +26,7 @@ import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
 import ActivateAccount from '@/views/ActivateAccount.vue'
+import { fetchCurrentUser } from '@/data/login'
 
 
 const router = createRouter({
@@ -83,13 +84,24 @@ const router = createRouter({
   ]
 })
 
-// 登入狀態改由 HttpOnly cookie 判斷；前端僅用 username 作為 UX hint
-// 真正授權由後端 cookie + 401 處理，若 cookie 已失效，受保護 API 會回 401 並由 fetchWithAuth 導回登入頁
-router.beforeEach((to) => {
-  const isLoggedIn = !!localStorage.getItem('username')
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    return { name: 'login', query: { returnUrl: to.fullPath } }
+// 登入狀態以 HttpOnly cookie 為準；localStorage 只作為 UI 快取。
+// 若使用者直接開受保護頁面，先用 /api/auth/me 確認 cookie 是否仍有效。
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth || localStorage.getItem('username')) return
+
+  const me = await fetchCurrentUser()
+  if (me) {
+    localStorage.setItem('username', me.userName)
+    localStorage.setItem('imageUrl', me.imageUrl ?? '')
+    if (me.memberId != null) localStorage.setItem('memberId', String(me.memberId))
+    else localStorage.removeItem('memberId')
+    return
   }
+
+  localStorage.removeItem('username')
+  localStorage.removeItem('imageUrl')
+  localStorage.removeItem('memberId')
+  return { name: 'login', query: { returnUrl: to.fullPath } }
 })
 
 export default router

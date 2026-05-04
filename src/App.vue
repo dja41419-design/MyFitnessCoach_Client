@@ -12,9 +12,12 @@ onMounted(async () => {
     if (me) {
       localStorage.setItem('username', me.userName)
       localStorage.setItem('imageUrl', me.imageUrl ?? '')
+      if (me.memberId != null) localStorage.setItem('memberId', String(me.memberId))
+      else localStorage.removeItem('memberId')
     } else {
       localStorage.removeItem('username')
       localStorage.removeItem('imageUrl')
+      localStorage.removeItem('memberId')
     }
   } catch {
     // 網路錯誤時維持現狀，避免誤踢使用者

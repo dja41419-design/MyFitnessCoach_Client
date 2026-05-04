@@ -2,7 +2,8 @@ import { fetchWithAuth } from './fetchWithAuth'
 
 export interface BasicInfoDto {
   height: number
-  targetWeight: number
+  targetWeight: number | null
+  currentWeight?: number | null
   activityLevel: string // '1.2' | '1.375' | '1.55' | '1.725' | '1.9'
   healthGoal: string
 }

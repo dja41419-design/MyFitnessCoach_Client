@@ -136,6 +136,7 @@ import {
   type BasicInfoDto, type TargetCaloriesDto,
 } from '@/data/goals'
 import { getPersonalInfo } from '@/data/personalInfo'
+import { getBodyRecords } from '@/data/bodyRecords'
 
 // ── Local state ────────────────────────────────────────────────
 interface LocalInfo extends BasicInfoDto {
@@ -167,20 +168,43 @@ const saving  = ref(false)
 
 // ── Load page ──────────────────────────────────────────────────
 onMounted(async () => {
-  try {
-    const [pageData, pInfo] = await Promise.all([loadGoalPage(), getPersonalInfo()])
-    applyPageResponse(pageData)
-    personalGender.value    = pInfo.gender
-    personalBirthDate.value = pInfo.dateOfBirth
-  } catch {
-    // API 尚未就緒時靜默失敗，讓使用者填寫表單
+  const [goalResult, personalResult, bodyResult] = await Promise.allSettled([
+    loadGoalPage(),
+    getPersonalInfo(),
+    getBodyRecords({ take: 1 }),
+  ])
+
+  if (goalResult.status === 'fulfilled') {
+    applyPageResponse(goalResult.value)
+  } else if (import.meta.env.DEV) {
+    console.warn('載入目標設定失敗', goalResult.reason)
   }
+
+  if (personalResult.status === 'fulfilled') {
+    personalGender.value    = personalResult.value.gender
+    personalBirthDate.value = personalResult.value.dateOfBirth
+  } else if (import.meta.env.DEV) {
+    console.warn('載入個人資料失敗', personalResult.reason)
+  }
+
+  if (bodyResult.status === 'fulfilled') {
+    const latestBodyRecord = bodyResult.value[0]
+    if (latestBodyRecord) {
+      localInfo.currentWeight = latestBodyRecord.weight
+    }
+  } else if (import.meta.env.DEV) {
+    console.warn('頛最新體重紀錄失敗', bodyResult.reason)
+  }
+
   liveRefreshTDEE()
 })
 
 function applyPageResponse(data: { info: BasicInfoDto | null; goals: TargetCaloriesDto | null }) {
   if (data.info) {
     localInfo.height        = data.info.height
+    if ('currentWeight' in data.info) {
+      localInfo.currentWeight = data.info.currentWeight ?? null
+    }
     localInfo.targetWeight  = data.info.targetWeight
     localInfo.activityLevel = data.info.activityLevel
     localInfo.healthGoal    = data.info.healthGoal

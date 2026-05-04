@@ -51,6 +51,7 @@ export async function logout(): Promise<void> {
 
 export interface CurrentUser {
   userId: number
+  memberId?: number
   userName: string
   imageUrl?: string
 }
