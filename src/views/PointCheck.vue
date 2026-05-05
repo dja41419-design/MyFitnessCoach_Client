@@ -21,9 +21,47 @@
       </div>
     </div>
 
+    <!-- 累積統計：3 張小卡 -->
+    <div class="summary-grid">
+      <div class="summary-card summary-earn">
+        <i class="mdi mdi-arrow-up-bold-circle-outline"></i>
+        <div class="summary-info">
+          <span class="summary-label">累積儲值</span>
+          <span class="summary-value">+{{ summary.totalEarned }}</span>
+        </div>
+      </div>
+      <div class="summary-card summary-spend">
+        <i class="mdi mdi-arrow-down-bold-circle-outline"></i>
+        <div class="summary-info">
+          <span class="summary-label">累積消費</span>
+          <span class="summary-value">-{{ summary.totalSpent }}</span>
+        </div>
+      </div>
+      <div class="summary-card summary-refund">
+        <i class="mdi mdi-cash-refund"></i>
+        <div class="summary-info">
+          <span class="summary-label">累積退回</span>
+          <span class="summary-value">+{{ summary.totalRefunded }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 紀錄清單 -->
     <div class="records-card">
-      <h3 class="card-subtitle">點數異動紀錄</h3>
+      <div class="records-header">
+        <h3 class="card-subtitle">點數異動紀錄</h3>
+        <div class="filter-tabs">
+          <button
+            v-for="tab in filterTabs"
+            :key="tab.value"
+            class="filter-tab"
+            :class="{ active: filter === tab.value }"
+            @click="changeFilter(tab.value)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
       
       <div v-if="loading" class="state-container">
         <p>讀取中...</p>
@@ -90,17 +128,40 @@ interface PointRecord {
   description: string
   amount: number
   status: string
+  type: 'recharge' | 'spend' | 'refund' | 'other'
 }
 
-const balance = ref(0)
-const loading = ref(true)
+interface PointSummary {
+  totalEarned: number
+  totalSpent: number
+  totalRefunded: number
+}
+
+const balance  = ref(0)
+const summary  = ref<PointSummary>({ totalEarned: 0, totalSpent: 0, totalRefunded: 0 })
+const loading  = ref(true)
 const errorMsg = ref('')
-const records = ref<PointRecord[]>([])
+const records  = ref<PointRecord[]>([])
 
 // 分頁相關
 const page = ref(1)
 const pageSize = 10
 const totalPages = ref(1)
+
+// 篩選
+type Filter = 'all' | 'recharge' | 'spend' | 'refund'
+const filter = ref<Filter>('all')
+const filterTabs: { value: Filter; label: string }[] = [
+  { value: 'all',      label: '全部' },
+  { value: 'recharge', label: '儲值' },
+  { value: 'spend',    label: '消費' },
+  { value: 'refund',   label: '退回' },
+]
+function changeFilter(f: Filter) {
+  if (filter.value === f) return
+  filter.value = f
+  fetchPointData(1)
+}
 
 // 格式化日期
 function formatDate(dateStr: string) {
@@ -117,7 +178,8 @@ async function fetchPointData(targetPage = 1) {
   errorMsg.value = ''
   try {
     const token = localStorage.getItem('token')
-    const response = await fetch(`/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}`, {
+    const url = `/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}&filter=${filter.value}`
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token ?? ''}`
       }
@@ -129,16 +191,18 @@ async function fetchPointData(targetPage = 1) {
     }
 
     const data = await response.json()
-    balance.value = Math.floor(data.balance)
+    balance.value    = Math.floor(data.balance)
+    summary.value    = data.summary ?? { totalEarned: 0, totalSpent: 0, totalRefunded: 0 }
     totalPages.value = data.totalPages
-    page.value = data.currentPage
-    
+    page.value       = data.currentPage
+
     records.value = data.history.map((r: any) => ({
-      id: r.id,
-      date: r.date,
+      id:          r.id,
+      date:        r.date,
       description: r.description,
-      amount: r.amount,
-      status: r.status
+      amount:      r.amount,
+      status:      r.status,
+      type:        r.type ?? 'other'
     }))
   } catch (err: any) {
     errorMsg.value = err.message ?? '發生未知錯誤'
@@ -243,6 +307,86 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
+/* 累積統計卡 */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.summary-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+.summary-card .mdi {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+.summary-earn   .mdi { color: #27ae60; }
+.summary-spend  .mdi { color: #e74c3c; }
+.summary-refund .mdi { color: var(--accent-dark); }
+.summary-info { display: flex; flex-direction: column; gap: 4px; }
+.summary-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.summary-value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.summary-earn   .summary-value { color: #27ae60; }
+.summary-spend  .summary-value { color: #e74c3c; }
+.summary-refund .summary-value { color: var(--accent-dark); }
+
+/* 紀錄卡片標頭 + 篩選 */
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.records-header .card-subtitle { margin-bottom: 0; }
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg);
+  padding: 4px;
+  border-radius: 100px;
+}
+.filter-tab {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 100px;
+  transition: all 0.2s;
+}
+.filter-tab.active {
+  background: var(--bg-dark);
+  color: var(--text-light);
+}
+.filter-tab:hover:not(.active) {
+  color: var(--text-primary);
+}
+
 /* 紀錄卡片 */
 .records-card {
   background: #fff;
@@ -340,9 +484,20 @@ onMounted(() => {
     text-align: center;
     padding: 24px;
   }
-  
+
   .balance-value {
     font-size: 2.8rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .records-header {
+    align-items: flex-start;
+  }
+  .filter-tabs {
+    overflow-x: auto;
   }
 }
 </style>
