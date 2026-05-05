@@ -152,12 +152,15 @@
           </div>
 
           <!-- Row 4：金額摘要 + 送出（右對齊） -->
-          <!-- TODO: 接上 CouponService.PreviewDiscountAsync -->
           <div class="checkout-bottom">
             <section class="card summary-card">
               <div class="summary-row">
                 <span>小計</span>
                 <span>NT${{ fmt(subtotal) }}</span>
+              </div>
+              <div v-if="discountAmount > 0" class="summary-row summary-discount">
+                <span>優惠折抵</span>
+                <span>－NT${{ fmt(discountAmount) }}</span>
               </div>
               <div class="summary-row">
                 <span>運費</span>
@@ -168,7 +171,7 @@
               </div>
               <div class="summary-row summary-total">
                 <span>總金額</span>
-                <span>NT${{ fmt(subtotal + shippingFee) }}</span>
+                <span>NT${{ fmt(finalTotal) }}</span>
               </div>
             </section>
             <p v-if="errorMsg" class="checkout-error">{{ errorMsg }}</p>
@@ -191,12 +194,18 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useCart } from '@/composables/useCart'
+import { useCoupon } from '@/composables/useCoupon'
 import { fetchWithAuth } from '@/data/fetchWithAuth'
 import type { EcPayResponse } from '@/types/lesson'
 
 const router = useRouter()
 const { items, subtotal, clearCart } = useCart()
+const { selectedMemberCouponId, discountPreview } = useCoupon()
 
+const discountAmount = computed(() =>
+  discountPreview.value?.isValid ? (discountPreview.value.discountAmount ?? 0) : 0
+)
+const finalTotal = computed(() => Math.max(0, subtotal.value - discountAmount.value) + shippingFee.value)
 const shippingFee = computed(() => subtotal.value >= 1000 ? 0 : 60)
 
 // 配送方式
@@ -336,13 +345,14 @@ async function handleSubmit(): Promise<void> {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        receiver:  receiver.value.name.trim(),
-        address:   deliveryMethod.value === 'home'
-                     ? receiver.value.address.trim()
-                     : selectedStore.value.address,
-        mobile:    receiver.value.phone.trim(),
-        taxNumber: receiver.value.taxNumber ? Number(receiver.value.taxNumber) : null,
-        memo:      receiver.value.memo.trim() || null,
+        receiver:        receiver.value.name.trim(),
+        address:         deliveryMethod.value === 'home'
+                           ? receiver.value.address.trim()
+                           : selectedStore.value.address,
+        mobile:          receiver.value.phone.trim(),
+        taxNumber:       receiver.value.taxNumber ? Number(receiver.value.taxNumber) : null,
+        memo:            receiver.value.memo.trim() || null,
+        memberCouponId:  selectedMemberCouponId.value ?? null,
       }),
     })
 
@@ -665,6 +675,9 @@ async function handleSubmit(): Promise<void> {
 .summary-row {
   display: flex; justify-content: space-between;
   font-size: 0.92rem; color: var(--text-secondary); padding: 6px 0;
+}
+.summary-discount {
+  color: #c0392b;
 }
 .summary-hint {
   font-size: 0.78rem; color: var(--accent-dark);
