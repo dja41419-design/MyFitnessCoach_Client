@@ -337,8 +337,27 @@
   <section class="final-cta reveal" id="cta">
     <h2>你的理想體態<br />從這裡開始</h2>
     <p>結合營養諮詢、飲食追蹤與健康商城，My Fitness Coach 陪你走每一步。</p>
-    <router-link :to="{name:'register'}" class="btn-dark">立即加入會員</router-link>
+    <button v-if="!isLoggedIn" @click="openAuthModal('register')" class="btn-dark">立即加入會員</button>
+    <router-link v-else :to="{name:'info'}" class="btn-dark">查看個人首頁</router-link>
   </section>
+
+  <!-- 認證彈窗 (登入/註冊) -->
+  <BaseModal :show="showAuthModal" @close="showAuthModal = false">
+    <div v-if="authMode === 'register'">
+      <RegisterForm @success="handleAuthSuccess" />
+      <p class="auth-switch-hint">
+        已有帳號？
+        <button @click="authMode = 'login'" class="auth-switch-link">立即登入</button>
+      </p>
+    </div>
+    <div v-else>
+      <LoginForm @success="handleAuthSuccess" />
+      <p class="auth-switch-hint">
+        還沒有帳號？
+        <button @click="authMode = 'register'" class="auth-switch-link">加入會員</button>
+      </p>
+    </div>
+  </BaseModal>
 
   <!-- ========== FOOTER ========== -->
   <footer class="footer">
@@ -388,47 +407,15 @@ import { footerCols } from '@/data/footer'
 import { logout } from '@/data/login'
 import { useProducts } from '@/composables/useProducts'
 import { getProductImagePath, type Product } from '@/data/products'
+import BaseModal from '@/components/BaseModal.vue'
+import RegisterForm from '@/components/RegisterForm.vue'
+import LoginForm from '@/components/LoginForm.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = useNavbar()
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
-
-// // 登入狀態
-// const username = ref(localStorage.getItem('username') || '')
-// const isLoggedIn = ref(!!localStorage.getItem('token'))
-
-// const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
-
-// function toAvatarSrc(url: string): string {
-//   if (!url) return NO_IMAGE
-//   if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
-//   return `/StaticFiles${url}`
-// }
-
-// const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
-// const isDropdownOpen = ref(false)
-
-// function toggleDropdown() {
-//   isDropdownOpen.value = !isDropdownOpen.value
-// }
-
-// function closeDropdown() {
-//   isDropdownOpen.value = false
-// }
-
-// function handleLogout() {
-//   logout()
-//   localStorage.removeItem('username')
-//   username.value = ''
-//   imageUrl.value = toAvatarSrc('')
-//   isLoggedIn.value = false
-//   isDropdownOpen.value = false
-// }
-
-// onMounted(() => document.addEventListener('click', closeDropdown))
-// onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 // 登入狀態
 const username = ref(localStorage.getItem('username') || '')
@@ -444,6 +431,25 @@ function toAvatarSrc(url: string): string {
 
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
 const isDropdownOpen = ref(false)
+
+// Modal 邏輯
+const showAuthModal = ref(false)
+const authMode = ref<'login' | 'register'>('register')
+const hasTriggeredModal = ref(false)
+
+function openAuthModal(mode: 'login' | 'register' = 'register') {
+  if (!isLoggedIn.value) {
+    authMode.value = mode
+    showAuthModal.value = true
+  }
+}
+
+function handleAuthSuccess() {
+  setTimeout(() => {
+    showAuthModal.value = false
+    window.location.reload() // 重新整理頁面以更新登入狀態
+  }, 2000)
+}
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value
@@ -467,7 +473,24 @@ function handleLogout() {
   }
 }
 
-onMounted(() => document.addEventListener('click', closeDropdown))
+onMounted(() => {
+  document.addEventListener('click', closeDropdown)
+  
+  // 捲動觸發 Modal
+  const ctaSection = document.getElementById('cta')
+  if (ctaSection) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !isLoggedIn.value && !hasTriggeredModal.value) {
+          openAuthModal('register')
+          hasTriggeredModal.value = true
+        }
+      })
+    }, { threshold: 0.5 })
+    observer.observe(ctaSection)
+  }
+})
+
 onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
 const { allInstructors, loadInstructors } = useInstructors()
@@ -1397,9 +1420,31 @@ function handleScroll() {
   transition: all 0.3s;
 }
 
-.btn-dark:hover { background: #2d2620; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,22,19,0.15); }
+.btn-dark:hover { background: #2d2620; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 22, 19, 0.15); }
+
+/* ── AUTH MODAL SWITCH ─────────────────────── */
+.auth-switch-hint {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.auth-switch-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-dark);
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+  margin-left: 4px;
+}
+.auth-switch-link:hover { color: var(--text-primary); }
 
 /* ── FOOTER ───────────────────────────────────── */
+
 .footer {
   background: var(--bg-dark);
   color: var(--text-light);
