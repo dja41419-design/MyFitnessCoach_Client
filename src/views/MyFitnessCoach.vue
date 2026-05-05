@@ -415,7 +415,7 @@ useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
 // // 登入狀態
 // const username = ref(localStorage.getItem('username') || '')
-// const isLoggedIn = ref(!!localStorage.getItem('token'))
+// const isLoggedIn = ref(!!localStorage.getItem('username'))
 
 // const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 

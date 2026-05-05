@@ -104,7 +104,7 @@ function toAvatarSrc(url: string): string {
 }
 
 const username = ref(localStorage.getItem('username') || '')
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+const isLoggedIn = ref(!!username.value)
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
 const isDropdownOpen = ref(false)
 

@@ -103,9 +103,10 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     const res = await login({ account: form.account.trim(), password: form.password })
-    localStorage.setItem('token', res.token)
     localStorage.setItem('username', res.userName)
     localStorage.setItem('imageUrl', res.imageUrl ?? '')
+    if (res.memberId != null) localStorage.setItem('memberId', String(res.memberId))
+    else localStorage.removeItem('memberId')
 
     await mergeGuestCartOnLogin()
     emit('success', res)

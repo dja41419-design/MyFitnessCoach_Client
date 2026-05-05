@@ -39,6 +39,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 const router = useRouter()
 const route = useRoute()
@@ -66,11 +67,8 @@ function goHome() {
 
 const checkGoogleStatus = async () => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const res = await fetch('/api/GoogleAuth/CheckStatus', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    if (!localStorage.getItem('username')) return
+    const res = await fetchWithAuth('/api/GoogleAuth/CheckStatus')
     if (res.ok) {
       const data = await res.json()
       isGoogleConnected.value = data.isConnected

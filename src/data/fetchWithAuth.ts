@@ -17,6 +17,7 @@ export async function fetchWithAuth(
   if (res.status === 401) {
     localStorage.removeItem('username')
     localStorage.removeItem('imageUrl')
+    localStorage.removeItem('memberId')
     const currentPath = router.currentRoute.value.fullPath
     router.push({ name: 'login', query: { returnUrl: currentPath } })
   }
