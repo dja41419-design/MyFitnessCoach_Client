@@ -161,7 +161,7 @@ const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
 function toAvatarSrc(url: string | null): string {
   if (!url) return NO_IMAGE
-  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images') || url.startsWith('/img')) return url
   return `/StaticFiles${url}`
 }
 
