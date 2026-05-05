@@ -78,6 +78,29 @@
             </div>
           </div>
 
+          <!-- 發票資訊 -->
+          <div class="detail-section">
+            <div class="detail-title">發票資訊</div>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="info-label">發票類型</span>
+                <span>{{ invoiceLabel(order.invoiceType) }}</span>
+              </div>
+              <div v-if="order.invoiceType === 2" class="info-row">
+                <span class="info-label">統一編號</span>
+                <span>{{ order.taxNumber }}</span>
+              </div>
+              <div v-if="order.invoiceType === 3" class="info-row">
+                <span class="info-label">愛心碼</span>
+                <span>{{ order.donationCode }}</span>
+              </div>
+              <div v-if="order.invoiceType === 4" class="info-row">
+                <span class="info-label">載具號碼</span>
+                <span>{{ order.carrierCode }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 金額摘要 -->
           <div class="detail-section amount-section">
             <div class="amount-row">
@@ -209,6 +232,10 @@ interface Order {
   storeName: string | null
   logisticsOrderNo: string | null
   memo: string | null
+  invoiceType: number
+  taxNumber: number | null
+  donationCode: string | null
+  carrierCode: string | null
   details: OrderDetail[]
 }
 
@@ -282,6 +309,9 @@ async function submitReturn(): Promise<void> {
 }
 function paymentLabel(m: number): string {
   return m === 1 ? '超商取貨付款' : '線上付款'
+}
+function invoiceLabel(t: number): string {
+  return ({ 1: '二聯式', 2: '三聯式', 3: '捐贈發票', 4: '手機載具' } as Record<number, string>)[t] ?? '二聯式'
 }
 
 async function resumePayment(orderId: number): Promise<void> {

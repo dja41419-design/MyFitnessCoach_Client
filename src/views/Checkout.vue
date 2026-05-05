@@ -138,9 +138,39 @@
                 </div>
               </div>
 
-              <label class="field-label">
-                統一編號（選填）
-                <input v-model="receiver.taxNumber" type="text" inputmode="numeric" class="field-input" placeholder="公司行號統編" />
+              <div class="field-label">
+                發票類型 <span class="required">*</span>
+                <div class="chain-options">
+                  <label v-for="t in invoiceTypes" :key="t.value"
+                    class="chain-option"
+                    :class="{ active: invoiceType === t.value }"
+                  >
+                    <input type="radio" v-model="invoiceType" :value="t.value" class="chain-radio" />
+                    {{ t.label }}
+                  </label>
+                </div>
+              </div>
+
+              <label v-if="invoiceType === 2" class="field-label">
+                統一編號 <span class="required">*</span>
+                <input v-model="receiver.taxNumber" type="text" inputmode="numeric" maxlength="8" class="field-input" placeholder="8 碼公司統編" />
+              </label>
+
+              <label v-if="invoiceType === 3" class="field-label">
+                愛心碼 <span class="required">*</span>
+                <input v-model="donationCode" type="text" inputmode="numeric" maxlength="7" class="field-input" placeholder="3–7 碼愛心碼（如：25885）" />
+              </label>
+
+              <label v-if="invoiceType === 4" class="field-label">
+                手機載具號碼 <span class="required">*</span>
+                <input
+                  v-model="carrierCode"
+                  type="text"
+                  maxlength="8"
+                  class="field-input carrier-input"
+                  placeholder="例如：/ABC+123"
+                  @input="carrierCode = carrierCode.toUpperCase()"
+                />
               </label>
 
               <label class="field-label">
@@ -231,6 +261,17 @@ const receiver = ref({ name: '', phone: '', address: '', taxNumber: '', memo: ''
 
 // 同訂購資訊勾選
 const sameAsOrderer = ref(false)
+
+// 發票類型
+const invoiceTypes = [
+  { value: 1, label: '二聯式' },
+  { value: 2, label: '三聯式' },
+  { value: 3, label: '捐贈發票' },
+  { value: 4, label: '手機載具' },
+]
+const invoiceType = ref<1 | 2 | 3 | 4>(1)
+const donationCode = ref('')
+const carrierCode  = ref('')
 
 function syncFromOrderer(): void {
   receiver.value.name    = orderer.value.name
@@ -327,8 +368,12 @@ function validate(): string {
     return '請填寫收件地址'
   if (deliveryMethod.value === 'cvs' && !selectedStore.value.storeId)
     return '請選擇取貨門市'
-  if (receiver.value.taxNumber && !/^\d{8}$/.test(receiver.value.taxNumber))
-    return '統一編號格式錯誤（需為 8 位數字）'
+  if (invoiceType.value === 2 && !/^\d{8}$/.test(receiver.value.taxNumber.trim()))
+    return '三聯式發票需填寫 8 碼統一編號'
+  if (invoiceType.value === 3 && !/^\d{3,7}$/.test(donationCode.value.trim()))
+    return '捐贈發票需填寫 3–7 碼愛心碼'
+  if (invoiceType.value === 4 && !/^\/[0-9A-Z+\-.]{7}$/.test(carrierCode.value.trim()))
+    return '手機載具格式錯誤（需為 / 開頭共 8 碼，例：/ABC+123）'
   return ''
 }
 
@@ -350,9 +395,12 @@ async function handleSubmit(): Promise<void> {
                            ? receiver.value.address.trim()
                            : selectedStore.value.address,
         mobile:          receiver.value.phone.trim(),
-        taxNumber:       receiver.value.taxNumber ? Number(receiver.value.taxNumber) : null,
+        taxNumber:       invoiceType.value === 2 ? Number(receiver.value.taxNumber) : null,
         memo:            receiver.value.memo.trim() || null,
         memberCouponId:  selectedMemberCouponId.value ?? null,
+        invoiceType:     invoiceType.value,
+        donationCode:    invoiceType.value === 3 ? donationCode.value.trim() : null,
+        carrierCode:     invoiceType.value === 4 ? carrierCode.value.trim()  : null,
       }),
     })
 
@@ -665,6 +713,7 @@ async function handleSubmit(): Promise<void> {
   transition: border-color 0.3s;
 }
 .field-input:focus { border-color: var(--accent-dark); }
+.carrier-input { font-family: 'Courier New', monospace; letter-spacing: 0.05em; }
 
 /* 金額摘要 */
 .checkout-bottom {
