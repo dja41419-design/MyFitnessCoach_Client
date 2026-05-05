@@ -91,6 +91,18 @@
             </div>
           </div>
 
+          <!-- 重新付款（待付款 + 線上付款） -->
+          <div v-if="order.status === 0 && order.paymentMethod !== 1" class="return-action">
+            <button
+              class="btn-pay-again"
+              :disabled="payingOrderId === order.id"
+              @click.stop="resumePayment(order.id)"
+            >
+              <i class="mdi mdi-credit-card-outline"></i>
+              {{ payingOrderId === order.id ? '導向綠界中…' : '重新付款' }}
+            </button>
+          </div>
+
           <!-- 申請退換貨 -->
           <div v-if="order.status === 1 || order.status === 2" class="return-action">
             <button class="btn-return" @click.stop="openReturnModal(order.id)">
@@ -203,6 +215,7 @@ interface Order {
 const loading = ref(true)
 const orders  = ref<Order[]>([])
 const expanded = ref(new Set<number>())
+const payingOrderId = ref<number | null>(null)
 
 const returnModal = ref({
   visible: false,
@@ -269,6 +282,46 @@ async function submitReturn(): Promise<void> {
 }
 function paymentLabel(m: number): string {
   return m === 1 ? '超商取貨付款' : '線上付款'
+}
+
+async function resumePayment(orderId: number): Promise<void> {
+  if (payingOrderId.value !== null) return
+  payingOrderId.value = orderId
+  try {
+    const formData = new URLSearchParams()
+    formData.append('productOrderId', orderId.toString())
+
+    const res = await fetchWithAuth('/api/Payment/ProductSendToEcPay', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    formData,
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || `付款初始化失敗（${res.status}）`)
+      return
+    }
+
+    const ecpay = await res.json() as { action: string; parameters: Record<string, string> }
+
+    const ecForm = document.createElement('form')
+    ecForm.method = 'POST'
+    ecForm.action = ecpay.action
+    for (const key in ecpay.parameters) {
+      const input = document.createElement('input')
+      input.type  = 'hidden'
+      input.name  = key
+      input.value = ecpay.parameters[key]
+      ecForm.appendChild(input)
+    }
+    document.body.appendChild(ecForm)
+    ecForm.submit()
+  } catch (err: any) {
+    alert(err.message || '網路錯誤，請稍後再試')
+  } finally {
+    payingOrderId.value = null
+  }
 }
 function paymentClass(m: number): string {
   return m === 1 ? 'tag--cvs' : 'tag--online'
@@ -454,6 +507,21 @@ onMounted(async () => {
   transition: all 0.2s;
 }
 .btn-return:hover { background: #c0392b; color: white; }
+
+/* 重新付款按鈕 */
+.btn-pay-again {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px;
+  background: var(--bg-dark);
+  border: 1.5px solid var(--bg-dark);
+  color: var(--text-light);
+  border-radius: 100px;
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-pay-again:hover:not(:disabled) { opacity: 0.85; }
+.btn-pay-again:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* 彈窗 */
 .modal-overlay {
