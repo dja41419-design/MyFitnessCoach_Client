@@ -4,12 +4,19 @@
       <div class="header-content">
         <h2 class="section-title">課程預約查詢</h2>
         <p class="section-desc">查看您過去與未來的營養諮詢預約</p>
+        <div class="member-summary" v-if="memberInfo">
+          <el-tag :type="memberInfo.cancelCount >= 3 ? 'danger' : 'info'" round effect="plain">
+            <i class="mdi mdi-cancel mr-1"></i> 
+            {{ memberInfo.cancelCount >= 3 ? '您的預約取消次數已達上限 (3/3)' : `您已累計取消：${memberInfo.cancelCount} 次` }}
+          </el-tag>
+        </div>
       </div>
 
       <!-- 取消政策提醒 -->
       <div class="cancellation-policy-notice">
         <i class="mdi mdi-alert-circle-outline"></i>
-        <span>取消預約請於諮商 <strong>40 分鐘前</strong> 辦理。</span>
+        <span v-if="memberInfo?.cancelCount >= 3" class="text-danger">您已取消預約 3 次，系統已暫時關閉您的取消功能，請聯繫客服。</span>
+        <span v-else>取消預約請於諮商 <strong>40 分鐘前</strong> 辦理。</span>
       </div>
     </header>
 
@@ -41,6 +48,10 @@
             <label>預約目標</label>
             <p>{{ res.target }}</p>
           </div>
+          <div class="info-item" v-if="res.status === '待付款'">
+            <label>付款剩餘時間</label>
+            <p class="text-danger font-bold">{{ getCountdownText(res) }}</p>
+          </div>
           <div class="info-item" v-if="res.memorandum">
             <label>營養師建議</label>
             <p class="suggestion">{{ res.memorandum }}</p>
@@ -55,19 +66,29 @@
         <div class="card-footer">
           <span class="create-at">預約於：{{ formatDate(res.createAt) }}</span>
           <div class="actions">
-            <!-- 待諮詢/已預約：可以取消 -->
+            <!-- 待付款：顯示立即付款按鈕 -->
+            <el-button 
+              v-if="res.status === '待付款'" 
+              size="small" 
+              type="primary" 
+              @click="handlePayment(res)"
+            >
+              立即付款
+            </el-button>
+
+            <!-- 待預約/待付款：可以取消 -->
             <el-tooltip
-              v-if="res.status === '已預約'"
-              :content="!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : ''"
+              v-if="res.status === '已預約' || res.status === '待付款'"
+              :content="memberInfo?.cancelCount >= 3 ? '取消次數已達 3 次上限，請洽客服' : (!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : '')"
               placement="top"
-              :disabled="isCancellable(res)"
+              :disabled="isCancellable(res) && memberInfo?.cancelCount < 3"
             >
               <span>
                 <el-button 
                   size="small" 
                   type="danger" 
                   plain 
-                  :disabled="!isCancellable(res)"
+                  :disabled="!isCancellable(res) || memberInfo?.cancelCount >= 3"
                   @click="handleCancel(res)"
                 >
                   取消預約
@@ -153,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface Reservation {
@@ -176,12 +197,53 @@ interface MemberInfo {
   username: string
   imageUrl: string
   points: number
+  cancelCount: number
 }
 
 const reservations = ref<Reservation[]>([])
 const memberInfo = ref<MemberInfo | null>(null)
 const keywords = ref<string[]>([])
 const loading = ref(true)
+const nowRef = ref(new Date())
+
+// 每秒更新一次現在時間，驅動倒數計時
+let timerInterval: any = null
+onMounted(() => {
+  timerInterval = setInterval(() => {
+    nowRef.value = new Date()
+    
+    // 檢查是否有「待付款」預約剛好過期
+    const hasNewExpired = reservations.value.some(res => {
+      if (res.status !== '待付款') return false
+      const expireAt = new Date(new Date(res.createAt).getTime() + 10 * 1000) // 配合目前的 10 秒設定
+      return nowRef.value.getTime() >= expireAt.getTime()
+    })
+
+    if (hasNewExpired) {
+      // 觸發重新獲取，讓後端清理並回傳更新後的列表
+      fetchReservations()
+    }
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
+})
+
+const getCountdownText = (res: Reservation) => {
+  const createAt = new Date(res.createAt)
+  const expireAt = new Date(createAt.getTime() + 10 * 1000) // 10 秒
+  const diff = expireAt.getTime() - nowRef.value.getTime()
+
+  if (diff <= 0) {
+    // 這裡只負責顯示，實際取消由後端 API 觸發（當使用者重新整理或點擊時）
+    return '已過期'
+  }
+
+  const mins = Math.floor(diff / 1000 / 60)
+  const secs = Math.floor((diff / 1000) % 60)
+  return `${mins} 分 ${secs} 秒`
+}
 
 // 分頁相關
 const currentPage = ref(1)
@@ -225,7 +287,11 @@ const fetchKeywords = async () => {
 
 const fetchMemberInfo = async () => {
   try {
-    const res = await fetch('/api/Member/Info')
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch('/api/Member/Info', { headers })
     if (res.ok) {
       memberInfo.value = await res.json()
     }
@@ -237,7 +303,11 @@ const fetchMemberInfo = async () => {
 const fetchReservations = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/Reservation/My')
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch('/api/Reservation/My', { headers })
     if (res.ok) {
       reservations.value = await res.json()
     } else {
@@ -288,7 +358,7 @@ const isWithinReviewPeriod = (res: Reservation) => {
 }
 
 const isCancellable = (res: Reservation) => {
-  if (!res || res.status !== '已預約') return false
+  if (!res || (res.status !== '已預約' && res.status !== '待付款')) return false
   if (!res.scheduleDate || !res.timeSlot) return true
 
   try {
@@ -437,8 +507,51 @@ const goToReserve = (instructorId: number) => {
   window.open(`/reserve/${instructorId}`, '_blank')
 }
 
+const handlePayment = async (res: Reservation) => {
+  try {
+    const token = localStorage.getItem('token')
+    const formData = new URLSearchParams()
+    formData.append('reservationId', res.id.toString())
+
+    const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
+    if (token) payHeaders['Authorization'] = `Bearer ${token}`
+
+    const response = await fetch('/api/Payment/ReservationSendToEcPay', {
+      method: 'POST',
+      headers: payHeaders,
+      body: formData
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      // 建立隱藏表單並提交到綠界
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = data.action
+
+      for (const key in data.parameters) {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = data.parameters[key]
+        form.appendChild(input)
+      }
+
+      document.body.appendChild(form)
+      form.submit()
+    } else {
+      ElMessage.error('無法啟動支付流程，請稍後再試')
+    }
+  } catch (error) {
+    console.error('Payment error:', error)
+    ElMessage.error('支付請求失敗')
+  }
+}
+
 const getStatusClass = (status: string) => {
   switch (status) {
+    case '待付款': return 'status-waiting'
     case '已預約': return 'status-pending'
     case '已完成': return 'status-completed'
     case '已取消': return 'status-cancelled'
@@ -471,16 +584,23 @@ const handleCancel = (res: Reservation) => {
     type: 'warning'
   }).then(async () => {
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/Reservation/${res.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
       
       if (response.ok) {
         ElMessage.success('預約已成功取消')
-        fetchReservations()
+        fetchReservations() // 刷新預約列表
+        fetchMemberInfo()   // 即時更新累計取消次數
       } else {
-        const error = await response.json()
-        ElMessage.error(error.message || '取消失敗')
+        try {
+          const error = await response.json()
+          ElMessage.error(error.message || '取消失敗')
+        } catch {
+          ElMessage.error(`取消失敗（${response.status}）`)
+        }
       }
     } catch (error) {
       console.error('Failed to cancel reservation:', error)
@@ -524,6 +644,10 @@ onMounted(() => {
   font-size: 0.95rem;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.member-summary {
+  margin-top: 12px;
 }
 
 /* 優化提醒框樣式 */
@@ -600,7 +724,8 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.status-pending { background: #fff8e1; color: #f57c00; }
+.status-waiting   { background: #fce4ec; color: #c2185b; }
+.status-pending   { background: #fff8e1; color: #f57c00; }
 .status-completed { background: #e8f5e9; color: #2e7d32; }
 .status-cancelled { background: #fdf0ee; color: #c62828; }
 
@@ -640,7 +765,8 @@ onMounted(() => {
 }
 
 .create-at { font-size: 0.8rem; color: #999; }
-.actions { display: flex; gap: 10px; }
+.actions { display: flex; gap: 10px; align-items: center; }
+.actions :deep(.el-tooltip__trigger) { display: inline-flex; }
 
 .pagination-wrapper {
   margin-top: 40px;

@@ -1,17 +1,11 @@
 <template>
+  <AppNavbar />
+
   <main class="detail-page">
     <div class="detail-container">
 
       <div class="detail-topbar">
         <RouterLink to="/store" class="detail-back" aria-label="返回商城">← 返回商城</RouterLink>
-        <RouterLink to="/cart" class="cart-icon-link" aria-label="前往購物車">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-          </svg>
-          <span v-if="itemCount > 0" class="cart-icon-badge">{{ itemCount }}</span>
-        </RouterLink>
       </div>
 
       <!-- Loading -->
@@ -28,7 +22,7 @@
       <!-- 商品詳情 -->
       <div v-else class="detail-layout">
         <!-- 左側：商品圖 -->
-        <div class="detail-img-wrap">
+        <div class="detail-img-wrap reveal">
           <span v-if="hasDiscount(product)" class="detail-badge">特價</span>
           <img
             :src="`/api/StoreApi/ProductImage/${product.id}`"
@@ -39,10 +33,10 @@
 
         <!-- 右側：商品資訊 -->
         <div class="detail-info">
-          <div class="detail-category">{{ product.categoryName }}</div>
-          <h1 class="detail-title">{{ product.name }}</h1>
+          <div class="detail-category reveal rd1">{{ product.categoryName }}</div>
+          <h1 class="detail-title reveal rd1">{{ product.name }}</h1>
 
-          <div class="detail-price">
+          <div class="detail-price reveal rd2">
             NT${{ formatPrice(product.unitPrice) }}
             <span v-if="hasDiscount(product)" class="original">
               NT${{ formatPrice(product.originalPrice) }}
@@ -51,12 +45,12 @@
 
           <div class="detail-divider"></div>
 
-          <div class="detail-desc-block">
+          <div class="detail-desc-block reveal rd3">
             <h3 class="detail-desc-title">商品介紹</h3>
             <p class="detail-desc">{{ product.description }}</p>
           </div>
 
-          <button class="detail-cart-btn" @click="handleAddToCart">加入購物車</button>
+          <button class="detail-cart-btn reveal rd4" @click="handleAddToCart">加入購物車</button>
         </div>
       </div>
 
@@ -69,6 +63,10 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import { useReveal } from '@/composables/useReveal'
+import AppNavbar from '@/components/AppNavbar.vue'
+
+useReveal()
 
 interface ProductDto {
   id: number
@@ -87,7 +85,7 @@ const route = useRoute()
 const product = ref<ProductDto | null>(null)
 const loading = ref<boolean>(true)
 
-const { addItem, itemCount } = useCart()
+const { addItem } = useCart()
 
 function handleAddToCart(): void {
   if (!product.value) return
@@ -167,59 +165,6 @@ onMounted(fetchProduct)
 
 .detail-back:hover {
   color: var(--text-primary);
-}
-
-.cart-icon-link {
-  position: fixed;
-  top: 100px;
-  right: 24px;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  color: var(--text-primary);
-  background: var(--bg);
-  text-decoration: none;
-  transition: all 0.3s;
-  flex-shrink: 0;
-  box-shadow: 0 2px 12px rgba(26, 22, 19, 0.08);
-}
-
-.cart-icon-link:hover {
-  border-color: var(--text-primary);
-  background: var(--bg-card);
-  box-shadow: 0 4px 16px rgba(26, 22, 19, 0.12);
-}
-
-@media (max-width: 768px) {
-  .cart-icon-link {
-    top: 80px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-  }
-}
-
-.cart-icon-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--bg-dark);
-  color: var(--text-light);
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
 }
 
 /* ── 狀態 ── */
@@ -381,4 +326,5 @@ onMounted(fetchProduct)
     gap: 24px;
   }
 }
+
 </style>

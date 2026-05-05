@@ -121,6 +121,90 @@
       </div>
     </section>
 
+    <!-- 使用者條約須知 -->
+    <section class="terms-section">
+      <div class="container">
+        <div class="terms-card">
+          <div class="terms-header" @click="termsOpen = !termsOpen">
+            <div class="terms-header-left">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9h6M9 12h6M9 15h4" />
+              </svg>
+              <h2 class="terms-title">點數購買須知與使用條約</h2>
+            </div>
+            <svg
+              class="terms-chevron"
+              :class="{ 'chevron-open': termsOpen }"
+              width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+
+          <transition name="terms-slide">
+            <div v-show="termsOpen" class="terms-body">
+
+              <!-- 第一條 -->
+              <div class="terms-block">
+                <h3>一、點數價值與使用範圍</h3>
+                <ol>
+                  <li>本平台提供之「諮詢點數」僅限用於預約營養師一對一諮詢服務，<strong>1 點 = 1 次諮詢</strong>（每次 1 小時）。</li>
+                  <li>點數依所購買之儲值方案定價，實際金額以結帳頁面顯示為準。</li>
+                  <li>點數僅限購買帳號本人使用，不得轉讓、轉售或與他人共用。</li>
+                  <li>點數購買後即儲值至您的會員錢包，可於「預約諮詢」頁面選擇以點數支付。</li>
+                </ol>
+              </div>
+
+              <!-- 第二條 -->
+              <div class="terms-block">
+                <h3>二、退款政策</h3>
+                <ol>
+                  <li>依據《消費者保護法》第 19 條，透過本平台線上購買之點數方案，消費者得於收受商品或接受服務後 <strong>7 日內</strong>，無須說明理由即可申請退款。</li>
+                  <li>鑑賞期內若已使用部分點數，僅退還未使用之點數對應金額。</li>
+                  <li>超過 7 日鑑賞期後，已購買之點數恕不接受退款申請。</li>
+                  <li>退款將透過原付款方式退回，處理時間約 7～14 個工作天，如需申請退款請聯繫客服。</li>
+                </ol>
+              </div>
+
+              <!-- 第三條 -->
+              <div class="terms-block">
+                <h3>三、點數有效期限</h3>
+                <ol>
+                  <li>本平台購買之諮詢點數 <strong>無使用期限</strong>，購買後永久有效。</li>
+                  <li>若帳號因違反平台規範遭停權或刪除，未使用之點數將無法使用，且不予退還。</li>
+                </ol>
+              </div>
+
+              <!-- 第四條 -->
+              <div class="terms-block">
+                <h3>四、預約取消與點數退還</h3>
+                <ol>
+                  <li>以點數支付之預約，若於諮詢開始前 <strong>40 分鐘</strong>以上取消，點數將全額退還至您的會員錢包。</li>
+                  <li>距離諮詢開始不足 40 分鐘，系統將不允許取消預約。</li>
+                  <li>每位會員累計取消預約次數上限為 <strong>3 次</strong>，達上限後將無法自行取消，需聯繫客服處理。</li>
+                  <li>以信用卡付款之預約取消後，退款將透過原付款管道處理。</li>
+                </ol>
+              </div>
+
+              <!-- 第五條 -->
+              <div class="terms-block">
+                <h3>五、其他約定事項</h3>
+                <ol>
+                  <li>本平台保留修改點數方案內容與定價之權利，修改後之條件適用於新購買之訂單，不影響已完成購買之點數。</li>
+                  <li>如對點數購買或使用有任何疑問，請透過平台客服信箱與我們聯繫。</li>
+                  <li>購買點數即表示您已閱讀並同意本條約內容。</li>
+                </ol>
+              </div>
+
+            </div>
+          </transition>
+        </div>
+      </div>
+    </section>
+
     <!-- 頁尾 -->
     <footer class="simple-footer">
       <div class="container">
@@ -143,6 +227,7 @@ const CART_KEY = 'lessonCart'
 
 const plans = ref<LessonPlan[]>([])
 const loading = ref(true)
+const termsOpen = ref(false)
 
 function formatPrice(price: number) {
   return Math.floor(price).toLocaleString()
@@ -534,6 +619,143 @@ useReveal()
   .info-grid {
     grid-template-columns: 1fr;
     gap: 32px;
+  }
+}
+
+/* ── 使用者條約須知 ── */
+.terms-section {
+  padding: 0 0 64px;
+}
+
+.terms-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.terms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  cursor: pointer;
+  transition: background 0.25s;
+  user-select: none;
+}
+
+.terms-header:hover {
+  background: rgba(212, 204, 194, 0.15);
+}
+
+.terms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent-dark);
+}
+
+.terms-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.terms-chevron {
+  color: var(--text-secondary);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  flex-shrink: 0;
+}
+
+.chevron-open {
+  transform: rotate(180deg);
+}
+
+.terms-body {
+  padding: 0 32px 32px;
+  border-top: 1px solid var(--border);
+}
+
+.terms-block {
+  margin-top: 28px;
+}
+
+.terms-block:first-child {
+  margin-top: 24px;
+}
+
+.terms-block h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.terms-block ol {
+  list-style: none;
+  counter-reset: terms-counter;
+  padding: 0;
+  margin: 0;
+}
+
+.terms-block ol li {
+  counter-increment: terms-counter;
+  position: relative;
+  padding-left: 28px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 6px;
+}
+
+.terms-block ol li::before {
+  content: counter(terms-counter) ".";
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+  color: var(--accent-dark);
+  font-size: 0.85rem;
+}
+
+.terms-block ol li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 條約展開動畫 */
+.terms-slide-enter-active,
+.terms-slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  max-height: 1200px;
+  overflow: hidden;
+}
+
+.terms-slide-enter-from,
+.terms-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .terms-header {
+    padding: 20px 20px;
+  }
+
+  .terms-body {
+    padding: 0 20px 24px;
+  }
+
+  .terms-title {
+    font-size: 1.05rem;
+  }
+
+  .terms-block ol li {
+    font-size: 0.84rem;
   }
 }
 </style>

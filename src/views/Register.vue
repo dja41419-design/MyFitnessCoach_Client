@@ -10,22 +10,7 @@
       <router-link to="/" class="register-back">← 回首頁</router-link>
 
       <div class="register-card">
-        <div class="register-logo">
-          <img src="/assets/logo.png" alt="My Fitness Coach" class="register-logo-img" />
-          <span class="register-logo-name">MyFitnessCoach</span>
-        </div>
-
-        <h1 class="register-title">建立帳號</h1>
-        <p class="register-subtitle">加入我們，開始您的健康旅程</p>
-
-        <!-- 成功訊息 -->
-        <div v-if="successEmail" class="form-success-banner">
-          <svg class="success-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>請至註冊信箱 <strong>{{ successEmail }}</strong> 進行驗證</span>
-        </div>
+        <RegisterForm @success="onRegisterSuccess" />
 
         <form v-else class="register-form" @submit.prevent="handleSubmit" novalidate>
           <!-- 姓名 -->
@@ -258,7 +243,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/data/register'
 import { usePasswordQuality } from '@/composables/usePasswordQuality'

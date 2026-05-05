@@ -1,4 +1,6 @@
 <template>
+  <AppNavbar />
+
   <main class="cart-page">
     <div class="cart-container">
 
@@ -18,7 +20,7 @@
         <div class="cart-list">
           <div v-for="item in items" :key="item.id" class="cart-row">
             <img
-              :src="`/api/StoreApi/ProductImage/${item.id}`"
+              :src="`/api/StoreApi/ProductImage/${item.productId}`"
               :alt="item.name"
               class="cart-row-img"
             />
@@ -63,13 +65,52 @@
 
         <!-- 底部結算 -->
         <div class="cart-summary">
+          <!-- 優惠券區塊（僅登入時顯示） -->
+          <div v-if="loggedIn" class="cart-coupon">
+            <div class="cart-coupon-row">
+              <label class="cart-coupon-label">優惠券</label>
+              <select
+                v-model="selectedCouponId"
+                class="cart-coupon-select"
+                @change="handleCouponChange"
+              >
+                <option :value="null">不使用</option>
+                <option
+                  v-for="mc in usableMyCoupons"
+                  :key="mc.id"
+                  :value="mc.id"
+                >{{ mc.coupon.name }}{{ formatExpirySuffix(mc) }}</option>
+              </select>
+              <button
+                type="button"
+                class="cart-coupon-auto-btn"
+                :disabled="!usableMyCoupons.length || subtotal <= 0 || autoPicking"
+                @click="handleAutoPick"
+                aria-label="自動選擇折扣最多的優惠券"
+              >{{ autoPicking ? '計算中…' : '✨ 自動選最划算' }}</button>
+              <RouterLink to="/coupons" class="cart-coupon-link">我的優惠券 →</RouterLink>
+            </div>
+            <p
+              v-if="discountPreview && !discountPreview.isValid && discountPreview.message"
+              class="cart-coupon-msg"
+            >{{ discountPreview.message }}</p>
+          </div>
+
           <div class="cart-summary-row">
             <span>總件數</span>
             <span>{{ itemCount }} 件</span>
           </div>
-          <div class="cart-summary-row cart-total">
-            <span>總金額</span>
+          <div class="cart-summary-row">
+            <span>小計</span>
             <span>NT${{ formatPrice(subtotal) }}</span>
+          </div>
+          <div v-if="appliedDiscount > 0" class="cart-summary-row cart-discount">
+            <span>優惠折扣</span>
+            <span>−NT${{ formatPrice(appliedDiscount) }}</span>
+          </div>
+          <div class="cart-summary-row cart-total">
+            <span>應付總計</span>
+            <span>NT${{ formatPrice(finalTotal) }}</span>
           </div>
           <div class="cart-actions">
             <button class="cart-clear-btn" @click="handleClear">清空購物車</button>
@@ -83,14 +124,128 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import { useCoupon } from '@/composables/useCoupon'
+import type { MemberCouponDto } from '@/data/coupon'
+import AppNavbar from '@/components/AppNavbar.vue'
+
+const router = useRouter()
 
 const { items, itemCount, subtotal, updateQty, removeItem, clearCart } = useCart()
+const {
+  usableMyCoupons,
+  selectedMemberCouponId,
+  discountPreview,
+  wasAutoPicked,
+  loadMyCoupons,
+  applyCoupon,
+  clearCoupon,
+  pickBestCoupon,
+} = useCoupon()
+
+const autoPicking = ref(false)
+
+const loggedIn = ref(!!localStorage.getItem('token'))
+
+// 雙向綁定優惠券下拉
+const selectedCouponId = computed<number | null>({
+  get: () => selectedMemberCouponId.value,
+  set: (v) => {
+    selectedMemberCouponId.value = v
+  },
+})
+
+// 套用後實際的折扣 / 應付（無券或試算失敗時退回 0）
+const appliedDiscount = computed(() =>
+  discountPreview.value?.isValid ? discountPreview.value.discountAmount : 0,
+)
+const finalTotal = computed(() => Math.max(0, subtotal.value - appliedDiscount.value))
+
+onMounted(async () => {
+  if (!loggedIn.value) return
+  await loadMyCoupons()
+  // 進入購物車時自動挑最划算的券（僅在尚未選任何券時觸發，不覆蓋使用者先前的手動選擇）
+  if (selectedMemberCouponId.value == null && subtotal.value > 0) {
+    await runAutoPick({ silent: true })
+  }
+})
+
+// 小計變動時:
+//   自動模式 → 重跑 pickBestCoupon,可能從無到有 / 切換更划算 / 變成沒券
+//   手動模式 → 只重試算當前已選券,尊重使用者選擇
+watch(subtotal, async (newVal) => {
+  if (newVal <= 0) return
+
+  if (wasAutoPicked.value) {
+    const prevId = selectedMemberCouponId.value
+    const picked = await pickBestCoupon(newVal)
+    if (picked && picked.id !== prevId) {
+      ElMessage.success(
+        `已自動切換為「${picked.coupon.name}」，省 NT$${formatPrice(discountPreview.value?.discountAmount ?? 0)}`,
+      )
+    }
+    // picked === null 或同一張:不 toast 避免吵
+  } else if (selectedMemberCouponId.value) {
+    await applyCoupon(selectedMemberCouponId.value, newVal)
+  }
+})
+
+async function handleCouponChange(): Promise<void> {
+  if (selectedMemberCouponId.value == null) {
+    clearCoupon()
+    return
+  }
+  await applyCoupon(selectedMemberCouponId.value, subtotal.value)
+}
+
+/** 共用的自動挑券流程；silent=true 時不顯示「沒有可用券」warning */
+async function runAutoPick(opts: { silent?: boolean } = {}): Promise<void> {
+  if (autoPicking.value) return
+  autoPicking.value = true
+  try {
+    const picked = await pickBestCoupon(subtotal.value)
+    if (!picked) {
+      if (!opts.silent) ElMessage.warning('目前沒有可使用的優惠券')
+      return
+    }
+    const saved = discountPreview.value?.discountAmount ?? 0
+    if (saved > 0) {
+      ElMessage.success(
+        `已自動選用「${picked.coupon.name}」，省 NT$${formatPrice(saved)}`,
+      )
+    }
+  } finally {
+    autoPicking.value = false
+  }
+}
+
+async function handleAutoPick(): Promise<void> {
+  await runAutoPick()
+}
 
 function formatPrice(price: number): string {
   return Math.floor(price).toLocaleString()
+}
+
+function formatExpirySuffix(mc: MemberCouponDto): string {
+  // 1. 個人到期日(WELCOME100)
+  if (mc.expiresAt) {
+    const target = new Date(mc.expiresAt)
+    const diffDays = Math.ceil((target.getTime() - Date.now()) / 86400000)
+    if (diffDays < 0) return ''
+    const m = target.getMonth() + 1
+    const d = target.getDate()
+    if (diffDays === 0) return ` (${m}/${d} 到期 · 今日到期)`
+    return ` (${m}/${d} 到期 · 剩 ${diffDays} 天)`
+  }
+  // 2. 限當日券(DAY22 等):後端只在當日下發,顯示「今日 23:59 截止」
+  if (mc.coupon.visibleOnlyOnDayOfMonth) {
+    return ' (今日 23:59 截止)'
+  }
+  return ''
 }
 
 function handleQtyInput(e: Event, id: number): void {
@@ -110,6 +265,7 @@ async function handleClear(): Promise<void> {
       type: 'warning',
     })
     clearCart()
+    clearCoupon()
     ElMessage.success('已清空購物車')
   } catch {
     // 使用者取消
@@ -117,7 +273,7 @@ async function handleClear(): Promise<void> {
 }
 
 function handleCheckout(): void {
-  ElMessage.info('結帳功能即將推出')
+  router.push('/checkout')
 }
 </script>
 
@@ -322,6 +478,13 @@ function handleCheckout(): void {
   font-size: 0.92rem;
 }
 
+.cart-discount {
+  color: var(--accent-dark);
+}
+.cart-discount span:last-child {
+  font-weight: 600;
+}
+
 .cart-total {
   padding-top: 16px;
   margin-top: 8px;
@@ -334,6 +497,74 @@ function handleCheckout(): void {
 .cart-total span:last-child {
   font-family: var(--font-display);
   font-size: 1.6rem;
+}
+
+/* 優惠券區塊 */
+.cart-coupon {
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.cart-coupon-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cart-coupon-label {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  min-width: 50px;
+}
+.cart-coupon-select {
+  flex: 1;
+  min-width: 140px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+.cart-coupon-select:focus { border-color: var(--accent); }
+.cart-coupon-auto-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-light);
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.cart-coupon-auto-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.cart-coupon-auto-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cart-coupon-link {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.cart-coupon-link:hover { color: var(--text-primary); }
+.cart-coupon-msg {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #c45c5c;
 }
 
 .cart-actions {

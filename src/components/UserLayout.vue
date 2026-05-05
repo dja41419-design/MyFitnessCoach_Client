@@ -20,16 +20,18 @@
           <router-link to="/changepassword" class="menu-item" active-class="active">
             <i class="mdi mdi-lock-reset"></i> 修改密碼
           </router-link>
-          <!-- 暫時導向到 # 用於佔位，避免同時觸發 active -->
-          <a href="#points" class="menu-item">
+          <router-link to="/points" class="menu-item" active-class="active">
             <i class="mdi mdi-rhombus"></i> 點數查詢
-          </a>
+          </router-link>
           <router-link to="/reserveorders" class="menu-item" active-class="active">
             <i class="mdi mdi-calendar-check"></i> 課程預約查詢
           </router-link>
-          <a href="#orders" class="menu-item">
+          <router-link to="/coupons" class="menu-item" active-class="active">
+            <i class="mdi mdi-ticket-percent"></i> 我的優惠券
+          </router-link>
+          <router-link to="/orders" class="menu-item" active-class="active">
             <i class="mdi mdi-clipboard-text"></i> 訂單查詢
-          </a>
+          </router-link>
           
           <div class="menu-divider"></div>
           

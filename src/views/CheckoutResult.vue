@@ -1,25 +1,25 @@
 <template>
   <div class="result-page">
     <div class="container">
-      <div class="result-card" :class="{ 'success': isSuccess, 'failure': !isSuccess }">
-        <!-- 圖示區 -->
+      <div class="result-card" :class="{ success: isSuccess, failure: !isSuccess }">
+
         <div class="status-icon">
-          <svg v-if="isSuccess" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" stroke="#27ae60" />
-            <path d="m9 12 2 2 4-4" stroke="#27ae60" />
+          <svg v-if="isSuccess" width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#27ae60" stroke-width="2" />
+            <path d="m9 12 2 2 4-4" stroke="#27ae60" stroke-width="2" />
           </svg>
-          <svg v-else width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" stroke="#c0392b" />
-            <path d="m15 9-6 6M9 9l6 6" stroke="#c0392b" />
+          <svg v-else width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2" />
+            <path d="m15 9-6 6M9 9l6 6" stroke="#c0392b" stroke-width="2" />
           </svg>
         </div>
 
-        <h1 class="status-title">{{ isSuccess ? '交易成功' : '交易失敗' }}</h1>
-        
+        <h1 class="status-title">{{ isSuccess ? '付款成功' : '交易失敗' }}</h1>
+
         <div class="status-details">
-          <p class="status-msg">{{ rtnMsg }}</p>
-          <div class="info-row" v-if="tradeNo">
-            <span class="label">訂單編號：</span>
+          <p class="status-msg">{{ statusMessage }}</p>
+          <div v-if="tradeNo" class="info-row">
+            <span class="label">交易編號：</span>
             <span class="value">{{ tradeNo }}</span>
           </div>
         </div>
@@ -27,41 +27,46 @@
         <div class="divider"></div>
 
         <div class="redirect-info">
-          <p>系統將在 <span class="countdown">{{ countdown }}</span> 秒後自動返回首頁</p>
-          <button @click="goHome" class="btn-home">立即返回</button>
+          <p>系統將在 <span class="countdown">{{ countdown }}</span> 秒後自動跳轉</p>
+          <button class="btn-action" @click="goNext">
+            {{ isSuccess ? '查看訂單' : '返回商城' }}
+          </button>
         </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useCart } from '@/composables/useCart'
 import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
+const { clearCart } = useCart()
 
 const countdown = ref(10)
 const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
 
-// 只接受純數字的 RtnCode，其他一律視為失敗
 const rawCode = (route.query.RtnCode as string) ?? ''
-const rtnCode = ref(/^\d+$/.test(rawCode) ? rawCode : '')
+const rtnCode = /^\d+$/.test(rawCode) ? rawCode : ''
 
-// tradeNo 只接受「MF + 17位數字」格式，不符則不顯示
 const rawTrade = (route.query.MerchantTradeNo as string) ?? ''
-const tradeNo = ref(/^MF\d{17}$/.test(rawTrade) ? rawTrade : '')
+// MFP + 17 位數字
+const tradeNo = ref(/^MFP\d{17}$/.test(rawTrade) ? rawTrade : '')
 
-// rtnMsg 不信任外部傳入，改用本地映射，防止假訊息/注入
-const isSuccess = computed(() => rtnCode.value === '1')
-const rtnMsg = computed(() => isSuccess.value ? '付款完成，點數已存入您的帳戶。' : '交易未完成，請返回重試或聯絡客服。')
+const isSuccess = computed(() => rtnCode === '1')
+const statusMessage = computed(() =>
+  isSuccess.value
+    ? '訂單已成立，我們將盡快為您處理出貨！'
+    : '交易未完成，請返回重試或聯絡客服。'
+)
 
-let timer: ReturnType<typeof setInterval> | null = null
-
-function goHome() {
-  router.push('/')
+function goNext(): void {
+  router.push(isSuccess.value ? '/orders' : '/store')
 }
 
 const checkGoogleStatus = async () => {
@@ -80,10 +85,10 @@ const checkGoogleStatus = async () => {
         if (timer) clearInterval(timer) // 暫停倒數
         
         ElMessageBox.confirm(
-          '付款成功！連結 Google 帳戶後可自動同步未來預約的行程並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
+          '付款成功！連結 Google 日曆後可自動同步未來預約的行程，是否現在同步？',
           '交易成功',
           {
-            confirmButtonText: '同步 Google 服務',
+            confirmButtonText: '同步google行事曆',
             cancelButtonText: '暫不同步',
             type: 'success',
             distinguishCancelAndClose: true
@@ -91,7 +96,7 @@ const checkGoogleStatus = async () => {
         ).then(() => {
           connectGoogleCalendar();
         }).catch(() => {
-          goHome();
+          goNext();
         });
       }
     }
@@ -109,12 +114,11 @@ const connectGoogleCalendar = () => {
   window.location.href = authUrl;
 }
 
+let timer: ReturnType<typeof setInterval> | null = null
+
 onMounted(async () => {
   if (isSuccess.value) {
-    localStorage.removeItem('lessonCart')
-    sessionStorage.removeItem('checkoutAmount')
-    sessionStorage.removeItem('checkoutPlanIds')
-    
+    await clearCart()
     await checkGoogleStatus()
   }
 
@@ -123,7 +127,7 @@ onMounted(async () => {
       countdown.value--
       if (countdown.value <= 0) {
         if (timer) clearInterval(timer)
-        goHome()
+        goNext()
       }
     }, 1000)
   }
@@ -140,19 +144,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fdfcfb;
+  background: var(--bg);
   padding: 24px;
 }
 
 .result-card {
-  background: white;
+  background: var(--bg-card);
   padding: 48px 32px;
-  border-radius: var(--radius-lg, 16px);
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 40px rgba(26, 22, 19, 0.06);
   max-width: 440px;
   width: 100%;
   text-align: center;
-  border-top: 6px solid #ddd;
+  border-top: 6px solid var(--border);
 }
 
 .result-card.success { border-top-color: #27ae60; }
@@ -161,64 +165,64 @@ onUnmounted(() => {
 .status-icon { margin-bottom: 24px; }
 
 .status-title {
+  font-family: var(--font-display);
   font-size: 1.8rem;
-  color: #1a1613;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
-.status-msg {
-  font-size: 1.1rem;
-  color: #6a635a;
-  margin-bottom: 20px;
+.status-details {
+  background: var(--bg);
+  padding: 16px;
+  border-radius: var(--radius);
+  margin-bottom: 32px;
 }
 
-.status-details {
-  background: #f9f7f5;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 32px;
+.status-msg {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
 }
 
 .info-row {
   display: flex;
   justify-content: center;
-  font-size: 0.9rem;
-  color: #8a837a;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .divider {
   height: 1px;
-  background: #eee;
+  background: var(--border);
   margin-bottom: 32px;
 }
 
 .redirect-info {
-  color: #8a837a;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .countdown {
   font-weight: 700;
-  color: #2d2620;
+  color: var(--text-primary);
   font-size: 1.1rem;
 }
 
-.btn-home {
-  margin-top: 24px;
+.btn-action {
+  margin-top: 20px;
   display: block;
   width: 100%;
   padding: 14px;
-  background: #2d2620;
-  color: white;
+  background: var(--bg-dark);
+  color: var(--text-light);
   border: none;
   border-radius: 100px;
   font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: opacity 0.3s;
 }
-
-.btn-home:hover {
-  background: #1a1613;
-  transform: translateY(-2px);
-}
+.btn-action:hover { opacity: 0.85; }
 </style>

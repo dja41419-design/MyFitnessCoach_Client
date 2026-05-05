@@ -41,14 +41,25 @@ async function startPayment() {
     formData.append('totalAmount', amount)
     formData.append('planIds', planIds)
 
+    const token = localStorage.getItem('token')
+    if (!token) {
+      error.value = '請先登入才能進行付款。'
+      loading.value = false
+      return
+    }
+
     const response = await fetch('/api/Payment/SendToEcPay', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${token}`,
+      },
       body: formData,
     })
 
     if (!response.ok) {
-      throw new Error(`伺服器回應錯誤 (${response.status})`)
+      const msg = response.status === 401 ? '登入已過期，請重新登入。' : `伺服器回應錯誤 (${response.status})`
+      throw new Error(msg)
     }
 
     const data: EcPayResponse = await response.json()

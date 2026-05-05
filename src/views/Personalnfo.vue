@@ -6,7 +6,6 @@
     </div>
 
     <div class="info-card">
-      <!-- 這裡之後可以加入表單內容 -->
       <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">
         (此處為個人資料編輯表單預留空間)
       </p>
@@ -15,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-// 已移至 UserLayout 處理登出
+// 個人資料邏輯開發中
 </script>
 
 <style scoped>

@@ -20,14 +20,20 @@ import FoodLibrary from '@/views/FoodLibrary.vue'
 import Goals from '@/views/Goals.vue'
 import HealthTrackerReports from '@/views/HealthTrackerReports.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
+import PointCheck from '@/views/PointCheck.vue'
 import UserLayout from '@/components/UserLayout.vue'
 import Lesson from '@/views/Lesson.vue'
 import LessonCart from '@/views/LessonCart.vue'
 import LessonPay from '@/views/LessonPay.vue'
 import LessonResult from '@/views/LessonResult.vue'
+import ReserveResult from '@/views/ReserveResult.vue'
 import ActivateAccount from '@/views/ActivateAccount.vue'
+import Checkout from '@/views/Checkout.vue'
+import CheckoutResult from '@/views/CheckoutResult.vue'
+import ProductOrders from '@/views/ProductOrders.vue'
 import { fetchCurrentUser } from '@/data/login'
 
+import GoogleCallback from '@/views/GoogleCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -60,6 +66,11 @@ const router = createRouter({
     { name: 'LessonCart', path: '/lesson-cart', component: LessonCart },
     { name: 'LessonPay', path: '/lesson-pay', component: LessonPay },
     { name: 'LessonResult', path: '/lesson-result', component: LessonResult },
+    { name: 'ReserveResult', path: '/reserve-result', component: ReserveResult },
+    { name: 'Checkout', path: '/checkout', component: Checkout, meta: { requiresAuth: true } },
+    { name: 'CheckoutResult', path: '/checkout-result', component: CheckoutResult },
+
+    { name: 'google-callback', path: '/google-callback', component: GoogleCallback },
 
     // 使用者帳戶相關頁面，共用 UserLayout
     {
@@ -70,6 +81,9 @@ const router = createRouter({
         { name: 'info', path: '/personalInfo', component: PersonalInfo },
         { name: 'changepwd', path: '/changepassword', component: ChangePwd },
         { name: 'ReserveOrders', path: '/reserveorders', component: ReserveOrders },
+        { name: 'points', path: '/points', component: PointCheck },
+        { name: 'ProductOrders', path: '/orders', component: ProductOrders },
+        { name: 'MyCoupons', path: '/coupons', component: () => import('@/views/MyCoupons.vue') },
       ]
     },
 

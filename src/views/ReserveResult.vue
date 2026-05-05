@@ -1,8 +1,7 @@
 <template>
   <div class="result-page">
     <div class="container">
-      <div class="result-card" :class="{ 'success': isSuccess, 'failure': !isSuccess }">
-        <!-- 圖示區 -->
+      <div class="result-card" :class="{ success: isSuccess, failure: !isSuccess }">
         <div class="status-icon">
           <svg v-if="isSuccess" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" stroke="#27ae60" />
@@ -14,12 +13,12 @@
           </svg>
         </div>
 
-        <h1 class="status-title">{{ isSuccess ? '交易成功' : '交易失敗' }}</h1>
-        
+        <h1 class="status-title">{{ isSuccess ? '付款成功' : '付款失敗' }}</h1>
+
         <div class="status-details">
-          <p class="status-msg">{{ rtnMsg }}</p>
+          <p class="status-msg">{{ statusMessage }}</p>
           <div class="info-row" v-if="tradeNo">
-            <span class="label">訂單編號：</span>
+            <span class="label">交易編號：</span>
             <span class="value">{{ tradeNo }}</span>
           </div>
         </div>
@@ -27,8 +26,8 @@
         <div class="divider"></div>
 
         <div class="redirect-info">
-          <p>系統將在 <span class="countdown">{{ countdown }}</span> 秒後自動返回首頁</p>
-          <button @click="goHome" class="btn-home">立即返回</button>
+          <p>系統將在 <span class="countdown">{{ countdown }}</span> 秒後自動跳轉</p>
+          <button @click="goReserveOrders" class="btn-home">查看預約紀錄</button>
         </div>
       </div>
     </div>
@@ -36,32 +35,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
-
 const countdown = ref(10)
-const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
+const isGoogleConnected = ref(true) // 預設為 true 以免閃爍，Mounted 後檢查
 
-// 只接受純數字的 RtnCode，其他一律視為失敗
 const rawCode = (route.query.RtnCode as string) ?? ''
-const rtnCode = ref(/^\d+$/.test(rawCode) ? rawCode : '')
+const isSuccess = computed(() => /^\d+$/.test(rawCode) && rawCode === '1')
 
-// tradeNo 只接受「MF + 17位數字」格式，不符則不顯示
 const rawTrade = (route.query.MerchantTradeNo as string) ?? ''
-const tradeNo = ref(/^MF\d{17}$/.test(rawTrade) ? rawTrade : '')
+const tradeNo = ref(/^MFR\d+$/.test(rawTrade) ? rawTrade : '')
 
-// rtnMsg 不信任外部傳入，改用本地映射，防止假訊息/注入
-const isSuccess = computed(() => rtnCode.value === '1')
-const rtnMsg = computed(() => isSuccess.value ? '付款完成，點數已存入您的帳戶。' : '交易未完成，請返回重試或聯絡客服。')
+const statusMessage = computed(() =>
+  isSuccess.value
+    ? '付款完成，您的預約已確認，我們將盡快與您聯繫。'
+    : '交易未完成，請返回重試或聯絡客服。'
+)
 
-let timer: ReturnType<typeof setInterval> | null = null
-
-function goHome() {
-  router.push('/')
+function goReserveOrders() {
+  router.push('/reserveorders')
 }
 
 const checkGoogleStatus = async () => {
@@ -80,8 +76,8 @@ const checkGoogleStatus = async () => {
         if (timer) clearInterval(timer) // 暫停倒數
         
         ElMessageBox.confirm(
-          '付款成功！連結 Google 帳戶後可自動同步未來預約的行程並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
-          '交易成功',
+          '付款成功！連結 Google 帳戶後可自動同步行事曆並發送預約通知信 (將一併綁定 Gmail)，是否現在同步？',
+          '預約成功',
           {
             confirmButtonText: '同步 Google 服務',
             cancelButtonText: '暫不同步',
@@ -91,7 +87,7 @@ const checkGoogleStatus = async () => {
         ).then(() => {
           connectGoogleCalendar();
         }).catch(() => {
-          goHome();
+          goReserveOrders();
         });
       }
     }
@@ -109,21 +105,21 @@ const connectGoogleCalendar = () => {
   window.location.href = authUrl;
 }
 
+let timer: ReturnType<typeof setInterval> | null = null
+
 onMounted(async () => {
   if (isSuccess.value) {
-    localStorage.removeItem('lessonCart')
-    sessionStorage.removeItem('checkoutAmount')
-    sessionStorage.removeItem('checkoutPlanIds')
-    
     await checkGoogleStatus()
   }
 
+  // 只有在還沒跳轉或沒跳出視窗時才開始/繼續倒數
+  // 實際上 checkGoogleStatus 會處理彈窗。如果彈窗沒跳出(已連動)，則執行倒數
   if (isGoogleConnected.value || !isSuccess.value) {
     timer = setInterval(() => {
       countdown.value--
       if (countdown.value <= 0) {
         if (timer) clearInterval(timer)
-        goHome()
+        goReserveOrders()
       }
     }, 1000)
   }
@@ -184,6 +180,7 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 0.9rem;
   color: #8a837a;
+  gap: 4px;
 }
 
 .divider {
