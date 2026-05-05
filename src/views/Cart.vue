@@ -81,6 +81,13 @@
                   :value="mc.id"
                 >{{ mc.coupon.name }}{{ formatExpirySuffix(mc) }}</option>
               </select>
+              <button
+                type="button"
+                class="cart-coupon-auto-btn"
+                :disabled="!usableMyCoupons.length || subtotal <= 0 || autoPicking"
+                @click="handleAutoPick"
+                aria-label="自動選擇折扣最多的優惠券"
+              >{{ autoPicking ? '計算中…' : '✨ 自動選最划算' }}</button>
               <RouterLink to="/coupons" class="cart-coupon-link">我的優惠券 →</RouterLink>
             </div>
             <p
@@ -132,10 +139,14 @@ const {
   usableMyCoupons,
   selectedMemberCouponId,
   discountPreview,
+  wasAutoPicked,
   loadMyCoupons,
   applyCoupon,
   clearCoupon,
+  pickBestCoupon,
 } = useCoupon()
+
+const autoPicking = ref(false)
 
 const loggedIn = ref(!!localStorage.getItem('token'))
 
@@ -154,14 +165,30 @@ const appliedDiscount = computed(() =>
 const finalTotal = computed(() => Math.max(0, subtotal.value - appliedDiscount.value))
 
 onMounted(async () => {
-  if (loggedIn.value) {
-    await loadMyCoupons()
+  if (!loggedIn.value) return
+  await loadMyCoupons()
+  // 進入購物車時自動挑最划算的券（僅在尚未選任何券時觸發，不覆蓋使用者先前的手動選擇）
+  if (selectedMemberCouponId.value == null && subtotal.value > 0) {
+    await runAutoPick({ silent: true })
   }
 })
 
-// 商品數量變動時，已選券要自動重新試算
+// 小計變動時:
+//   自動模式 → 重跑 pickBestCoupon,可能從無到有 / 切換更划算 / 變成沒券
+//   手動模式 → 只重試算當前已選券,尊重使用者選擇
 watch(subtotal, async (newVal) => {
-  if (selectedMemberCouponId.value && newVal > 0) {
+  if (newVal <= 0) return
+
+  if (wasAutoPicked.value) {
+    const prevId = selectedMemberCouponId.value
+    const picked = await pickBestCoupon(newVal)
+    if (picked && picked.id !== prevId) {
+      ElMessage.success(
+        `已自動切換為「${picked.coupon.name}」，省 NT$${formatPrice(discountPreview.value?.discountAmount ?? 0)}`,
+      )
+    }
+    // picked === null 或同一張:不 toast 避免吵
+  } else if (selectedMemberCouponId.value) {
     await applyCoupon(selectedMemberCouponId.value, newVal)
   }
 })
@@ -172,6 +199,31 @@ async function handleCouponChange(): Promise<void> {
     return
   }
   await applyCoupon(selectedMemberCouponId.value, subtotal.value)
+}
+
+/** 共用的自動挑券流程；silent=true 時不顯示「沒有可用券」warning */
+async function runAutoPick(opts: { silent?: boolean } = {}): Promise<void> {
+  if (autoPicking.value) return
+  autoPicking.value = true
+  try {
+    const picked = await pickBestCoupon(subtotal.value)
+    if (!picked) {
+      if (!opts.silent) ElMessage.warning('目前沒有可使用的優惠券')
+      return
+    }
+    const saved = discountPreview.value?.discountAmount ?? 0
+    if (saved > 0) {
+      ElMessage.success(
+        `已自動選用「${picked.coupon.name}」，省 NT$${formatPrice(saved)}`,
+      )
+    }
+  } finally {
+    autoPicking.value = false
+  }
+}
+
+async function handleAutoPick(): Promise<void> {
+  await runAutoPick()
 }
 
 function formatPrice(price: number): string {
@@ -480,6 +532,28 @@ function handleCheckout(): void {
   transition: border-color 0.3s;
 }
 .cart-coupon-select:focus { border-color: var(--accent); }
+.cart-coupon-auto-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-light);
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.cart-coupon-auto-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.cart-coupon-auto-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .cart-coupon-link {
   font-size: 0.78rem;
   color: var(--text-secondary);

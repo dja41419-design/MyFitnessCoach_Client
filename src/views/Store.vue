@@ -13,6 +13,19 @@
         </div>
       </div>
 
+      <!-- 優惠券 Banner 區(策劃式:僅顯示 BannerImageUrl 有設的券) -->
+      <section v-if="banners.length > 0" class="coupon-banners reveal rd1" aria-label="優惠券活動">
+        <RouterLink
+          v-for="b in banners"
+          :key="b.id"
+          to="/coupons"
+          class="coupon-banner-card"
+          :aria-label="`查看 ${b.name} 活動`"
+        >
+          <img :src="b.bannerImageUrl!" :alt="b.name" class="coupon-banner-img" />
+        </RouterLink>
+      </section>
+
       <!-- 搜尋 + 排序列 -->
       <div class="store-toolbar reveal rd1">
         <input
@@ -167,6 +180,8 @@ import { ElNotification } from 'element-plus'
 import { useReveal } from '@/composables/useReveal'
 import { useCart } from '@/composables/useCart'
 import AppNavbar from '@/components/AppNavbar.vue'
+import { fetchCouponBanners } from '@/data/couponBanner'
+import type { CouponDto } from '@/data/coupon'
 
 interface CategoryDto {
   id: number
@@ -199,6 +214,7 @@ const priceRange = ref<[number, number]>([0, PRICE_MAX])
 const loading = ref<boolean>(true)
 const isModalOpen = ref(false)
 const selectedProduct = ref<ProductDto | null>(null)
+const banners = ref<CouponDto[]>([])
 
 const sortedProducts = computed<ProductDto[]>(() => {
   const list = [...products.value]
@@ -286,6 +302,7 @@ watch(priceRange, () => {
 onMounted(async () => {
   await fetchCategories()
   await fetchProducts()
+  banners.value = await fetchCouponBanners()
 })
 
 useReveal()
@@ -340,6 +357,38 @@ useReveal()
   max-width: 480px;
   margin-top: 10px;
   line-height: 1.6;
+}
+
+/* ── 優惠券 Banner 區 ── */
+.coupon-banners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0 32px;
+}
+
+.coupon-banner-card {
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.coupon-banner-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.coupon-banner-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 5;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .coupon-banner-img { aspect-ratio: 16 / 7; }
 }
 
 /* ── 搜尋 + 排序列 ── */
@@ -757,4 +806,5 @@ useReveal()
     align-items: flex-start;
   }
 }
+
 </style>
