@@ -1,15 +1,15 @@
 import { computed, type Ref } from 'vue'
-import { hasKeyboardSequence, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from '@/utils/validators'
+import { hasKeyboardSequence, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/utils/validators'
 
 export function usePasswordQuality(password: Ref<string>) {
   const rules = computed(() => {
     const p = password.value
     return {
-      minLen:        p.length >= PASSWORD_MIN_LENGTH,
-      maxLen:        p.length > 0 && p.length <= PASSWORD_MAX_LENGTH,
-      hasUpper:      /[A-Z]/.test(p),
-      hasNumber:     /[0-9]/.test(p),
-      hasSymbol:     /[^A-Za-z0-9]/.test(p),
+      minLen: p.length >= PASSWORD_MIN_LENGTH,
+      maxLen: p.length > 0 && p.length <= PASSWORD_MAX_LENGTH,
+      hasUpper: /[A-Z]/.test(p),
+      hasNumber: /[0-9]/.test(p),
+      hasSymbol: /[^A-Za-z0-9]/.test(p),
       noKeyboardSeq: p.length === 0 || !hasKeyboardSequence(p),
     }
   })
@@ -26,15 +26,16 @@ export function usePasswordQuality(password: Ref<string>) {
 
   const firstFailureMessage = computed((): string => {
     const p = password.value
-    if (!p) return '請輸入新密碼'
+    if (!p) return '請輸入密碼'
     if (!noSurroundingSpace.value) return '密碼前後不可包含空白'
+
     const r = rules.value
-    if (!r.minLen) return `密碼至少需要 ${PASSWORD_MIN_LENGTH} 個字元`
-    if (!r.maxLen) return `密碼長度不可超過 ${PASSWORD_MAX_LENGTH} 個字元`
-    if (!r.hasUpper) return '密碼需包含至少一個大寫字母'
-    if (!r.hasNumber) return '密碼需包含至少一個數字'
-    if (!r.hasSymbol) return '密碼需包含至少一個特殊字元'
-    if (!r.noKeyboardSeq) return '密碼不可包含鍵盤連續字串（如 asdfgh、qwerty、123456）'
+    if (!r.minLen) return `密碼至少需要 ${PASSWORD_MIN_LENGTH} 位`
+    if (!r.maxLen) return `密碼不可超過 ${PASSWORD_MAX_LENGTH} 位`
+    if (!r.hasUpper) return '密碼至少需要一個大寫英文字母'
+    if (!r.hasNumber) return '密碼至少需要一個數字'
+    if (!r.hasSymbol) return '密碼至少需要一個符號'
+    if (!r.noKeyboardSeq) return '密碼不可包含連續鍵盤序列'
     return ''
   })
 
@@ -47,7 +48,7 @@ export function usePasswordQuality(password: Ref<string>) {
     return 3
   })
 
-  const strengthText = computed(() => ['', '弱', '中等', '強'][strength.value])
+  const strengthText = computed(() => ['', '弱', '中', '強'][strength.value])
   const strengthClass = computed(() => ['', 'text-weak', 'text-medium', 'text-strong'][strength.value])
 
   return { rules, isValid, firstFailureMessage, strength, strengthText, strengthClass }

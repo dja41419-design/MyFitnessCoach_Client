@@ -90,23 +90,54 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label">每日熱量目標 (kcal)</label>
-            <input type="number" v-model.number="localGoals.totalCalories" min="0" class="form-input" />
+            <input
+              type="number"
+              v-model.number="localGoals.totalCalories"
+              min="0"
+              class="form-input"
+              :placeholder="goalPlaceholder('totalCalories')"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">蛋白質目標 (g)</label>
-            <input type="number" v-model.number="localGoals.protein" min="0" class="form-input" />
+            <input
+              type="number"
+              v-model.number="localGoals.protein"
+              min="0"
+              class="form-input"
+              :placeholder="goalPlaceholder('protein')"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">碳水化合物目標 (g)</label>
-            <input type="number" v-model.number="localGoals.carbs" min="0" class="form-input" />
+            <input
+              type="number"
+              v-model.number="localGoals.carbs"
+              min="0"
+              class="form-input"
+              :placeholder="goalPlaceholder('carbs')"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">脂肪目標 (g)</label>
-            <input type="number" v-model.number="localGoals.fat" min="0" class="form-input" />
+            <input
+              type="number"
+              v-model.number="localGoals.fat"
+              min="0"
+              class="form-input"
+              :placeholder="goalPlaceholder('fat')"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">每日飲水目標 (ml)</label>
-            <input type="number" v-model.number="localGoals.water" min="0" step="50" class="form-input" />
+            <input
+              type="number"
+              v-model.number="localGoals.water"
+              min="0"
+              step="50"
+              class="form-input"
+              :placeholder="goalPlaceholder('water')"
+            />
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -143,6 +174,9 @@ interface LocalInfo extends BasicInfoDto {
   currentWeight: number | null
 }
 
+type GoalInputValue = number | null | ''
+type NutritionGoalInputs = Record<keyof TargetCaloriesDto, GoalInputValue>
+
 const localInfo = reactive<LocalInfo>({
   height: 0,
   currentWeight: null,
@@ -155,13 +189,15 @@ const personalGender   = ref<'M' | 'F' | null>(null)
 const personalBirthDate = ref<string | null>(null)
 const missingPersonalInfo = computed(() => !personalGender.value || !personalBirthDate.value)
 
-const localGoals = reactive<TargetCaloriesDto>({
-  totalCalories: 0,
-  protein: 0,
-  carbs: 0,
-  fat: 0,
-  water: 2000,
+const localGoals = reactive<NutritionGoalInputs>({
+  totalCalories: null,
+  protein: null,
+  carbs: null,
+  fat: null,
+  water: null,
 })
+
+const memberGoalPlaceholders = ref<TargetCaloriesDto | null>(null)
 
 const hasInfo = ref(false)
 const saving  = ref(false)
@@ -210,13 +246,7 @@ function applyPageResponse(data: { info: BasicInfoDto | null; goals: TargetCalor
     localInfo.healthGoal    = data.info.healthGoal
     hasInfo.value = true
   }
-  if (data.goals) {
-    localGoals.totalCalories = data.goals.totalCalories
-    localGoals.protein       = data.goals.protein
-    localGoals.carbs         = data.goals.carbs
-    localGoals.fat           = data.goals.fat
-    localGoals.water         = data.goals.water
-  }
+  memberGoalPlaceholders.value = data.goals
 }
 
 // ── TDEE preview ───────────────────────────────────────────────
@@ -237,7 +267,7 @@ function liveRefreshTDEE() {
   const w      = localInfo.currentWeight ?? localInfo.targetWeight
   const gender = personalGender.value
   const dob    = personalBirthDate.value
-  if (!gender || !dob) {
+  if (!gender || !dob || !w || !localInfo.height) {
     tdeeResult.bmr  = null
     tdeeResult.tdee = null
     macroSuggestion.value = null
@@ -267,6 +297,48 @@ function applySuggestion() {
   localGoals.carbs         = macroSuggestion.value.carbs
   localGoals.fat           = macroSuggestion.value.fat
   showToast('已套用 TDEE 建議')
+}
+
+function goalPlaceholder(key: keyof TargetCaloriesDto): string {
+  const value = memberGoalPlaceholders.value?.[key]
+  return value || value === 0 ? String(value) : '尚未設定'
+}
+
+function toNumberOrNull(value: GoalInputValue): number | null {
+  if (value === '' || value === null) return null
+  return Number.isFinite(value) ? value : null
+}
+
+function resolveGoalValue(key: keyof TargetCaloriesDto): number | null {
+  return toNumberOrNull(localGoals[key]) ?? memberGoalPlaceholders.value?.[key] ?? null
+}
+
+function buildTargetCaloriesPayload(): TargetCaloriesDto | null {
+  const totalCalories = resolveGoalValue('totalCalories')
+  const protein       = resolveGoalValue('protein')
+  const carbs         = resolveGoalValue('carbs')
+  const fat           = resolveGoalValue('fat')
+  const water         = resolveGoalValue('water')
+
+  if (
+    totalCalories === null ||
+    protein === null ||
+    carbs === null ||
+    fat === null ||
+    water === null
+  ) {
+    return null
+  }
+
+  return { totalCalories, protein, carbs, fat, water }
+}
+
+function clearLocalGoals() {
+  localGoals.totalCalories = null
+  localGoals.protein       = null
+  localGoals.carbs         = null
+  localGoals.fat           = null
+  localGoals.water         = null
 }
 
 // ── Validation ─────────────────────────────────────────────────
@@ -303,9 +375,17 @@ async function onSaveBasicInfo() {
 }
 
 async function onSaveTargetCalories() {
+  const dto = buildTargetCaloriesPayload()
+  if (!dto) {
+    showToast('請填寫完整營養目標')
+    return
+  }
+
   saving.value = true
   try {
-    await saveTargetCalories({ ...localGoals })
+    await saveTargetCalories(dto)
+    memberGoalPlaceholders.value = dto
+    clearLocalGoals()
     showToast('營養目標已儲存')
   } catch (e: unknown) {
     showToast(e instanceof Error ? e.message : '儲存失敗')

@@ -1,10 +1,6 @@
 <template>
+  <AppNavbar />
   <div class="health-tracker">
-    <!-- Navbar placeholder — 待接 LandingPage navbar -->
-    <nav class="ht-topbar">
-      <span class="ht-brand">健康紀錄</span>
-    </nav>
-
     <div class="ht-tab-nav">
       <button
         v-for="tab in tabs"
@@ -23,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import AppNavbar from '@/components/AppNavbar.vue';
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 const route  = useRoute()
@@ -58,22 +55,7 @@ const tabs = [
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--ht-text);
-}
-
-.ht-topbar {
-  display: flex;
-  align-items: center;
-  padding: 14px 24px;
-  background: var(--bg-dark);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.ht-brand {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-light);
-  letter-spacing: 0.5px;
+  padding-top: 92px;
 }
 
 .ht-tab-nav {
@@ -118,7 +100,6 @@ const tabs = [
 }
 
 @media (max-width: 768px) {
-  .ht-topbar,
   .ht-tab-nav {
     padding-left: 12px;
     padding-right: 12px;

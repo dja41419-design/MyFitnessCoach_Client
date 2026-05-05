@@ -12,8 +12,7 @@
       <div class="nav-links">
         <a href="#nutritionists" @click.prevent="scrollTo('#nutritionists')">營養師團隊</a>
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
-        <router-link :to="{name:'body-metrics'}">體態紀錄</router-link>
-        <router-link :to="{name:'daily-diet'}">飲食紀錄</router-link>
+        <router-link to="/health-tracker/reports">健康追蹤</router-link>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
       </div>
 
@@ -60,9 +59,7 @@
   <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
     <a href="#nutritionists" @click.prevent="menuScrollTo('#nutritionists')">營養師團隊</a>
     <a href="#pricing"       @click.prevent="menuScrollTo('#pricing')">課程方案</a>
-    <RouterLink to="/bodyrecord" @click="isMobileMenuOpen = false">體態紀錄</RouterLink>
-    <RouterLink to="/foodrecord" @click="isMobileMenuOpen = false">飲食紀錄</RouterLink>
-    <a href="#tracking"      @click.prevent="menuScrollTo('#tracking')">飲食追蹤</a>
+    <RouterLink to="/health-tracker/reports" @click="isMobileMenuOpen = false">健康追蹤</RouterLink>
     <a href="#shop"          @click.prevent="menuScrollTo('#shop')">健康商城</a>
     <template v-if="!isLoggedIn">
       <a href="#cta" @click.prevent="menuScrollTo('#cta')">立即加入</a>

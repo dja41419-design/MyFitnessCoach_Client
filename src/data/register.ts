@@ -17,12 +17,12 @@ export async function register(payload: RegisterRequest): Promise<RegisterRespon
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   })
 
   if (response.status === 409) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err?.message ?? '帳號或信箱已被使用')
+    throw new Error(err?.message ?? '帳號或電子信箱已被使用')
   }
 
   if (!response.ok) {
@@ -31,7 +31,8 @@ export async function register(payload: RegisterRequest): Promise<RegisterRespon
       err?.errors && typeof err.errors === 'object'
         ? (Object.values(err.errors as Record<string, string[]>).flat()[0] as string | undefined)
         : undefined
-    throw new Error(err?.message ?? firstFieldError ?? err?.title ?? '伺服器錯誤，請稍後再試')
+
+    throw new Error(err?.message ?? firstFieldError ?? err?.title ?? '註冊失敗，請確認輸入資料')
   }
 
   return response.json()

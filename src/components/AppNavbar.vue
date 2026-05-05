@@ -12,8 +12,7 @@
       <div class="nav-links">
         <RouterLink to="/AllInstructor">營養師團隊</RouterLink>
         <RouterLink to="/lesson">課程方案</RouterLink>
-        <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
-        <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
+        <RouterLink to="/health-tracker/reports">健康追蹤</RouterLink>
         <RouterLink to="/store">健康商城</RouterLink>
       </div>
 
@@ -60,8 +59,7 @@
   <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
     <RouterLink to="/AllInstructor" @click="closeMobileMenu">營養師團隊</RouterLink>
     <RouterLink to="/lesson" @click="closeMobileMenu">課程方案</RouterLink>
-    <RouterLink to="/bodyrecord" @click="closeMobileMenu">體態紀錄</RouterLink>
-    <RouterLink to="/foodrecord" @click="closeMobileMenu">飲食紀錄</RouterLink>
+    <RouterLink to="/health-tracker/reports" @click="closeMobileMenu">健康追蹤</RouterLink>
     <RouterLink to="/store" @click="closeMobileMenu">健康商城</RouterLink>
     <template v-if="!isLoggedIn">
       <router-link :to="{ name: 'register' }" @click="closeMobileMenu">立即加入</router-link>
