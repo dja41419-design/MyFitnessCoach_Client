@@ -30,16 +30,17 @@ onMounted(async () => {
   }
 
   try {
+    const token = localStorage.getItem('token');
     // 使用瀏覽器內建的 fetch，不依賴 axios
-    const response = await fetch('https://localhost:7212/api/GoogleAuth/SaveToken', {
+    const response = await fetch('/api/GoogleAuth/SaveToken', {
       method: 'POST',
-      headers: {
+      headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
+      body: JSON.stringify({ 
         code: code,
-        redirectUri: window.location.origin + '/google-callback'
+        redirectUri: window.location.origin + "/google-callback" 
       })
     });
 

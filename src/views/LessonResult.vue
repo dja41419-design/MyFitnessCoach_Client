@@ -43,7 +43,7 @@ import { ElMessageBox } from 'element-plus'
 const router = useRouter()
 const route = useRoute()
 
-const countdown = ref(5)
+const countdown = ref(10)
 const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
 
 // 只接受純數字的 RtnCode，其他一律視為失敗
@@ -68,7 +68,7 @@ const checkGoogleStatus = async () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const res = await fetch('https://localhost:7212/api/GoogleAuth/CheckStatus', {
+    const res = await fetch('/api/GoogleAuth/CheckStatus', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (res.ok) {
