@@ -215,7 +215,7 @@ onMounted(() => {
     // 檢查是否有「待付款」預約剛好過期
     const hasNewExpired = reservations.value.some(res => {
       if (res.status !== '待付款') return false
-      const expireAt = new Date(new Date(res.createAt).getTime() + 30 * 1000) // 配合目前的 30 秒設定
+      const expireAt = new Date(new Date(res.createAt).getTime() + 10 * 1000) // 配合目前的 10 秒設定
       return nowRef.value.getTime() >= expireAt.getTime()
     })
 
@@ -232,7 +232,7 @@ onUnmounted(() => {
 
 const getCountdownText = (res: Reservation) => {
   const createAt = new Date(res.createAt)
-  const expireAt = new Date(createAt.getTime() + 30 * 1000) // 30 秒
+  const expireAt = new Date(createAt.getTime() + 10 * 1000) // 10 秒
   const diff = expireAt.getTime() - nowRef.value.getTime()
 
   if (diff <= 0) {
