@@ -45,8 +45,35 @@
         
         <div class="card-body">
           <div class="info-item" v-if="res.target">
-            <label>預約目標</label>
+            <label>
+              預約目標 
+              <el-button 
+                link 
+                type="primary" 
+                size="small" 
+                :icon="Edit" 
+                @click="openTargetModal(res)"
+                v-if="res.status !== '已取消'"
+              >
+                編輯
+              </el-button>
+            </label>
             <p>{{ res.target }}</p>
+          </div>
+          <div class="info-item" v-else-if="res.status !== '已取消'">
+            <label>
+              預約目標
+              <el-button 
+                link 
+                type="primary" 
+                size="small" 
+                :icon="Plus" 
+                @click="openTargetModal(res)"
+              >
+                新增備註
+              </el-button>
+            </label>
+            <p class="text-muted" style="font-size: 0.9rem; font-style: italic;">尚未填寫預約目標或備註</p>
           </div>
           <div class="info-item" v-if="res.status === '待付款'">
             <label>付款剩餘時間</label>
@@ -79,16 +106,16 @@
             <!-- 待預約/待付款：可以取消 -->
             <el-tooltip
               v-if="res.status === '已預約' || res.status === '待付款'"
-              :content="memberInfo?.cancelCount >= 3 ? '取消次數已達 3 次上限，請洽客服' : (!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : '')"
+              :content="memberInfo?.cancelCount >= 3 && res.status !== '待付款' ? '取消次數已達 3 次上限，請洽客服' : (!isCancellable(res) ? '距離諮商開始不到 40 分鐘，無法取消' : '')"
               placement="top"
-              :disabled="isCancellable(res) && memberInfo?.cancelCount < 3"
+              :disabled="isCancellable(res) && (memberInfo?.cancelCount < 3 || res.status === '待付款')"
             >
               <span>
                 <el-button 
                   size="small" 
                   type="danger" 
                   plain 
-                  :disabled="!isCancellable(res) || memberInfo?.cancelCount >= 3"
+                  :disabled="!isCancellable(res) || (memberInfo?.cancelCount >= 3 && res.status !== '待付款')"
                   @click="handleCancel(res)"
                 >
                   取消預約
@@ -101,7 +128,7 @@
               <el-button v-if="!res.hasReview" size="small" type="warning" plain @click="openReviewModal(res)">寫評價</el-button>
               <el-button v-else size="small" type="success" plain @click="openReviewModal(res, true)">修改評價</el-button>
             </template>
-            <template v-else-if="res.status === '已完成'">
+            <template v-else-if="res.status === '已完成' && isReviewExpired(res)">
               <el-tag type="info" effect="plain" size="small">評價期已過</el-tag>
             </template>
             
@@ -170,12 +197,41 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 備註/目標編輯彈窗 -->
+    <el-dialog
+      v-model="targetModalVisible"
+      title="編輯預約備註"
+      width="400px"
+      align-center
+    >
+      <div class="target-edit-form">
+        <p class="edit-tip">您可以修改本次諮詢的目標或想對營養師說的話：</p>
+        <el-input
+          v-model="targetForm"
+          type="textarea"
+          :rows="4"
+          maxlength="200"
+          show-word-limit
+          placeholder="例如：想諮詢減脂飲食、最近體重停滯..."
+        />
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="targetModalVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitTargetUpdate" :loading="targetSubmitting">
+            儲存修改
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Plus } from '@element-plus/icons-vue'
 import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 interface Reservation {
@@ -275,6 +331,43 @@ const reviewForm = ref({
   comment: ''
 })
 
+// 備註/目標編輯相關
+const targetModalVisible = ref(false)
+const targetSubmitting = ref(false)
+const targetForm = ref('')
+
+const openTargetModal = (res: Reservation) => {
+  selectedRes.value = res
+  targetForm.value = res.target || ''
+  targetModalVisible.value = true
+}
+
+const submitTargetUpdate = async () => {
+  if (!selectedRes.value) return
+  
+  targetSubmitting.value = true
+  try {
+    const response = await fetchWithAuth(`/api/Reservation/${selectedRes.value.id}/Target`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: targetForm.value })
+    })
+
+    if (response.ok) {
+      ElMessage.success('備註更新成功')
+      targetModalVisible.value = false
+      fetchReservations() // 刷新列表
+    } else {
+      ElMessage.error('更新失敗')
+    }
+  } catch (error) {
+    console.error('Failed to update target:', error)
+    ElMessage.error('網路錯誤，請稍後再試')
+  } finally {
+    targetSubmitting.value = false
+  }
+}
+
 const fetchKeywords = async () => {
   try {
     const res = await fetch('/api/Review/Keywords')
@@ -346,6 +439,38 @@ const isWithinReviewPeriod = (res: Reservation) => {
     return diffDays >= 0 && diffDays <= 5
   } catch (error) {
     console.error('Error in isWithinReviewPeriod:', error)
+    return false
+  }
+}
+
+const isReviewExpired = (res: Reservation) => {
+  if (!res || !res.scheduleDate) return false
+  
+  try {
+    let endTime = '23:59'
+    if (res.timeSlot && res.timeSlot.includes('-')) {
+      const parts = res.timeSlot.split('-')
+      if (parts.length > 1) {
+        endTime = parts[1].trim()
+        if (endTime.includes('(')) {
+          endTime = endTime.split('(')[0].trim()
+        }
+      }
+    }
+    
+    if (endTime && !endTime.includes(':')) {
+      endTime = `${endTime}:00`
+    }
+
+    const endDateTime = new Date(`${res.scheduleDate} ${endTime}`)
+    if (isNaN(endDateTime.getTime())) return false
+
+    const now = new Date()
+    const diffDays = (now.getTime() - endDateTime.getTime()) / (1000 * 60 * 60 * 24)
+    
+    // 超過 5 天視為過期
+    return diffDays > 5
+  } catch {
     return false
   }
 }
@@ -764,6 +889,10 @@ onMounted(() => {
 .review-target { text-align: center; margin-bottom: 10px; }
 .res-time { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
 .review-form label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+
+/* 備註編輯樣式 */
+.target-edit-form { padding: 10px 0; }
+.edit-tip { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; }
 
 .ml-2 { margin-left: 8px; }
 
