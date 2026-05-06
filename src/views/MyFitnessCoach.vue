@@ -12,8 +12,7 @@
       <div class="nav-links">
         <a href="#nutritionists" @click.prevent="scrollTo('#nutritionists')">營養師團隊</a>
         <a href="#pricing"       @click.prevent="scrollTo('#pricing')">課程方案</a>
-        <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
-        <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
+        <router-link to="/health-tracker/reports">健康追蹤</router-link>
         <a href="#shop"          @click.prevent="scrollTo('#shop')">健康商城</a>
       </div>
 
@@ -60,9 +59,7 @@
   <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
     <a href="#nutritionists" @click.prevent="menuScrollTo('#nutritionists')">營養師團隊</a>
     <a href="#pricing"       @click.prevent="menuScrollTo('#pricing')">課程方案</a>
-    <RouterLink to="/bodyrecord" @click="isMobileMenuOpen = false">體態紀錄</RouterLink>
-    <RouterLink to="/foodrecord" @click="isMobileMenuOpen = false">飲食紀錄</RouterLink>
-    <a href="#tracking"      @click.prevent="menuScrollTo('#tracking')">飲食追蹤</a>
+    <RouterLink to="/health-tracker/reports" @click="isMobileMenuOpen = false">健康追蹤</RouterLink>
     <a href="#shop"          @click.prevent="menuScrollTo('#shop')">健康商城</a>
     <template v-if="!isLoggedIn">
       <a href="#cta" @click.prevent="menuScrollTo('#cta')">立即加入</a>
@@ -416,15 +413,50 @@ const { isScrolled, isMobileMenuOpen, toggleMenu, scrollTo, menuScrollTo } = use
 const { nutriTrackRef, slideNutri } = useNutriCarousel()
 useReveal({ threshold: 0.08, rootMargin: '0px 0px -30px 0px' })
 
-// 登入狀態
+// // 登入狀態
+// const username = ref(localStorage.getItem('username') || '')
+// const isLoggedIn = ref(!!localStorage.getItem('username'))
+
+// const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
+
+// function toAvatarSrc(url: string): string {
+//   if (!url) return NO_IMAGE
+//   if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+//   return `/StaticFiles${url}`
+// }
+
+// const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
+// const isDropdownOpen = ref(false)
+
+// function toggleDropdown() {
+//   isDropdownOpen.value = !isDropdownOpen.value
+// }
+
+// function closeDropdown() {
+//   isDropdownOpen.value = false
+// }
+
+// function handleLogout() {
+//   logout()
+//   localStorage.removeItem('username')
+//   username.value = ''
+//   imageUrl.value = toAvatarSrc('')
+//   isLoggedIn.value = false
+//   isDropdownOpen.value = false
+// }
+
+// onMounted(() => document.addEventListener('click', closeDropdown))
+// onUnmounted(() => document.removeEventListener('click', closeDropdown))
+
+// 登入狀態：改用 username 作為 UX hint（真正授權由後端 HttpOnly cookie + 401 控制）
 const username = ref(localStorage.getItem('username') || '')
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+const isLoggedIn = ref(!!localStorage.getItem('username'))
 
 const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
 function toAvatarSrc(url: string): string {
   if (!url) return NO_IMAGE
-  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images') || url.startsWith('/img')) return url
   return `/StaticFiles${url}`
 }
 
@@ -458,9 +490,8 @@ function closeDropdown() {
   isDropdownOpen.value = false
 }
 
-function handleLogout() {
-  logout()
-  localStorage.removeItem('username')
+async function handleLogout() {
+  await logout()
   username.value = ''
   imageUrl.value = toAvatarSrc('')
   isLoggedIn.value = false
@@ -490,7 +521,20 @@ onMounted(() => {
   }
 })
 
-onUnmounted(() => document.removeEventListener('click', closeDropdown))
+function handleProfileUpdated(e: Event) {
+  const detail = (e as CustomEvent<{ userName?: string; imageUrl?: string }>).detail
+  if (detail.userName) username.value = detail.userName
+  if (detail.imageUrl) imageUrl.value = toAvatarSrc(detail.imageUrl)
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeDropdown)
+  window.addEventListener('profile-updated', handleProfileUpdated)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdown)
+  window.removeEventListener('profile-updated', handleProfileUpdated)
+})
 
 const { allInstructors, loadInstructors } = useInstructors()
 const { reviewList, loadReviews } = useReviews()

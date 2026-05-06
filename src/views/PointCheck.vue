@@ -121,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 interface PointRecord {
   id: number
@@ -177,13 +178,16 @@ async function fetchPointData(targetPage = 1) {
   loading.value = true
   errorMsg.value = ''
   try {
-    const token = localStorage.getItem('token')
-    const url = `/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}&filter=${filter.value}`
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token ?? ''}`
-      }
-    })
+    const response = await fetchWithAuth(`/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}`)
+
+    //const token = localStorage.getItem('token')
+    //const url = `/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}&filter=${filter.value}`
+    //const response = await fetch(url, {
+      //headers: {
+        //'Authorization': `Bearer ${token ?? ''}`
+      //}
+    //})
+
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}))

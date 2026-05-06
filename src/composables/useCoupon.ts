@@ -22,7 +22,7 @@ const discountPreview  = ref<DiscountPreviewResultDto | null>(null)
 const wasAutoPicked    = ref(false)
 
 function isLoggedIn(): boolean {
-  return !!localStorage.getItem('token')
+  return !!localStorage.getItem('username')
 }
 
 // ----- Exported API ---------------------------------------------------------

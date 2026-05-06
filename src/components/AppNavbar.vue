@@ -12,8 +12,7 @@
       <div class="nav-links">
         <RouterLink to="/AllInstructor">營養師團隊</RouterLink>
         <RouterLink to="/lesson">課程方案</RouterLink>
-        <RouterLink to="/bodyrecord">體態紀錄</RouterLink>
-        <RouterLink to="/foodrecord">飲食紀錄</RouterLink>
+        <RouterLink to="/health-tracker/reports">健康追蹤</RouterLink>
         <RouterLink to="/store">健康商城</RouterLink>
       </div>
 
@@ -60,8 +59,7 @@
   <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
     <RouterLink to="/AllInstructor" @click="closeMobileMenu">營養師團隊</RouterLink>
     <RouterLink to="/lesson" @click="closeMobileMenu">課程方案</RouterLink>
-    <RouterLink to="/bodyrecord" @click="closeMobileMenu">體態紀錄</RouterLink>
-    <RouterLink to="/foodrecord" @click="closeMobileMenu">飲食紀錄</RouterLink>
+    <RouterLink to="/health-tracker/reports" @click="closeMobileMenu">健康追蹤</RouterLink>
     <RouterLink to="/store" @click="closeMobileMenu">健康商城</RouterLink>
     <template v-if="!isLoggedIn">
       <router-link :to="{ name: 'register' }" @click="closeMobileMenu">立即加入</router-link>
@@ -101,12 +99,12 @@ const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
 function toAvatarSrc(url: string): string {
   if (!url) return NO_IMAGE
-  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images') || url.startsWith('/img')) return url
   return `/StaticFiles${url}`
 }
 
 const username = ref(localStorage.getItem('username') || '')
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+const isLoggedIn = ref(!!username.value)
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl') || ''))
 const isDropdownOpen = ref(false)
 

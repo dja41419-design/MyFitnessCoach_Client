@@ -15,6 +15,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { fetchWithAuth } from '@/data/fetchWithAuth';
 
 const router = useRouter();
 const route = useRoute();
@@ -31,15 +32,14 @@ onMounted(async () => {
 
   try {
     // 使用瀏覽器內建的 fetch，不依賴 axios
-    const response = await fetch('https://localhost:7212/api/GoogleAuth/SaveToken', {
+    const response = await fetchWithAuth('/api/GoogleAuth/SaveToken', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      headers: { 
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
+      body: JSON.stringify({ 
         code: code,
-        redirectUri: window.location.origin + '/google-callback'
+        redirectUri: window.location.origin + "/google-callback" 
       })
     });
 

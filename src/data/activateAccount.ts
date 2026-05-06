@@ -6,7 +6,9 @@ export class ActivationError extends Error {
 }
 
 export async function activateAccount(token: string): Promise<void> {
-  const response = await fetch(`/api/auth/activate?token=${encodeURIComponent(token)}`)
+  const response = await fetch(`/api/auth/activate?token=${encodeURIComponent(token)}`, {
+    credentials: 'include'
+  })
 
   if (response.ok) return
 

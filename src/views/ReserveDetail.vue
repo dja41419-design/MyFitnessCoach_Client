@@ -252,6 +252,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchAllInstructors, type Instructor, type Availability } from '@/data/instructors'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -266,15 +267,12 @@ const paymentModalVisible = ref(false)
 const paymentMethod = ref('')
 const submitting = ref(false)
 const isGoogleConnected = ref(false)
-const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+const isLoggedIn = computed(() => !!localStorage.getItem('username'))
 
 const checkGoogleStatus = async () => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const res = await fetch('https://localhost:7212/api/GoogleAuth/CheckStatus', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    if (!isLoggedIn.value) return;
+    const res = await fetchWithAuth('/api/GoogleAuth/CheckStatus')
     if (res.ok) {
       const data = await res.json()
       isGoogleConnected.value = data.isConnected
@@ -326,13 +324,7 @@ function fillMemberInfo() {
 
 const fetchMemberInfo = async () => {
   try {
-    const token = localStorage.getItem('token')
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const res = await fetch('/api/Member/Info', { headers })
+    const res = await fetchWithAuth('/api/Member/Info')
     if (res.ok) {
       memberInfo.value = await res.json()
     }
@@ -491,13 +483,9 @@ async function submitFinalReservation() {
 
   submitting.value = true
   try {
-    const token = localStorage.getItem('token')
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const response = await fetch('/api/Reservation', {
+    const response = await fetchWithAuth('/api/Reservation', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         instructorId: instructorId.value,
         date: form.value.date,
@@ -528,12 +516,9 @@ async function submitFinalReservation() {
       const formData = new URLSearchParams()
       formData.append('reservationId', String(data.reservationId))
 
-      const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
-      if (token) payHeaders['Authorization'] = `Bearer ${token}`
-
-      const payResponse = await fetch('/api/Payment/ReservationSendToEcPay', {
+      const payResponse = await fetchWithAuth('/api/Payment/ReservationSendToEcPay', {
         method: 'POST',
-        headers: payHeaders,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       })
 
@@ -633,7 +618,9 @@ watch(instructorId, async (newId) => {
 })
 
 onMounted(async () => {
-  fetchMemberInfo()
+  if (isLoggedIn.value) {
+    fetchMemberInfo()
+  }
   checkGoogleStatus()
   instructors.value = await fetchAllInstructors()
   if (instructorId.value) {

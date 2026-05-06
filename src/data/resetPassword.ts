@@ -4,6 +4,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   const response = await fetch('/api/auth/resetpassword', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ token, newPassword }),
   })
 

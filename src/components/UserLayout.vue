@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '@/data/login'
 
@@ -60,15 +60,23 @@ const NO_IMAGE = '/StaticFiles/images/NoImage.jpg'
 
 function toAvatarSrc(url: string | null): string {
   if (!url) return NO_IMAGE
-  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images')) return url
+  if (url.startsWith('http') || url.startsWith('/StaticFiles') || url.startsWith('/images') || url.startsWith('/img')) return url
   return `/StaticFiles${url}`
 }
 
 const imageUrl = ref(toAvatarSrc(localStorage.getItem('imageUrl')))
 
-function handleLogout() {
-  logout()
-  localStorage.removeItem('username')
+function handleProfileUpdated(e: Event) {
+  const detail = (e as CustomEvent<{ userName?: string; imageUrl?: string }>).detail
+  if (detail.userName) username.value = detail.userName
+  if (detail.imageUrl) imageUrl.value = toAvatarSrc(detail.imageUrl)
+}
+
+onMounted(() => window.addEventListener('profile-updated', handleProfileUpdated))
+onUnmounted(() => window.removeEventListener('profile-updated', handleProfileUpdated))
+
+async function handleLogout() {
+  await logout()
   router.push({ name: 'login' })
 }
 </script>

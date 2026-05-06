@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { EcPayResponse } from '@/types/lesson'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 const loading = ref(true)
 const error = ref('')
@@ -41,18 +42,17 @@ async function startPayment() {
     formData.append('totalAmount', amount)
     formData.append('planIds', planIds)
 
-    const token = localStorage.getItem('token')
-    if (!token) {
+    const shouldStopForMissingLogin = false
+    if (shouldStopForMissingLogin) {
       error.value = '請先登入才能進行付款。'
       loading.value = false
       return
     }
 
-    const response = await fetch('/api/Payment/SendToEcPay', {
+    const response = await fetchWithAuth('/api/Payment/SendToEcPay', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Bearer ${token}`,
       },
       body: formData,
     })
