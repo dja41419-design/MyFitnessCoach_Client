@@ -127,9 +127,9 @@ import {
   LineController, BarController, DoughnutController,
   LineElement, BarElement, ArcElement,
   PointElement, CategoryScale, LinearScale,
-  Legend, Tooltip, Filler,
-  type ChartConfiguration,
+  Legend, Tooltip, Filler
 } from 'chart.js'
+import type { ChartConfiguration } from 'chart.js'
 import { getHealthReport, type HealthReportResponse } from '@/data/healthReports'
 import { bmiLabel } from '@/composables/useGoals'
 

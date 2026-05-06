@@ -18,7 +18,6 @@ import DailyDiet from '@/views/DailyDiet.vue'
 import BodyMetrics from '@/views/BodyMetrics.vue'
 import FoodLibrary from '@/views/FoodLibrary.vue'
 import Goals from '@/views/Goals.vue'
-import HealthTrackerReports from '@/views/HealthTrackerReports.vue'
 import ReserveOrders from '@/views/ReserveOrders.vue'
 import PointCheck from '@/views/PointCheck.vue'
 import UserLayout from '@/components/UserLayout.vue'
@@ -57,7 +56,7 @@ const router = createRouter({
         { name: 'body-metrics', path: 'body-metrics',  component: BodyMetrics },
         { name: 'food-library', path: 'food-library',  component: FoodLibrary },
         { name: 'goals',        path: 'goals',         component: Goals },
-        { name: 'reports',      path: 'reports',       component: HealthTrackerReports },
+        { name: 'reports',      path: 'reports',       component: () => import('@/views/HealthTrackerReports.vue') },
       ],
     },
     { name: 'AllInstructor', path: '/AllInstructor', component: AllInstructor },
