@@ -105,7 +105,7 @@
               <el-tag type="info" effect="plain" size="small">評價期已過</el-tag>
             </template>
             
-            <el-button size="small" type="primary" plain @click="window.open(`/reserve/${res.instructorId}`, '_blank')">再次預約</el-button>
+            <el-button size="small" type="primary" plain @click="openNewTab(`/reserve/${res.instructorId}`)">再次預約</el-button>
           </div>
         </div>
       </div>
@@ -176,6 +176,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 interface Reservation {
   id: number
@@ -260,6 +261,10 @@ const handlePageChange = (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+function openNewTab(url: string) {
+  window.open(url, '_blank')
+}
+
 // 評價相關
 const reviewModalVisible = ref(false)
 const submitting = ref(false)
@@ -283,11 +288,7 @@ const fetchKeywords = async () => {
 
 const fetchMemberInfo = async () => {
   try {
-    const token = localStorage.getItem('token')
-    const headers: Record<string, string> = {}
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const res = await fetch('/api/Member/Info', { headers })
+    const res = await fetchWithAuth('/api/Member/Info')
     if (res.ok) {
       memberInfo.value = await res.json()
     }
@@ -299,11 +300,7 @@ const fetchMemberInfo = async () => {
 const fetchReservations = async () => {
   loading.value = true
   try {
-    const token = localStorage.getItem('token')
-    const headers: Record<string, string> = {}
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const res = await fetch('/api/Reservation/My', { headers })
+    const res = await fetchWithAuth('/api/Reservation/My')
     if (res.ok) {
       reservations.value = await res.json()
     } else {
@@ -505,16 +502,12 @@ const goToReserve = (instructorId: number) => {
 
 const handlePayment = async (res: Reservation) => {
   try {
-    const token = localStorage.getItem('token')
     const formData = new URLSearchParams()
     formData.append('reservationId', res.id.toString())
 
-    const payHeaders: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
-    if (token) payHeaders['Authorization'] = `Bearer ${token}`
-
-    const response = await fetch('/api/Payment/ReservationSendToEcPay', {
+    const response = await fetchWithAuth('/api/Payment/ReservationSendToEcPay', {
       method: 'POST',
-      headers: payHeaders,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData
     })
 
@@ -580,11 +573,7 @@ const handleCancel = (res: Reservation) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/Reservation/${res.id}`, {
-        method: 'DELETE',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      })
+      const response = await fetchWithAuth(`/api/Reservation/${res.id}`, { method: 'DELETE' })
       
       if (response.ok) {
         ElMessage.success('預約已成功取消')

@@ -19,6 +19,7 @@
               :class="{ 'is-error': errors.oldPassword }"
               placeholder="請輸入舊密碼"
               autocomplete="current-password"
+              maxlength="12"
             />
             <button type="button" class="pwd-toggle-btn" @click="show.old = !show.old" :aria-label="show.old ? '隱藏密碼' : '顯示密碼'">
               <svg v-if="show.old" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -45,8 +46,9 @@
               :type="show.new ? 'text' : 'password'"
               class="form-input"
               :class="{ 'is-error': errors.newPassword }"
-              placeholder="請輸入新密碼（至少 8 個字元）"
+              placeholder="請輸入新密碼（8-12 碼）"
               autocomplete="new-password"
+              maxlength="12"
             />
             <button type="button" class="pwd-toggle-btn" @click="show.new = !show.new" :aria-label="show.new ? '隱藏密碼' : '顯示密碼'">
               <svg v-if="show.new" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -64,8 +66,8 @@
           <div v-if="form.newPassword" class="pwd-feedback">
             <!-- 規則清單 -->
             <ul class="pwd-rules">
-              <li :class="rules.minLen ? 'rule-pass' : 'rule-fail'">
-                {{ rules.minLen ? '✓' : '✗' }} 至少 8 個字元
+              <li :class="rules.minLen && rules.maxLen ? 'rule-pass' : 'rule-fail'">
+                {{ rules.minLen && rules.maxLen ? '✓' : '✗' }} 長度 8-12 碼
               </li>
               <li :class="rules.hasUpper ? 'rule-pass' : 'rule-fail'">
                 {{ rules.hasUpper ? '✓' : '✗' }} 包含大寫字母
@@ -75,6 +77,9 @@
               </li>
               <li :class="rules.hasSymbol ? 'rule-pass' : 'rule-fail'">
                 {{ rules.hasSymbol ? '✓' : '✗' }} 包含特殊字元
+              </li>
+              <li :class="rules.noKeyboardSeq ? 'rule-pass' : 'rule-fail'">
+                {{ rules.noKeyboardSeq ? '✓' : '✗' }} 不含鍵盤連續字串
               </li>
             </ul>
             <!-- 強度條 -->
@@ -102,6 +107,7 @@
               :class="{ 'is-error': errors.confirmPassword }"
               placeholder="請再次輸入新密碼"
               autocomplete="new-password"
+              maxlength="12"
             />
             <button type="button" class="pwd-toggle-btn" @click="show.confirm = !show.confirm" :aria-label="show.confirm ? '隱藏密碼' : '顯示密碼'">
               <svg v-if="show.confirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -140,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, toRef } from 'vue'
+import { ref, reactive, toRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { changePassword } from '@/data/changePassword'
 import { usePasswordQuality } from '@/composables/usePasswordQuality'
@@ -154,14 +160,16 @@ const apiError = ref('')
 const successMessage = ref('')
 const isLoading = ref(false)
 
-const { rules, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'newPassword'))
+const { rules, isValid, firstFailureMessage, strength, strengthText, strengthClass } = usePasswordQuality(toRef(form, 'newPassword'))
+
+watch(() => form.oldPassword, () => { errors.oldPassword = '' })
+watch(() => form.newPassword, () => { errors.newPassword = '' })
+watch(() => form.confirmPassword, () => { errors.confirmPassword = '' })
 
 function validate(): boolean {
   errors.oldPassword = form.oldPassword ? '' : '請輸入舊密碼'
-  if (!form.newPassword) {
-    errors.newPassword = '請輸入新密碼'
-  } else if (form.newPassword.length < 8) {
-    errors.newPassword = '密碼至少需要 8 個字元'
+  if (!isValid.value) {
+    errors.newPassword = firstFailureMessage.value
   } else if (form.newPassword === form.oldPassword) {
     errors.newPassword = '新密碼不可與舊密碼相同'
   } else {

@@ -10,6 +10,7 @@ export async function forgotPassword(email: string): Promise<void> {
   const response = await fetch('/api/auth/forgotpassword', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ email }),
   })
 
