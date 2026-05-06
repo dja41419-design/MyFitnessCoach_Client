@@ -43,12 +43,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import { ElMessageBox } from 'element-plus'
+import { fetchWithAuth } from '@/data/fetchWithAuth'
 
 const router = useRouter()
 const route = useRoute()
 const { clearCart } = useCart()
 
-const countdown = ref(10)
+const countdown = ref(5)
 const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
 
 const rawCode = (route.query.RtnCode as string) ?? ''
@@ -71,11 +72,8 @@ function goNext(): void {
 
 const checkGoogleStatus = async () => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const res = await fetch('/api/GoogleAuth/CheckStatus', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    if (!localStorage.getItem('username')) return
+    const res = await fetchWithAuth('/api/GoogleAuth/CheckStatus')
     if (res.ok) {
       const data = await res.json()
       isGoogleConnected.value = data.isConnected

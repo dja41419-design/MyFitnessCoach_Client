@@ -23,6 +23,7 @@
               :class="{ 'is-error': emailError }"
               placeholder="請輸入註冊時的 Email"
               autocomplete="email"
+              maxlength="100"
             />
             <span v-if="emailError" class="form-error">{{ emailError }}</span>
           </div>
@@ -45,9 +46,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { forgotPassword, RateLimitError } from '@/data/forgotPassword'
+import { EMAIL_REGEX } from '@/utils/validators'
 
 const COOLDOWN_KEY = 'forgotpwd_cooldown_until'
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const email = ref('')
 const emailError = ref('')
@@ -100,11 +101,16 @@ onUnmounted(() => {
 })
 
 function validate(): boolean {
-  if (!email.value) {
+  const v = email.value.trim()
+  if (!v) {
     emailError.value = '請輸入 Email'
     return false
   }
-  if (!EMAIL_REGEX.test(email.value)) {
+  if (v.length > 100) {
+    emailError.value = 'Email 長度不可超過 100 碼'
+    return false
+  }
+  if (!EMAIL_REGEX.test(v)) {
     emailError.value = '請輸入有效的 Email 格式'
     return false
   }

@@ -148,7 +148,7 @@ const {
 
 const autoPicking = ref(false)
 
-const loggedIn = ref(!!localStorage.getItem('token'))
+const loggedIn = ref(!!localStorage.getItem('username'))
 
 // 雙向綁定優惠券下拉
 const selectedCouponId = computed<number | null>({

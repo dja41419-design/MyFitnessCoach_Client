@@ -4,8 +4,9 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string
+  token?: string
   userId: number
+  memberId?: number
   userName: string
   imageUrl?: string
 }
@@ -14,7 +15,8 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    credentials: 'include',
+    body: JSON.stringify(payload),
   })
 
   if (response.status === 401) {
@@ -23,17 +25,45 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
   }
 
   if (!response.ok) {
-    throw new Error('伺服器錯誤，請稍後再試')
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err?.message ?? err?.title ?? '登入失敗，請稍後再試')
   }
 
   return response.json()
 }
 
-export function logout(): void {
-  localStorage.removeItem('token')
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+  } catch {
+    // Logout should still clear client state when the server request fails.
+  }
+
   localStorage.removeItem('username')
   localStorage.removeItem('imageUrl')
-  // 清空前端購物車 state + localStorage,避免下一個訪客看到前一位使用者的商品
-  // 動態 import 避免循環依賴(useCart 會 import fetchWithAuth,fetchWithAuth 會 import router)
-  import('@/composables/useCart').then(m => m.clearCartOnLogout())
+  localStorage.removeItem('memberId')
+
+  const cart = await import('@/composables/useCart')
+  cart.clearCartOnLogout()
+}
+
+export interface CurrentUser {
+  userId: number
+  memberId?: number
+  userName: string
+  imageUrl?: string
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  const response = await fetch('/api/auth/me', {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (response.status === 401) return null
+  if (!response.ok) return null
+  return response.json()
 }

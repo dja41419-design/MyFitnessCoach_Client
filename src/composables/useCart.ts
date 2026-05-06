@@ -73,7 +73,7 @@ function loadFromStorage(): CartItem[] {
 }
 
 function isLoggedIn(): boolean {
-  return !!localStorage.getItem('token')
+  return !!localStorage.getItem('username')
 }
 
 function mapServerItem(dto: ServerCartItemDto): CartItem {
