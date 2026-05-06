@@ -48,7 +48,7 @@ const router = useRouter()
 const route = useRoute()
 const { clearCart } = useCart()
 
-const countdown = ref(10)
+const countdown = ref(5)
 const isGoogleConnected = ref(true) // 預設為 true 以免閃爍
 
 const rawCode = (route.query.RtnCode as string) ?? ''

@@ -41,7 +41,7 @@ import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
-const countdown = ref(10)
+const countdown = ref(5)
 const isGoogleConnected = ref(true) // 預設為 true 以免閃爍，Mounted 後檢查
 
 const rawCode = (route.query.RtnCode as string) ?? ''

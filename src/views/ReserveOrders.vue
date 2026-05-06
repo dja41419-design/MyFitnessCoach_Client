@@ -232,7 +232,7 @@ onUnmounted(() => {
 
 const getCountdownText = (res: Reservation) => {
   const createAt = new Date(res.createAt)
-  const expireAt = new Date(createAt.getTime() + 10 * 1000) // 10 秒
+  const expireAt = new Date(createAt.getTime() + 20 * 1000) // 20 秒
   const diff = expireAt.getTime() - nowRef.value.getTime()
 
   if (diff <= 0) {
