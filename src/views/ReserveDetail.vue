@@ -91,6 +91,10 @@
                   <span class="status-indicator reserved"></span>
                   <span class="status-text">已額滿</span>
                 </div>
+                <div class="legend-item">
+                  <span class="status-indicator past"></span>
+                  <span class="status-text">已過期</span>
+                </div>
               </div>
             </div>
             <input type="hidden" v-model="form.date" required />
@@ -350,6 +354,12 @@ const fetchAvailabilityData = async (id: number) => {
 
 function getDayClass(dateNum: number) {
   const d = new Date(currentYear.value, currentMonth.value, dateNum)
+  const compareDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  
+  if (d < compareDate) {
+    return { 'status-past': true }
+  }
+
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const dayAvailability = availability.value.filter(a => a.date === dateStr)
   if (dayAvailability.length === 0) return {}
@@ -726,11 +736,17 @@ onMounted(async () => {
   color: #b91c1c; 
   font-weight: 600;
 }
+.calendar-day.status-past {
+  background-color: #f5f5f5 !important;
+  color: #999 !important;
+  cursor: not-allowed;
+}
 .calendar-status-legend { display: flex; justify-content: flex-end; gap: 20px; margin-top: 15px; padding: 0 5px; }
 .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); }
 .status-indicator { width: 12px; height: 12px; border-radius: 3px; }
 .status-indicator.available { background-color: #f0fdf4; border: 1px solid #15803d; }
 .status-indicator.reserved { background-color: #fff1f2; border: 1px solid #b91c1c; }
+.status-indicator.past { background-color: #f5f5f5; border: 1px solid #999; }
 .form-group { margin-bottom: 30px; }
 .form-floating { position: relative; margin-bottom: 20px; }
 .form-floating > .form-control { height: calc(3.5rem + 2px); padding: 1.625rem 0.75rem 0.625rem; line-height: 1.25; }
