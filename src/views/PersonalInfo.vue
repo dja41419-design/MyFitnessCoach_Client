@@ -1,4 +1,5 @@
 <template>
+  <AppNavbar />
   <div class="personal-info">
     <div class="section-header">
       <h2 class="section-title">個人資料</h2>
@@ -127,6 +128,7 @@ import {
   type UpdatePersonalInfoRequest,
 } from '@/data/personalInfo'
 import { hasHtmlSpecialChar, NAME_MAX_LENGTH } from '@/utils/validators'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 // ── State ──────────────────────────────────────────────────────
 const initLoading    = ref(true)

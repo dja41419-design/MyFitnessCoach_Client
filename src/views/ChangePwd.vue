@@ -1,4 +1,5 @@
 <template>
+  <AppNavbar />
   <div class="pwd-container">
     <div class="section-header">
       <h2 class="section-title">修改密碼</h2>
@@ -150,6 +151,7 @@ import { ref, reactive, toRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { changePassword } from '@/data/changePassword'
 import { usePasswordQuality } from '@/composables/usePasswordQuality'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 const router = useRouter()
 

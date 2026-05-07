@@ -1,4 +1,5 @@
 <template>
+  <AppNavbar />
   <div class="orders-page">
     <h1 class="page-title">訂單查詢</h1>
 
@@ -209,6 +210,7 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchWithAuth } from '@/data/fetchWithAuth'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface OrderDetail {
   productName: string

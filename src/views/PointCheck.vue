@@ -1,4 +1,5 @@
 <template>
+  <AppNavbar />
   <div class="point-check-container">
     <div class="section-header">
       <h2 class="section-title">點數查詢</h2>
@@ -122,6 +123,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { fetchWithAuth } from '@/data/fetchWithAuth'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface PointRecord {
   id: number

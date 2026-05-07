@@ -1,4 +1,5 @@
 <template>
+  <AppNavbar />
   <div class="my-reservations">
     <header class="section-header">
       <div class="header-content">
@@ -233,6 +234,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
 import { fetchWithAuth } from '@/data/fetchWithAuth'
+import AppNavbar from '@/components/AppNavbar.vue'
 
 interface Reservation {
   id: number
