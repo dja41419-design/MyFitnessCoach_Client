@@ -25,10 +25,6 @@
           <input type="number" v-model.number="localInfo.currentWeight" step="0.1" class="form-input" placeholder="自動抓取體重紀錄" @blur="liveRefreshTDEE" />
         </div>
         <div class="form-group">
-          <label class="form-label">目標體重 (kg)</label>
-          <input type="number" v-model.number="localInfo.targetWeight" step="0.1" class="form-input" />
-        </div>
-        <div class="form-group">
           <label class="form-label">活動量 <span class="required">*</span></label>
           <select v-model="localInfo.activityLevel" class="form-input" @change="liveRefreshTDEE">
             <option value="1.2">久坐（幾乎不運動）</option>
