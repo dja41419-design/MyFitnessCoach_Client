@@ -180,7 +180,7 @@ async function fetchPointData(targetPage = 1) {
   loading.value = true
   errorMsg.value = ''
   try {
-    const response = await fetchWithAuth(`/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}`)
+    const response = await fetchWithAuth(`/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}&filter=${filter.value}`)
 
     //const token = localStorage.getItem('token')
     //const url = `/api/Points/my-points?page=${targetPage}&pageSize=${pageSize}&filter=${filter.value}`
