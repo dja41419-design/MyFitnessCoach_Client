@@ -86,7 +86,13 @@
             <span v-else-if="mc.coupon.visibleOnlyOnDayOfMonth" class="coupon-card-expiry">
               今日 23:59 截止
             </span>
-            <span v-else>{{ formatDateRange(mc.coupon.startAt, mc.coupon.endAt) }}</span>
+            <span
+              v-else-if="isLimitedTime(mc.coupon.startAt, mc.coupon.endAt)"
+              class="coupon-card-expiry"
+            >
+              {{ formatLimitedExpiry(mc.coupon.endAt) }}
+            </span>
+            <!-- 長期券:不渲染任何日期 span -->
           </div>
           <RouterLink to="/cart" class="coupon-card-btn coupon-card-btn--link">前往使用</RouterLink>
         </article>
@@ -199,17 +205,36 @@ function formatDate(iso: string | null): string {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
 }
 
-function formatDateRange(startIso: string, endIso: string): string {
-  return `${formatDate(startIso)} - ${formatDate(endIso)}`
+const LIMITED_TIME_THRESHOLD_DAYS = 60
+
+/** 判斷是否為「短期限時券」(整體上下架期間 ≤ 60 天) */
+function isLimitedTime(startIso: string, endIso: string): boolean {
+  const start = new Date(startIso).getTime()
+  const end   = new Date(endIso).getTime()
+  const days  = (end - start) / (1000 * 60 * 60 * 24)
+  return days <= LIMITED_TIME_THRESHOLD_DAYS
+}
+
+/** 短期券專用:回傳「5/15 到期 (剩 N 天)」格式
+ *  EndAt 慣例為 exclusive upper bound (T00:00:00),所以顯示時減 1 天才是真實最後可用日。
+ *  此函式只給短期券用,長期券走另一條 v-else-if 不渲染,所以這個 -1 不會影響其他卡片。 */
+function formatLimitedExpiry(endIso: string): string {
+  const d = new Date(endIso)
+  d.setDate(d.getDate() - 1)
+  return `${d.getMonth() + 1}/${d.getDate()} 到期 (${daysLeft(d.toISOString())})`
 }
 
 function daysLeft(iso: string | null): string {
   if (!iso) return ''
   const target = new Date(iso)
   const now = new Date()
-  const diffMs = target.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays < 0) return '已過期'
+  // 用 calendar day 比較,避免 DATETIME2(0) 進位 + 瀏覽器 / 伺服器 sub-second 時差
+  // 造成「剛領券顯示 31 天、重整變 30 天」的跳動。
+  // Math.round 是為了 DST 切換那兩天 (有 23/25 小時) 時保護整數結果。
+  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
+  const todayDay  = new Date(now.getFullYear(),    now.getMonth(),    now.getDate()).getTime()
+  const diffDays  = Math.round((targetDay - todayDay) / (1000 * 60 * 60 * 24))
+  if (diffDays < 0)  return '已過期'
   if (diffDays === 0) return '今日到期'
   return `剩 ${diffDays} 天`
 }
