@@ -5,7 +5,15 @@
     <div class="forgot-form-wrap">
       <div class="forgot-card">
         <div class="forgot-logo">
-          <img src="/assets/logo.png" alt="My Fitness Coach" class="forgot-logo-img" />
+          <button
+            type="button"
+            class="forgot-logo-quickfill"
+            title="快速填入 Email"
+            aria-label="快速填入 Email"
+            @click="handleQuickFill"
+          >
+            <img src="/assets/logo.png" alt="My Fitness Coach" class="forgot-logo-img" />
+          </button>
           <span class="forgot-logo-name">MyFitnessCoach</span>
         </div>
 
@@ -118,6 +126,13 @@ function validate(): boolean {
   return true
 }
 
+function handleQuickFill() {
+  email.value = 'myfitnesscoach2026+linxuanyu51@gmail.com'
+  emailError.value = ''
+  apiError.value = ''
+  successMessage.value = ''
+}
+
 async function handleSubmit() {
   apiError.value = ''
   successMessage.value = ''
@@ -127,7 +142,7 @@ async function handleSubmit() {
   try {
     //呼叫後方api
     await forgotPassword(email.value)
-    successMessage.value = '若此帳號存在，系統已將重設郵件寄出'
+    successMessage.value = '系統已將重設郵件寄出'
     startCountdown(60)
   } catch (err) {
     //
@@ -184,6 +199,20 @@ async function handleSubmit() {
   gap: 10px;
   margin-bottom: 32px;
   transform: translateX(-10px);
+}
+.forgot-logo-quickfill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.forgot-logo-quickfill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 50%;
 }
 .forgot-logo-img {
   height: 80px;

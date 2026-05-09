@@ -1,9 +1,16 @@
 <template>
   <div class="register-form-container">
-    <div v-if="showLogo" class="register-logo">
+    <button
+      v-if="showLogo"
+      type="button"
+      class="register-logo"
+      title="快速填入註冊資料"
+      aria-label="快速填入註冊資料"
+      @click="handleQuickFill"
+    >
       <img src="/assets/logo.png" alt="My Fitness Coach" class="register-logo-img" />
       <span class="register-logo-name">MyFitnessCoach</span>
-    </div>
+    </button>
 
     <h1 class="register-title">{{ title }}</h1>
     <p class="register-subtitle">{{ subtitle }}</p>
@@ -367,6 +374,30 @@ function handleClear() {
   apiError.value = ''
 }
 
+function handleQuickFill() {
+  const suffix = Date.now().toString(36).slice(-8)
+  const phoneTail = `${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`
+
+  Object.assign(form, {
+    name: '測試用戶',
+    account: `test${suffix}`,
+    password: 'IspanFuen49!',
+    confirmPassword: 'IspanFuen49!',
+    email: `myfitnesscoach2026+${suffix}@gmail.com`,
+    phone: `09${phoneTail}`,
+    gender: 'M',
+    dateOfBirth: '1995-01-01',
+  })
+
+  const fields = Object.keys(errors) as (keyof typeof errors)[]
+  fields.forEach((field) => {
+    touched[field] = true
+    errors[field] = validateOne(field)
+  })
+
+  apiError.value = ''
+}
+
 async function handleSubmit() {
   apiError.value = ''
   if (!validate()) return
@@ -403,6 +434,18 @@ async function handleSubmit() {
   justify-content: center;
   gap: 10px;
   margin-bottom: 24px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.register-logo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: var(--radius);
 }
 
 .register-logo-img {

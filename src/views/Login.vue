@@ -9,7 +9,15 @@
 
       <div class="login-card">
         <div class="login-logo">
-          <img src="/assets/logo.png" alt="My Fitness Coach" class="login-logo-img" />
+          <button
+            type="button"
+            class="login-logo-quickfill"
+            title="快速填入登入資料"
+            aria-label="快速填入登入資料"
+            @click="handleQuickFill"
+          >
+            <img src="/assets/logo.png" alt="My Fitness Coach" class="login-logo-img" />
+          </button>
           <span class="login-logo-name">MyFitnessCoach</span>
         </div>
 
@@ -101,6 +109,14 @@ function validate(): boolean {
   return !errors.account && !errors.password
 }
 
+function handleQuickFill() {
+  form.account = 'linxuanyu51'
+  form.password = '@A12345678'
+  errors.account = ''
+  errors.password = ''
+  apiError.value = ''
+}
+
 async function handleSubmit() {
   apiError.value = ''
   if (!validate()) return
@@ -185,6 +201,22 @@ function handleGoogleLogin() {
   gap: 10px;
   margin-bottom: 32px;
   transform: translateX(-10px);
+}
+
+.login-logo-quickfill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.login-logo-quickfill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 50%;
 }
 
 .login-logo-img {
