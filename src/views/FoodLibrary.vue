@@ -312,7 +312,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useFoodLibrary, loadFoods, createFood, updateFood, deleteFood, toggleFavorite } from '@/composables/useFoodLibrary'
-import { useHealthTracker, genUid } from '@/composables/useHealthTracker'
+import { useHealthTracker } from '@/composables/useHealthTracker'
+import { createFoodRecord } from '@/data/dailyDiet'
 import { compareOp } from '@/composables/useGoals'
 import type { FoodDto, ServingSizeDto } from '@/data/foodLibrary'
 
@@ -321,8 +322,7 @@ const {
 } = useFoodLibrary()
 
 const {
-  dietLogs, goals,
-  saveData, getDayLog, todayStr,
+  todayStr,
   FOOD_PAGE_SIZE, MEAL_META, r0,
 } = useHealthTracker()
 
@@ -556,21 +556,26 @@ function openQuickAdd(id: number) {
   quickAddVisible.value = true
 }
 
-function confirmQuickAdd() {
+async function confirmQuickAdd() {
   const food = quickFood.value
   const srv  = selectedServing.value
   if (!food || !srv) return
-  const entry = {
-    uid: genUid(), foodId: String(food.id), name: food.foodName,
-    cal: srv.kcal, p: srv.proteinGram, c: srv.carbGram, f: srv.fatGram,
-    serving: servingTextDto(srv), servings: quickServings.value,
+  isSaving.value = true
+  try {
+    await createFoodRecord({
+      foodId:   food.id,
+      amount:   quickServings.value,
+      measure:  srv.measure,
+      mealType: quickMeal.value,
+      eatDT:    quickDate.value,
+    })
+    quickAddVisible.value = false
+    showToast(`已將 ${food.foodName} 加入 ${quickDate.value} ${MEAL_META.find(m => m.id === quickMeal.value)?.label}`)
+  } catch (e: any) {
+    showToast(e.message || '新增飲食紀錄失敗')
+  } finally {
+    isSaving.value = false
   }
-  const log  = getDayLog(quickDate.value)
-  const meal = log.meals[quickMeal.value as keyof typeof log.meals]
-  meal.push(entry)
-  saveData()
-  quickAddVisible.value = false
-  showToast(`已將 ${food.foodName} 加入 ${quickDate.value} ${MEAL_META.find(m => m.id === quickMeal.value)?.label}`)
 }
 
 // ── Toast ──────────────────────────────────────────────────────
