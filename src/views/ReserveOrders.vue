@@ -54,7 +54,7 @@
                 size="small" 
                 :icon="Edit" 
                 @click="openTargetModal(res)"
-                v-if="res.status !== '已取消'"
+                v-if="!isStarted(res)"
               >
                 編輯
               </el-button>
@@ -70,6 +70,7 @@
                 size="small" 
                 :icon="Plus" 
                 @click="openTargetModal(res)"
+                v-if="!isStarted(res)"
               >
                 新增備註
               </el-button>
@@ -344,6 +345,32 @@ const openTargetModal = (res: Reservation) => {
   targetModalVisible.value = true
 }
 
+const isStarted = (res: Reservation) => {
+  if (!res) return false
+  if (res.status === '已完成' || res.status === '已取消') return true
+  if (!res.scheduleDate || !res.timeSlot) return false
+
+  try {
+    // 解析開始時間，例如 "09-10(上午)" -> "09"
+    let startTime = res.timeSlot.split('-')[0].trim()
+    if (startTime.includes('(')) {
+      startTime = startTime.split('(')[0].trim()
+    }
+    
+    // 補足分鐘
+    if (!startTime.includes(':')) {
+      startTime = `${startTime}:00`
+    }
+
+    const startDateTime = new Date(`${res.scheduleDate} ${startTime}`)
+    if (isNaN(startDateTime.getTime())) return false
+
+    return nowRef.value.getTime() >= startDateTime.getTime()
+  } catch {
+    return false
+  }
+}
+
 const submitTargetUpdate = async () => {
   if (!selectedRes.value) return
   
@@ -360,7 +387,8 @@ const submitTargetUpdate = async () => {
       targetModalVisible.value = false
       fetchReservations() // 刷新列表
     } else {
-      ElMessage.error('更新失敗')
+      const errorData = await response.json().catch(() => ({}))
+      ElMessage.error(errorData.message || '更新失敗')
     }
   } catch (error) {
     console.error('Failed to update target:', error)
@@ -551,7 +579,7 @@ const openReviewModal = async (res: Reservation, edit = false) => {
   
   if (edit) {
     try {
-      const response = await fetch(`/api/Review/Reservation/${res.id}`)
+      const response = await fetchWithAuth(`/api/Review/Reservation/${res.id}`)
       if (response.ok) {
         const review = await response.json()
         reviewForm.value = { 
@@ -598,7 +626,7 @@ const submitReview = async () => {
   submitting.value = true
   try {
     const method = isEditing.value ? 'PUT' : 'POST'
-    const res = await fetch('/api/Review', {
+    const res = await fetchWithAuth('/api/Review', {
       method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
