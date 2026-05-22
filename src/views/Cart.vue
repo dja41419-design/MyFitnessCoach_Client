@@ -79,7 +79,7 @@
                   v-for="mc in usableMyCoupons"
                   :key="mc.id"
                   :value="mc.id"
-                >{{ mc.coupon.name }}{{ formatExpirySuffix(mc) }}</option>
+                >{{ mc.coupon.name }}{{ formatExpirySuffix(mc.expiresAt) }}</option>
               </select>
               <RouterLink to="/coupons" class="cart-coupon-link">我的優惠券 →</RouterLink>
             </div>
@@ -122,7 +122,6 @@ import { RouterLink, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCart } from '@/composables/useCart'
 import { useCoupon } from '@/composables/useCoupon'
-import type { MemberCouponDto } from '@/data/coupon'
 import AppNavbar from '@/components/AppNavbar.vue'
 
 const router = useRouter()
@@ -176,24 +175,6 @@ async function handleCouponChange(): Promise<void> {
 
 function formatPrice(price: number): string {
   return Math.floor(price).toLocaleString()
-}
-
-function formatExpirySuffix(mc: MemberCouponDto): string {
-  // 1. 個人到期日(WELCOME100)
-  if (mc.expiresAt) {
-    const target = new Date(mc.expiresAt)
-    const diffDays = Math.ceil((target.getTime() - Date.now()) / 86400000)
-    if (diffDays < 0) return ''
-    const m = target.getMonth() + 1
-    const d = target.getDate()
-    if (diffDays === 0) return ` (${m}/${d} 到期 · 今日到期)`
-    return ` (${m}/${d} 到期 · 剩 ${diffDays} 天)`
-  }
-  // 2. 限當日券(DAY22 等):後端只在當日下發,顯示「今日 23:59 截止」
-  if (mc.coupon.visibleOnlyOnDayOfMonth) {
-    return ' (今日 23:59 截止)'
-  }
-  return ''
 }
 
 function handleQtyInput(e: Event, id: number): void {

@@ -6,17 +6,17 @@
 
       <RouterLink to="/store" class="coupons-back" aria-label="返回商城">← 返回商城</RouterLink>
 
-      <h1 class="coupons-title">我的優惠券</h1>
+      <h1 class="coupons-title reveal">我的優惠券</h1>
 
       <!-- 輸入代碼領取 -->
-      <section class="coupons-claim">
+      <section class="coupons-claim reveal rd1">
         <label class="coupons-claim-label">輸入優惠碼領取</label>
         <div class="coupons-claim-row">
           <input
             v-model="claimCode"
             type="text"
             class="coupons-claim-input"
-            placeholder="例如：WELCOME100"
+            placeholder="例如:MyFitness222"
             @keydown.enter="handleClaim"
           />
           <button
@@ -31,7 +31,7 @@
 
       <!-- 可領取清單 -->
       <section class="coupons-section">
-        <h2 class="coupons-section-title">可領取</h2>
+        <h2 class="coupons-section-title reveal">可領取</h2>
         <div v-if="availableCoupons.length === 0" class="coupons-empty">
           目前沒有可領取的優惠券
         </div>
@@ -58,7 +58,7 @@
 
       <!-- 我的優惠券 -->
       <section class="coupons-section">
-        <h2 class="coupons-section-title">我的優惠券</h2>
+        <h2 class="coupons-section-title reveal">我的優惠券</h2>
 
         <h3 class="coupons-subtitle">未使用</h3>
         <div v-if="unusedCoupons.length === 0" class="coupons-empty">
@@ -116,7 +116,10 @@ import { RouterLink } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppNavbar from '@/components/AppNavbar.vue'
 import { useCoupon } from '@/composables/useCoupon'
+import { useReveal } from '@/composables/useReveal'
 import type { CouponDto } from '@/data/coupon'
+
+useReveal()
 
 const {
   availableCoupons,

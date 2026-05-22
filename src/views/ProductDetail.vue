@@ -22,7 +22,7 @@
       <!-- 商品詳情 -->
       <div v-else class="detail-layout">
         <!-- 左側：商品圖 -->
-        <div class="detail-img-wrap">
+        <div class="detail-img-wrap reveal">
           <span v-if="hasDiscount(product)" class="detail-badge">特價</span>
           <img
             :src="`/api/StoreApi/ProductImage/${product.id}`"
@@ -33,10 +33,10 @@
 
         <!-- 右側：商品資訊 -->
         <div class="detail-info">
-          <div class="detail-category">{{ product.categoryName }}</div>
-          <h1 class="detail-title">{{ product.name }}</h1>
+          <div class="detail-category reveal rd1">{{ product.categoryName }}</div>
+          <h1 class="detail-title reveal rd1">{{ product.name }}</h1>
 
-          <div class="detail-price">
+          <div class="detail-price reveal rd2">
             NT${{ formatPrice(product.unitPrice) }}
             <span v-if="hasDiscount(product)" class="original">
               NT${{ formatPrice(product.originalPrice) }}
@@ -45,12 +45,12 @@
 
           <div class="detail-divider"></div>
 
-          <div class="detail-desc-block">
+          <div class="detail-desc-block reveal rd3">
             <h3 class="detail-desc-title">商品介紹</h3>
             <p class="detail-desc">{{ product.description }}</p>
           </div>
 
-          <button class="detail-cart-btn" @click="handleAddToCart">加入購物車</button>
+          <button class="detail-cart-btn reveal rd4" @click="handleAddToCart">加入購物車</button>
         </div>
       </div>
 
@@ -63,7 +63,10 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useCart } from '@/composables/useCart'
+import { useReveal } from '@/composables/useReveal'
 import AppNavbar from '@/components/AppNavbar.vue'
+
+useReveal()
 
 interface ProductDto {
   id: number
