@@ -5,24 +5,24 @@
 
 ---
 
-## 🔗 相關連結
+## 相關連結
 *   **後端 API 專案 (Master README)**：[MyFitnessCoach_Server](https://github.com/dja41419-design/MyFitnessCoach_Server)
-*   **展示影片**：[YouTube 連結](https://www.youtube.com/watch?v=你的影片連結)
+*   **展示影片**：[YouTube 連結](https://www.youtube.com/watch?v=lV-r9YCWR1M&t=1242s)
 
 ---
 
-## 🛠️ 前端技術棧 (Frontend Tech Stack)
+## 前端技術棧 (Frontend Tech Stack)
 
 *   **框架**: Vue 3 (Composition API, `<script setup>`)
 *   **構建工具**: Vite
 *   **語言**: TypeScript / JavaScript
-*   **UI 組件庫**: Element Plus
+*   **UI 組件庫**: Element Plus、Vuetify
 *   **狀態管理**: 自定義 Composables (Module-level Singleton Pattern)
 *   **HTTP 客戶端**: Fetch API + 自定義封裝 (`fetchWithAuth`)
 
 ---
 
-## 🚀 前端技術亮點
+## 前端技術亮點
 
 ### 1. 全站單例狀態管理 (Global State Management)
 本專案不依賴傳統的 Vuex 或 Pinia，而是運用 Vue 3 的響應式原理（`ref`, `computed`）實作了 **Module-level Singleton** 模式。
@@ -44,7 +44,7 @@
 
 ---
 
-## 📂 專案目錄結構
+## 專案目錄結構
 
 ```text
 src/
@@ -61,7 +61,7 @@ src/
 
 ---
 
-## 💻 快速上手 (Getting Started)
+## 快速上手 (Getting Started)
 
 ### 1. 安裝依賴
 ```bash
@@ -80,7 +80,7 @@ npm run build
 
 ---
 
-## 📸 介面縮影
+## 介面縮影
 
 | 商城主介面 | 購物車與優惠券 |
 | :---: | :---: |
@@ -88,5 +88,5 @@ npm run build
 
 ---
 
-## 💡 開發體悟
+## 開發體悟
 透過 Vue 3 的 Composition API，我深刻體會到「邏輯抽離」對大型前端專案的重要性。將複雜的購物車合併邏輯與優惠券演算法封裝成 Composable，不僅讓視圖層（View）變得純粹，也讓代碼的複用性與可讀性達到了商業級標準。
